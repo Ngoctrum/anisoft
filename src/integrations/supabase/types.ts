@@ -169,6 +169,7 @@ export type Database = {
       }
       tools: {
         Row: {
+          app_config: Json | null
           author_user_id: string | null
           category: string
           created_at: string | null
@@ -184,10 +185,12 @@ export type Database = {
           tags: string[] | null
           thumbnail_url: string | null
           title: string
+          tool_type: string
           total_downloads: number | null
           updated_at: string | null
         }
         Insert: {
+          app_config?: Json | null
           author_user_id?: string | null
           category: string
           created_at?: string | null
@@ -203,10 +206,12 @@ export type Database = {
           tags?: string[] | null
           thumbnail_url?: string | null
           title: string
+          tool_type?: string
           total_downloads?: number | null
           updated_at?: string | null
         }
         Update: {
+          app_config?: Json | null
           author_user_id?: string | null
           category?: string
           created_at?: string | null
@@ -222,6 +227,7 @@ export type Database = {
           tags?: string[] | null
           thumbnail_url?: string | null
           title?: string
+          tool_type?: string
           total_downloads?: number | null
           updated_at?: string | null
         }

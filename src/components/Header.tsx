@@ -100,6 +100,18 @@ export const Header = () => {
         <span className="hidden lg:inline">Website</span>
       </Link>
       <Link 
+        to="/apps" 
+        className={cn(
+          "flex items-center gap-2 font-medium px-4 py-2 rounded-full transition-all",
+          isActivePath('/apps') 
+            ? "bg-gradient-primary text-primary-foreground shadow-glow" 
+            : "text-foreground/70 hover:text-foreground hover:bg-muted/50"
+        )}
+      >
+        <span className="text-lg">⚡</span>
+        <span className="hidden lg:inline">Apps</span>
+      </Link>
+      <Link 
         to="/docs" 
         className={cn(
           "flex items-center gap-2 font-medium px-4 py-2 rounded-full transition-all",
@@ -442,6 +454,19 @@ export const Header = () => {
                     >
                       <Globe className="h-4 w-4" />
                       <span>Website</span>
+                    </Link>
+                    <Link 
+                      to="/apps"
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
+                        isActivePath('/apps')
+                          ? "bg-gradient-primary text-primary-foreground shadow-glow" 
+                          : "text-foreground/80 hover:bg-muted/50"
+                      )}
+                    >
+                      <span className="text-lg">⚡</span>
+                      <span>Apps</span>
                     </Link>
                     <Link 
                       to="/docs"

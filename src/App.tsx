@@ -7,6 +7,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ScrollManager } from "./components/ScrollManager";
 import Home from "./pages/Home";
 import Tools from "./pages/Tools";
+import Code from "./pages/Code";
+import Website from "./pages/Website";
 import ToolDetail from "./pages/ToolDetail";
 import Download from "./pages/Download";
 import Login from "./pages/Login";
@@ -35,6 +37,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/tools" element={<Tools />} />
+            <Route path="/code" element={<Code />} />
+            <Route path="/website" element={<Website />} />
             <Route path="/tools/:slug" element={<ToolDetail />} />
             <Route path="/download/:id" element={<Download />} />
             <Route path="/login" element={<Login />} />

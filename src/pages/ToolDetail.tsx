@@ -74,6 +74,26 @@ export default function ToolDetail() {
 
   if (!tool) return null;
 
+  const getBadgeStyle = (badge: string) => {
+    const styles: Record<string, string> = {
+      new: "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg",
+      updated: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg",
+      hot: "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg",
+      popular: "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg",
+    };
+    return styles[badge.toLowerCase()] || "bg-primary text-primary-foreground shadow-lg";
+  };
+
+  const getBadgeText = (badge: string) => {
+    const texts: Record<string, string> = {
+      new: "🆕 Mới",
+      updated: "🔄 Cập nhật",
+      hot: "🔥 Hot",
+      popular: "⭐ Phổ biến",
+    };
+    return texts[badge.toLowerCase()] || badge;
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -99,7 +119,14 @@ export default function ToolDetail() {
 
             {/* Title and metadata */}
             <div>
-              <h1 className="text-4xl font-bold mb-4">{tool.title}</h1>
+              <div className="flex items-start gap-3 mb-4">
+                <h1 className="text-4xl font-bold flex-1">{tool.title}</h1>
+                {tool.status_badge && (
+                  <Badge className={getBadgeStyle(tool.status_badge)}>
+                    {getBadgeText(tool.status_badge)}
+                  </Badge>
+                )}
+              </div>
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />

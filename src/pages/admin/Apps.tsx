@@ -27,13 +27,12 @@ export default function AdminApps() {
     short_description: '',
     description: '',
     thumbnail_url: '',
-    download_url: '',
+    redirect_url: '',
     category: 'tool',
     tags: '',
     is_active: true,
     is_featured: false,
     status_badge: '',
-    app_config: '{"type": "image-generator"}',
   });
 
   useEffect(() => {
@@ -61,13 +60,12 @@ export default function AdminApps() {
         short_description: app.short_description || '',
         description: app.description || '',
         thumbnail_url: app.thumbnail_url || '',
-        download_url: app.download_url || '',
+        redirect_url: app.download_url || '',
         category: app.category,
         tags: app.tags?.join(', ') || '',
         is_active: app.is_active,
         is_featured: app.is_featured,
         status_badge: app.status_badge || '',
-        app_config: JSON.stringify(app.app_config || {}, null, 2),
       });
     } else {
       setEditingApp(null);
@@ -77,13 +75,12 @@ export default function AdminApps() {
         short_description: '',
         description: '',
         thumbnail_url: '',
-        download_url: '',
+        redirect_url: '',
         category: 'tool',
         tags: '',
         is_active: true,
         is_featured: false,
         status_badge: '',
-        app_config: '{"type": "image-generator"}',
       });
     }
     setDialogOpen(true);
@@ -98,29 +95,20 @@ export default function AdminApps() {
       .map((tag) => tag.trim())
       .filter((tag) => tag);
 
-    let appConfigObj = {};
-    try {
-      appConfigObj = JSON.parse(formData.app_config);
-    } catch (e) {
-      toast.error('App Config phải là JSON hợp lệ');
-      setSubmitting(false);
-      return;
-    }
-
     const appData = {
       title: formData.title,
       slug: formData.slug,
       short_description: formData.short_description,
       description: formData.description,
       thumbnail_url: formData.thumbnail_url,
-      download_url: formData.download_url || '',
+      download_url: formData.redirect_url,
       category: formData.category,
       tags: tagsArray,
       is_active: formData.is_active,
       is_featured: formData.is_featured,
       status_badge: formData.status_badge || null,
       tool_type: 'interactive',
-      app_config: appConfigObj,
+      app_config: {},
     };
 
     try {
@@ -268,18 +256,17 @@ export default function AdminApps() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="app_config">App Config (JSON) *</Label>
-                  <Textarea
-                    id="app_config"
-                    value={formData.app_config}
-                    onChange={(e) => setFormData({ ...formData, app_config: e.target.value })}
-                    rows={6}
-                    placeholder='{"type": "image-generator", "model": "gemini"}'
-                    className="font-mono text-sm"
+                  <Label htmlFor="redirect_url">URL chuyển hướng *</Label>
+                  <Input
+                    id="redirect_url"
+                    type="url"
+                    value={formData.redirect_url}
+                    onChange={(e) => setFormData({ ...formData, redirect_url: e.target.value })}
+                    placeholder="https://tool-cua-ban.com"
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Loại app: image-generator, image-editor, qr-generator, etc.
+                    URL của tool/website bên ngoài mà bạn muốn chuyển hướng đến
                   </p>
                 </div>
 
@@ -400,10 +387,12 @@ export default function AdminApps() {
                       <div className="flex flex-wrap gap-2">
                         <Badge variant="secondary">{app.category}</Badge>
                         <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                          ⚡ Interactive App
+                          ⚡ Redirect
                         </Badge>
-                        {app.app_config?.type && (
-                          <Badge variant="outline">{app.app_config.type}</Badge>
+                        {app.download_url && (
+                          <Badge variant="outline" className="max-w-[200px] truncate">
+                            {new URL(app.download_url).hostname}
+                          </Badge>
                         )}
                         {app.status_badge && (
                           <Badge className={getBadgeStyle(app.status_badge)}>

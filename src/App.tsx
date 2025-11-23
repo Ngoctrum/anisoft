@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ScrollManager } from "./components/ScrollManager";
+import { MaintenanceMode } from "./components/MaintenanceMode";
 import Home from "./pages/Home";
 import Tools from "./pages/Tools";
 import Website from "./pages/Website";
@@ -34,7 +35,8 @@ const App = () => (
       <BrowserRouter>
         <ScrollManager />
         <AuthProvider>
-          <Routes>
+          <MaintenanceMode>
+            <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/tools" element={<Tools />} />
             <Route path="/website" element={<Website />} />
@@ -54,7 +56,8 @@ const App = () => (
             <Route path="/admin/settings" element={<AdminSettings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
+            </Routes>
+          </MaintenanceMode>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

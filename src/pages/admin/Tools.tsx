@@ -116,20 +116,26 @@ export default function AdminTools() {
           .eq('id', editingTool.id);
 
         if (error) throw error;
-        toast.success('Đã cập nhật tool');
+        toast.success('Đã cập nhật tool', {
+          description: `Tool "${formData.title}" đã được cập nhật thành công`
+        });
       } else {
         const { error } = await supabase
           .from('tools')
           .insert(toolData);
 
         if (error) throw error;
-        toast.success('Đã thêm tool mới');
+        toast.success('Đã thêm tool mới', {
+          description: `Tool "${formData.title}" đã được thêm vào hệ thống`
+        });
       }
 
       setDialogOpen(false);
       loadTools();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error('Có lỗi xảy ra', {
+        description: error.message
+      });
     }
 
     setSubmitting(false);
@@ -144,9 +150,13 @@ export default function AdminTools() {
       .eq('id', id);
 
     if (error) {
-      toast.error('Xóa thất bại');
+      toast.error('Xóa thất bại', {
+        description: error.message
+      });
     } else {
-      toast.success('Đã xóa tool');
+      toast.success('Đã xóa tool', {
+        description: 'Tool đã được xóa khỏi hệ thống'
+      });
       loadTools();
     }
   };

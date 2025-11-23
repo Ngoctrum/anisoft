@@ -4,6 +4,18 @@
 
 **URL**: https://lovable.dev/projects/d73b0440-8493-430d-987a-d64668e80464
 
+## 🚀 Setup Your Own Instance
+
+**Muốn host riêng với database riêng?** 
+
+Xem hướng dẫn chi tiết tại: [SETUP.md](./SETUP.md)
+
+Bao gồm:
+- Tạo Supabase database riêng (miễn phí)
+- Cấu hình environment variables
+- Deploy lên cPanel hosting
+- Cấu hình SMTP, Admin user, v.v.
+
 ## How can I edit this code?
 
 There are several ways of editing your application.

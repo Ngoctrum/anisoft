@@ -14,6 +14,7 @@ interface ToolCardProps {
   tags?: string[];
   total_downloads: number;
   is_featured?: boolean;
+  status_badge?: string | null;
 }
 
 export const ToolCard = ({
@@ -25,7 +26,28 @@ export const ToolCard = ({
   tags,
   total_downloads,
   is_featured,
+  status_badge,
 }: ToolCardProps) => {
+  const getBadgeStyle = (badge: string) => {
+    const styles: Record<string, string> = {
+      new: "bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg animate-pulse",
+      updated: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg",
+      hot: "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg animate-pulse",
+      popular: "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg",
+    };
+    return styles[badge.toLowerCase()] || "bg-primary text-primary-foreground shadow-lg";
+  };
+
+  const getBadgeText = (badge: string) => {
+    const texts: Record<string, string> = {
+      new: "🆕 Mới",
+      updated: "🔄 Cập nhật",
+      hot: "🔥 Hot",
+      popular: "⭐ Phổ biến",
+    };
+    return texts[badge.toLowerCase()] || badge;
+  };
+
   return (
     <Card className="group overflow-hidden bg-gradient-card border-border hover:border-primary/50 transition-all hover:shadow-glow">
       <Link to={`/tools/${slug}`}>
@@ -41,14 +63,19 @@ export const ToolCard = ({
               <Download className="h-12 w-12" />
             </div>
           )}
-          {is_featured && (
-            <div className="absolute top-2 right-2">
-              <Badge className="bg-accent text-accent-foreground">
+          <div className="absolute top-2 right-2 flex gap-2">
+            {status_badge && (
+              <Badge className={`${getBadgeStyle(status_badge)} font-bold z-10`}>
+                {getBadgeText(status_badge)}
+              </Badge>
+            )}
+            {is_featured && (
+              <Badge className="bg-accent text-accent-foreground z-10">
                 <Star className="h-3 w-3 mr-1" />
                 Nổi bật
               </Badge>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </Link>
 

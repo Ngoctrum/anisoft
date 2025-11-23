@@ -76,13 +76,25 @@ export default function AdminReports() {
     }
   };
 
+  const getSupportTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      tool_error: '🔧 Tools lỗi',
+      code_error: '💻 Code lỗi',
+      website_error: '🌐 Website lỗi',
+      website_report: '📝 Báo cáo website',
+      general: '💬 Khách',
+      support_request: '🤝 Yêu cầu hỗ trợ',
+    };
+    return labels[type] || type;
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Quản lý Báo lỗi</h1>
+          <h1 className="text-3xl font-bold">Quản lý Báo lỗi & Hỗ trợ</h1>
           <p className="text-muted-foreground">
-            Xem và xử lý các báo cáo lỗi từ người dùng
+            Xem và xử lý các báo cáo lỗi và yêu cầu hỗ trợ từ người dùng
           </p>
         </div>
 
@@ -99,9 +111,16 @@ export default function AdminReports() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{report.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Tool: <span className="text-foreground">{report.tools?.title}</span>
-                        </p>
+                        <div className="flex gap-2 items-center text-sm text-muted-foreground mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {getSupportTypeLabel(report.support_type || 'tool_error')}
+                          </Badge>
+                          {report.tools?.title && (
+                            <span>
+                              • Tool: <span className="text-foreground">{report.tools.title}</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {getStatusBadge(report.status)}
                     </div>
@@ -163,6 +182,9 @@ export default function AdminReports() {
             {selectedReport && (
               <div className="space-y-4">
                 <div>
+                  <Badge variant="outline" className="mb-2">
+                    {getSupportTypeLabel(selectedReport.support_type || 'tool_error')}
+                  </Badge>
                   <h4 className="font-semibold mb-2">{selectedReport.title}</h4>
                   <p className="text-sm text-muted-foreground">{selectedReport.message}</p>
                 </div>

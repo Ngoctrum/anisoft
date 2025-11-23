@@ -64,6 +64,7 @@ export type Database = {
           message: string
           screenshot_url: string | null
           status: string | null
+          support_type: string | null
           title: string
           tool_id: string
           updated_at: string | null
@@ -76,6 +77,7 @@ export type Database = {
           message: string
           screenshot_url?: string | null
           status?: string | null
+          support_type?: string | null
           title: string
           tool_id: string
           updated_at?: string | null
@@ -88,6 +90,7 @@ export type Database = {
           message?: string
           screenshot_url?: string | null
           status?: string | null
+          support_type?: string | null
           title?: string
           tool_id?: string
           updated_at?: string | null
@@ -177,6 +180,7 @@ export type Database = {
           is_premium: boolean | null
           short_description: string | null
           slug: string
+          status_badge: string | null
           tags: string[] | null
           thumbnail_url: string | null
           title: string
@@ -195,6 +199,7 @@ export type Database = {
           is_premium?: boolean | null
           short_description?: string | null
           slug: string
+          status_badge?: string | null
           tags?: string[] | null
           thumbnail_url?: string | null
           title: string
@@ -213,6 +218,7 @@ export type Database = {
           is_premium?: boolean | null
           short_description?: string | null
           slug?: string
+          status_badge?: string | null
           tags?: string[] | null
           thumbnail_url?: string | null
           title?: string

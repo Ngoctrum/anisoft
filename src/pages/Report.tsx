@@ -18,7 +18,17 @@ const reportSchema = z.object({
   title: z.string().min(5, 'Tiêu đề phải có ít nhất 5 ký tự').max(100, 'Tiêu đề không được quá 100 ký tự'),
   message: z.string().min(10, 'Mô tả phải có ít nhất 10 ký tự').max(1000, 'Mô tả không được quá 1000 ký tự'),
   screenshot_url: z.string().url('URL không hợp lệ').optional().or(z.literal('')),
+  support_type: z.string().min(1, 'Vui lòng chọn loại hỗ trợ'),
 });
+
+const supportTypes = [
+  { value: 'tool_error', label: '🔧 Tools lỗi' },
+  { value: 'code_error', label: '💻 Code lỗi' },
+  { value: 'website_error', label: '🌐 Website lỗi' },
+  { value: 'website_report', label: '📝 Báo cáo website' },
+  { value: 'general', label: '💬 Khách (nội dung chung)' },
+  { value: 'support_request', label: '🤝 Yêu cầu hỗ trợ/liên kết' },
+];
 
 export default function Report() {
   const [searchParams] = useSearchParams();
@@ -30,6 +40,7 @@ export default function Report() {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [screenshotUrl, setScreenshotUrl] = useState('');
+  const [supportType, setSupportType] = useState('tool_error');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -49,13 +60,16 @@ export default function Report() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedTool) {
-      toast.error('Vui lòng chọn tool');
+    // For general inquiries and support requests, tool selection is optional
+    const requiresToolSelection = ['tool_error', 'code_error', 'website_error'].includes(supportType);
+    
+    if (requiresToolSelection && !selectedTool) {
+      toast.error('Vui lòng chọn tool/code/website gặp lỗi');
       return;
     }
 
     try {
-      reportSchema.parse({ title, message, screenshot_url: screenshotUrl });
+      reportSchema.parse({ title, message, screenshot_url: screenshotUrl, support_type: supportType });
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -67,10 +81,11 @@ export default function Report() {
 
     const { error } = await supabase.from('error_reports').insert({
       user_id: user?.id || null,
-      tool_id: selectedTool,
+      tool_id: selectedTool || null,
       title,
       message,
       screenshot_url: screenshotUrl || null,
+      support_type: supportType,
       status: 'pending'
     });
 
@@ -81,6 +96,7 @@ export default function Report() {
       setTitle('');
       setMessage('');
       setScreenshotUrl('');
+      setSupportType('tool_error');
       setSelectedTool('');
     }
 
@@ -94,39 +110,60 @@ export default function Report() {
       <main className="flex-1 container py-8">
         <div className="max-w-2xl mx-auto space-y-8">
           <div>
-            <h1 className="text-4xl font-bold mb-4">Báo lỗi</h1>
+            <h1 className="text-4xl font-bold mb-4">Báo lỗi & Hỗ trợ</h1>
             <p className="text-muted-foreground">
-              Phát hiện lỗi trong tool? Hãy cho chúng tôi biết để cải thiện
+              Gặp vấn đề hoặc cần hỗ trợ? Hãy cho chúng tôi biết
             </p>
           </div>
 
           <Card className="bg-gradient-card border-border">
             <CardHeader>
-              <CardTitle>Thông tin lỗi</CardTitle>
+              <CardTitle>Thông tin yêu cầu</CardTitle>
               <CardDescription>
-                Mô tả chi tiết vấn đề bạn gặp phải
+                Chọn loại hỗ trợ và mô tả chi tiết vấn đề của bạn
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tool">Tool gặp lỗi</Label>
-                  <Select value={selectedTool} onValueChange={setSelectedTool} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn tool" />
+                  <Label htmlFor="support-type">Loại hỗ trợ <span className="text-destructive">*</span></Label>
+                  <Select value={supportType} onValueChange={setSupportType}>
+                    <SelectTrigger id="support-type">
+                      <SelectValue placeholder="Chọn loại hỗ trợ" />
                     </SelectTrigger>
                     <SelectContent>
-                      {tools.map((tool) => (
-                        <SelectItem key={tool.id} value={tool.id}>
-                          {tool.title}
+                      {supportTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
+                {(supportType === 'tool_error' || supportType === 'code_error' || supportType === 'website_error') && (
+                  <div className="space-y-2">
+                    <Label htmlFor="tool">
+                      {supportType === 'tool_error' ? 'Tool' : supportType === 'code_error' ? 'Code' : 'Website'} gặp lỗi
+                      <span className="text-destructive"> *</span>
+                    </Label>
+                    <Select value={selectedTool} onValueChange={setSelectedTool} required>
+                      <SelectTrigger id="tool">
+                        <SelectValue placeholder="Chọn mục gặp lỗi" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tools.map((tool) => (
+                          <SelectItem key={tool.id} value={tool.id}>
+                            {tool.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div className="space-y-2">
-                  <Label htmlFor="title">Tiêu đề lỗi</Label>
+                  <Label htmlFor="title">Tiêu đề <span className="text-destructive">*</span></Label>
                   <Input
                     id="title"
                     value={title}
@@ -137,19 +174,23 @@ export default function Report() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="message">Mô tả chi tiết</Label>
+                  <Label htmlFor="message">Mô tả chi tiết <span className="text-destructive">*</span></Label>
                   <Textarea
                     id="message"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Mô tả chi tiết lỗi, các bước tái hiện, thông tin hệ thống..."
+                    placeholder={
+                      supportType === 'general' ? 'Nhập nội dung của bạn...' :
+                      supportType === 'support_request' ? 'Mô tả yêu cầu hỗ trợ hoặc liên kết...' :
+                      'Mô tả chi tiết lỗi, các bước tái hiện, thông tin hệ thống...'
+                    }
                     rows={6}
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="screenshot">Link ảnh lỗi (tùy chọn)</Label>
+                  <Label htmlFor="screenshot">Link ảnh (tùy chọn)</Label>
                   <Input
                     id="screenshot"
                     type="url"

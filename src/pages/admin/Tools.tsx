@@ -32,6 +32,7 @@ export default function AdminTools() {
     tags: '',
     is_active: true,
     is_featured: false,
+    status_badge: '',
   });
 
   useEffect(() => {
@@ -63,6 +64,7 @@ export default function AdminTools() {
         tags: tool.tags?.join(', ') || '',
         is_active: tool.is_active,
         is_featured: tool.is_featured,
+        status_badge: tool.status_badge || '',
       });
     } else {
       setEditingTool(null);
@@ -77,6 +79,7 @@ export default function AdminTools() {
         tags: '',
         is_active: true,
         is_featured: false,
+        status_badge: '',
       });
     }
     setDialogOpen(true);
@@ -92,8 +95,17 @@ export default function AdminTools() {
       .filter((tag) => tag);
 
     const toolData = {
-      ...formData,
+      title: formData.title,
+      slug: formData.slug,
+      short_description: formData.short_description,
+      description: formData.description,
+      thumbnail_url: formData.thumbnail_url,
+      download_url: formData.download_url,
+      category: formData.category,
       tags: tagsArray,
+      is_active: formData.is_active,
+      is_featured: formData.is_featured,
+      status_badge: formData.status_badge || null,
     };
 
     try {
@@ -137,6 +149,16 @@ export default function AdminTools() {
       toast.success('Đã xóa tool');
       loadTools();
     }
+  };
+
+  const getBadgeStyle = (badge: string) => {
+    const styles: Record<string, string> = {
+      new: "bg-gradient-to-r from-green-500 to-emerald-500 text-white",
+      updated: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
+      hot: "bg-gradient-to-r from-red-500 to-orange-500 text-white",
+      popular: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+    };
+    return styles[badge.toLowerCase()] || "bg-primary text-primary-foreground";
   };
 
   return (
@@ -253,6 +275,25 @@ export default function AdminTools() {
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="status-badge">Tag trạng thái</Label>
+                  <Select value={formData.status_badge} onValueChange={(value) => setFormData({ ...formData, status_badge: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn tag (tùy chọn)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Không có</SelectItem>
+                      <SelectItem value="new">🆕 Mới</SelectItem>
+                      <SelectItem value="updated">🔄 Cập nhật</SelectItem>
+                      <SelectItem value="hot">🔥 Hot</SelectItem>
+                      <SelectItem value="popular">⭐ Phổ biến</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Tag sẽ hiển thị nổi bật trên card
+                  </p>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Switch
@@ -328,6 +369,14 @@ export default function AdminTools() {
 
                       <div className="flex flex-wrap gap-2">
                         <Badge variant="secondary">{tool.category}</Badge>
+                        {tool.status_badge && (
+                          <Badge className={getBadgeStyle(tool.status_badge)}>
+                            {tool.status_badge === 'new' ? '🆕 Mới' :
+                             tool.status_badge === 'updated' ? '🔄 Cập nhật' :
+                             tool.status_badge === 'hot' ? '🔥 Hot' :
+                             tool.status_badge === 'popular' ? '⭐ Phổ biến' : tool.status_badge}
+                          </Badge>
+                        )}
                         {tool.is_featured && <Badge className="bg-accent">Nổi bật</Badge>}
                         {!tool.is_active && <Badge variant="destructive">Đã ẩn</Badge>}
                         {tool.tags?.map((tag: string) => (

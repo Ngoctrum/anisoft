@@ -10,16 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Eye, Loader2, Globe } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, Loader2, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-export default function AdminWebsites() {
-  const [websites, setWebsites] = useState<any[]>([]);
+export default function AdminApps() {
+  const [apps, setApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingWebsite, setEditingWebsite] = useState<any>(null);
+  const [editingApp, setEditingApp] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Form state
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -27,45 +28,49 @@ export default function AdminWebsites() {
     description: '',
     thumbnail_url: '',
     download_url: '',
+    category: 'tool',
     tags: '',
     is_active: true,
     is_featured: false,
     status_badge: '',
+    app_config: '{"type": "image-generator"}',
   });
 
   useEffect(() => {
-    loadWebsites();
+    loadApps();
   }, []);
 
-  const loadWebsites = async () => {
+  const loadApps = async () => {
     setLoading(true);
     const { data } = await supabase
       .from('tools')
       .select('*')
-      .eq('category', 'website')
+      .eq('tool_type', 'interactive')
       .order('created_at', { ascending: false });
 
-    setWebsites(data || []);
+    setApps(data || []);
     setLoading(false);
   };
 
-  const handleOpenDialog = (website?: any) => {
-    if (website) {
-      setEditingWebsite(website);
+  const handleOpenDialog = (app?: any) => {
+    if (app) {
+      setEditingApp(app);
       setFormData({
-        title: website.title,
-        slug: website.slug,
-        short_description: website.short_description || '',
-        description: website.description || '',
-        thumbnail_url: website.thumbnail_url || '',
-        download_url: website.download_url,
-        tags: website.tags?.join(', ') || '',
-        is_active: website.is_active,
-        is_featured: website.is_featured,
-        status_badge: website.status_badge || '',
+        title: app.title,
+        slug: app.slug,
+        short_description: app.short_description || '',
+        description: app.description || '',
+        thumbnail_url: app.thumbnail_url || '',
+        download_url: app.download_url || '',
+        category: app.category,
+        tags: app.tags?.join(', ') || '',
+        is_active: app.is_active,
+        is_featured: app.is_featured,
+        status_badge: app.status_badge || '',
+        app_config: JSON.stringify(app.app_config || {}, null, 2),
       });
     } else {
-      setEditingWebsite(null);
+      setEditingApp(null);
       setFormData({
         title: '',
         slug: '',
@@ -73,10 +78,12 @@ export default function AdminWebsites() {
         description: '',
         thumbnail_url: '',
         download_url: '',
+        category: 'tool',
         tags: '',
         is_active: true,
         is_featured: false,
         status_badge: '',
+        app_config: '{"type": "image-generator"}',
       });
     }
     setDialogOpen(true);
@@ -91,44 +98,55 @@ export default function AdminWebsites() {
       .map((tag) => tag.trim())
       .filter((tag) => tag);
 
-    const websiteData = {
+    let appConfigObj = {};
+    try {
+      appConfigObj = JSON.parse(formData.app_config);
+    } catch (e) {
+      toast.error('App Config phải là JSON hợp lệ');
+      setSubmitting(false);
+      return;
+    }
+
+    const appData = {
       title: formData.title,
       slug: formData.slug,
       short_description: formData.short_description,
       description: formData.description,
       thumbnail_url: formData.thumbnail_url,
-      download_url: formData.download_url,
-      category: 'website',
+      download_url: formData.download_url || '',
+      category: formData.category,
       tags: tagsArray,
       is_active: formData.is_active,
       is_featured: formData.is_featured,
       status_badge: formData.status_badge || null,
+      tool_type: 'interactive',
+      app_config: appConfigObj,
     };
 
     try {
-      if (editingWebsite) {
+      if (editingApp) {
         const { error } = await supabase
           .from('tools')
-          .update(websiteData)
-          .eq('id', editingWebsite.id);
+          .update(appData)
+          .eq('id', editingApp.id);
 
         if (error) throw error;
-        toast.success('Đã cập nhật website', {
-          description: `Website "${formData.title}" đã được cập nhật thành công`
+        toast.success('Đã cập nhật app', {
+          description: `App "${formData.title}" đã được cập nhật thành công`
         });
       } else {
         const { error } = await supabase
           .from('tools')
-          .insert(websiteData);
+          .insert(appData);
 
         if (error) throw error;
-        toast.success('Đã thêm website mới', {
-          description: `Website "${formData.title}" đã được thêm vào hệ thống`
+        toast.success('Đã thêm app mới', {
+          description: `App "${formData.title}" đã được thêm vào hệ thống`
         });
       }
 
       setDialogOpen(false);
-      loadWebsites();
+      loadApps();
     } catch (error: any) {
       toast.error('Có lỗi xảy ra', {
         description: error.message
@@ -139,7 +157,7 @@ export default function AdminWebsites() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa website này?')) return;
+    if (!confirm('Bạn có chắc muốn xóa app này?')) return;
 
     const { error } = await supabase
       .from('tools')
@@ -151,10 +169,10 @@ export default function AdminWebsites() {
         description: error.message
       });
     } else {
-      toast.success('Đã xóa website', {
-        description: 'Website đã được xóa khỏi hệ thống'
+      toast.success('Đã xóa app', {
+        description: 'App đã được xóa khỏi hệ thống'
       });
-      loadWebsites();
+      loadApps();
     }
   };
 
@@ -173,34 +191,34 @@ export default function AdminWebsites() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <Globe className="h-8 w-8 text-primary" />
-              Quản lý Website Templates
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Sparkles className="h-8 w-8 text-primary" />
+              Quản lý Apps
             </h1>
             <p className="text-muted-foreground">
-              Thêm, sửa, xóa các website templates trên hệ thống
+              Thêm, sửa, xóa các ứng dụng web tương tác
             </p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => handleOpenDialog()} className="bg-gradient-primary">
                 <Plus className="mr-2 h-4 w-4" />
-                Thêm Website
+                Thêm App
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
-                  {editingWebsite ? 'Chỉnh sửa Website' : 'Thêm Website mới'}
+                  {editingApp ? 'Chỉnh sửa App' : 'Thêm App mới'}
                 </DialogTitle>
                 <DialogDescription>
-                  Điền đầy đủ thông tin website template
+                  Điền đầy đủ thông tin ứng dụng tương tác
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="title">Tên website *</Label>
+                    <Label htmlFor="title">Tên app *</Label>
                     <Input
                       id="title"
                       value={formData.title}
@@ -229,12 +247,13 @@ export default function AdminWebsites() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Mô tả chi tiết</Label>
+                  <Label htmlFor="description">Hướng dẫn sử dụng</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={4}
+                    placeholder="Hướng dẫn chi tiết cách sử dụng app..."
                   />
                 </div>
 
@@ -249,24 +268,44 @@ export default function AdminWebsites() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="download_url">URL tải xuống *</Label>
-                  <Input
-                    id="download_url"
-                    type="url"
-                    value={formData.download_url}
-                    onChange={(e) => setFormData({ ...formData, download_url: e.target.value })}
+                  <Label htmlFor="app_config">App Config (JSON) *</Label>
+                  <Textarea
+                    id="app_config"
+                    value={formData.app_config}
+                    onChange={(e) => setFormData({ ...formData, app_config: e.target.value })}
+                    rows={6}
+                    placeholder='{"type": "image-generator", "model": "gemini"}'
+                    className="font-mono text-sm"
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Loại app: image-generator, image-editor, qr-generator, etc.
+                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="tags">Tags (phân cách bằng dấu ,)</Label>
-                  <Input
-                    id="tags"
-                    value={formData.tags}
-                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                    placeholder="responsive, landing-page, ecommerce"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Danh mục</Label>
+                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="tool">Tool</SelectItem>
+                        <SelectItem value="website">Website</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tags">Tags (phân cách bằng dấu ,)</Label>
+                    <Input
+                      id="tags"
+                      value={formData.tags}
+                      onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                      placeholder="ai, image, generator"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -328,16 +367,16 @@ export default function AdminWebsites() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {websites.map((website) => (
-              <Card key={website.id} className="bg-gradient-card border-border">
+            {apps.map((app) => (
+              <Card key={app.id} className="bg-gradient-card border-border">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="h-20 w-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                      {website.thumbnail_url ? (
-                        <img src={website.thumbnail_url} alt={website.title} className="w-full h-full object-cover" />
+                      {app.thumbnail_url ? (
+                        <img src={app.thumbnail_url} alt={app.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Globe className="h-8 w-8 text-muted-foreground" />
+                          <Sparkles className="h-8 w-8 text-muted-foreground" />
                         </div>
                       )}
                     </div>
@@ -345,38 +384,40 @@ export default function AdminWebsites() {
                     <div className="flex-1 space-y-2">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="font-semibold text-lg">{website.title}</h3>
-                          <p className="text-sm text-muted-foreground">{website.short_description}</p>
+                          <h3 className="font-semibold text-lg">{app.title}</h3>
+                          <p className="text-sm text-muted-foreground">{app.short_description}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(website)}>
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(app)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(website.id)}>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(app.id)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary">Website</Badge>
-                        {website.status_badge && (
-                          <Badge className={getBadgeStyle(website.status_badge)}>
-                            {website.status_badge === 'new' ? '🆕 Mới' :
-                             website.status_badge === 'updated' ? '🔄 Cập nhật' :
-                             website.status_badge === 'hot' ? '🔥 Hot' :
-                             website.status_badge === 'popular' ? '⭐ Phổ biến' : website.status_badge}
+                        <Badge variant="secondary">{app.category}</Badge>
+                        <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                          ⚡ Interactive App
+                        </Badge>
+                        {app.app_config?.type && (
+                          <Badge variant="outline">{app.app_config.type}</Badge>
+                        )}
+                        {app.status_badge && (
+                          <Badge className={getBadgeStyle(app.status_badge)}>
+                            {app.status_badge === 'new' ? '🆕 Mới' :
+                             app.status_badge === 'updated' ? '🔄 Cập nhật' :
+                             app.status_badge === 'hot' ? '🔥 Hot' :
+                             app.status_badge === 'popular' ? '⭐ Phổ biến' : app.status_badge}
                           </Badge>
                         )}
-                        {website.is_featured && <Badge className="bg-accent">Nổi bật</Badge>}
-                        {!website.is_active && <Badge variant="destructive">Đã ẩn</Badge>}
-                        {website.tags?.map((tag: string) => (
+                        {app.is_featured && <Badge className="bg-accent">Nổi bật</Badge>}
+                        {!app.is_active && <Badge variant="destructive">Đã ẩn</Badge>}
+                        {app.tags?.map((tag: string) => (
                           <Badge key={tag} variant="outline">{tag}</Badge>
                         ))}
-                      </div>
-
-                      <div className="text-sm text-muted-foreground">
-                        {website.total_downloads} lượt tải
                       </div>
                     </div>
                   </div>

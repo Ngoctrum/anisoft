@@ -21,7 +21,7 @@ import Support from "./pages/Support";
 import Report from "./pages/Report";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminTools from "./pages/admin/Tools";
-import AdminWebsites from "./pages/admin/Websites";
+import AdminApps from "./pages/admin/Apps";
 import AdminUsers from "./pages/admin/Users";
 import AdminReports from "./pages/admin/Reports";
 import AdminSettings from "./pages/admin/Settings";
@@ -54,7 +54,7 @@ const App = () => (
             <Route path="/report" element={<Report />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/tools" element={<AdminTools />} />
-            <Route path="/admin/websites" element={<AdminWebsites />} />
+            <Route path="/admin/apps" element={<AdminApps />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/admin/settings" element={<AdminSettings />} />

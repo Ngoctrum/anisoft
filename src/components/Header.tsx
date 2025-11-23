@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, Search, User, LogOut, Download, Home, FileText, HelpCircle, Shield, Globe } from 'lucide-react';
+import { Menu, Search, User, LogOut, Download, Home, FileText, HelpCircle, Shield, Globe, Sparkles } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import mascotAvatar from '@/assets/mascot-avatar.jpg';
@@ -165,16 +165,16 @@ export const Header = () => {
         <span className="hidden xl:inline">Tools</span>
       </Link>
       <Link 
-        to="/admin/websites" 
+        to="/admin/apps" 
         className={cn(
           "flex items-center gap-2 font-medium px-3 py-2 rounded-full transition-all",
-          location.pathname === '/admin/websites'
+          location.pathname === '/admin/apps'
             ? "bg-gradient-primary text-primary-foreground shadow-glow" 
             : "text-primary hover:bg-primary/20"
         )}
       >
-        <Globe className="h-4 w-4" />
-        <span className="hidden xl:inline">Websites</span>
+        <Sparkles className="h-4 w-4" />
+        <span className="hidden xl:inline">Apps</span>
       </Link>
       <Link 
         to="/admin/users" 
@@ -390,6 +390,19 @@ export const Header = () => {
                     >
                       <Download className="h-4 w-4" />
                       <span>Quản lý Tools</span>
+                    </Link>
+                    <Link 
+                      to="/admin/apps"
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
+                        location.pathname === '/admin/apps'
+                          ? "bg-gradient-primary text-primary-foreground shadow-glow" 
+                          : "text-foreground/80 hover:bg-primary/10"
+                      )}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      <span>Quản lý Apps</span>
                     </Link>
                     <Link 
                       to="/admin/users"

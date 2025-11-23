@@ -47,10 +47,11 @@ export default function ToolDetail() {
 
     setTool(toolData);
 
-    // Load related tools (same category)
+    // Load related tools (same category, download type only)
     const { data: related } = await supabase
       .from('tools')
       .select('*')
+      .eq('tool_type', 'download')
       .eq('category', toolData.category)
       .neq('id', toolData.id)
       .eq('is_active', true)

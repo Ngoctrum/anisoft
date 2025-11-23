@@ -16,6 +16,7 @@ interface Tool {
   thumbnail_url: string;
   app_config: any;
   tool_type: string;
+  status_badge: string | null;
 }
 
 export default function Apps() {
@@ -31,13 +32,19 @@ export default function Apps() {
     setLoading(true);
     const { data, error } = await supabase
       .from('tools')
-      .select('id, title, slug, short_description, thumbnail_url, app_config, tool_type')
+      .select('id, title, slug, short_description, thumbnail_url, app_config, tool_type, status_badge')
       .eq('tool_type', 'interactive')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      setTools(data);
+      // Sắp xếp: có status_badge trước, không có sau
+      const sorted = data.sort((a, b) => {
+        const aHasBadge = a.status_badge ? 1 : 0;
+        const bHasBadge = b.status_badge ? 1 : 0;
+        return bHasBadge - aHasBadge;
+      });
+      setTools(sorted);
     }
     setLoading(false);
   };
@@ -90,11 +97,25 @@ export default function Apps() {
                         <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
                       </div>
                     )}
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 flex-wrap">
                       {tool.title}
                       <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
                         ⚡ App
                       </Badge>
+                      {tool.status_badge && (
+                        <Badge className={
+                          tool.status_badge === 'new' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' :
+                          tool.status_badge === 'updated' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' :
+                          tool.status_badge === 'hot' ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white' :
+                          tool.status_badge === 'popular' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' :
+                          'bg-primary text-primary-foreground'
+                        }>
+                          {tool.status_badge === 'new' ? '🆕 Mới' :
+                           tool.status_badge === 'updated' ? '🔄 Cập nhật' :
+                           tool.status_badge === 'hot' ? '🔥 Hot' :
+                           tool.status_badge === 'popular' ? '⭐ Phổ biến' : tool.status_badge}
+                        </Badge>
+                      )}
                     </CardTitle>
                     <CardDescription>
                       {tool.short_description}

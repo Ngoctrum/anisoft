@@ -19,10 +19,11 @@ export default function Home() {
   }, []);
 
   const loadTools = async () => {
-    // Load featured tools
+    // Load featured tools (only download type)
     const { data: featured } = await supabase
       .from('tools')
       .select('*')
+      .eq('tool_type', 'download')
       .eq('is_featured', true)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
@@ -30,10 +31,11 @@ export default function Home() {
 
     if (featured) setFeaturedTools(featured);
 
-    // Load recent tools
+    // Load recent tools (only download type)
     const { data: recent } = await supabase
       .from('tools')
       .select('*')
+      .eq('tool_type', 'download')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(6);

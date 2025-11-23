@@ -4,23 +4,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Eye, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, Loader2, Globe } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-export default function AdminTools() {
-  const [tools, setTools] = useState<any[]>([]);
+export default function AdminWebsites() {
+  const [websites, setWebsites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTool, setEditingTool] = useState<any>(null);
+  const [editingWebsite, setEditingWebsite] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form state
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -28,7 +27,6 @@ export default function AdminTools() {
     description: '',
     thumbnail_url: '',
     download_url: '',
-    category: 'tool',
     tags: '',
     is_active: true,
     is_featured: false,
@@ -36,38 +34,38 @@ export default function AdminTools() {
   });
 
   useEffect(() => {
-    loadTools();
+    loadWebsites();
   }, []);
 
-  const loadTools = async () => {
+  const loadWebsites = async () => {
     setLoading(true);
     const { data } = await supabase
       .from('tools')
       .select('*')
+      .eq('category', 'website')
       .order('created_at', { ascending: false });
 
-    setTools(data || []);
+    setWebsites(data || []);
     setLoading(false);
   };
 
-  const handleOpenDialog = (tool?: any) => {
-    if (tool) {
-      setEditingTool(tool);
+  const handleOpenDialog = (website?: any) => {
+    if (website) {
+      setEditingWebsite(website);
       setFormData({
-        title: tool.title,
-        slug: tool.slug,
-        short_description: tool.short_description || '',
-        description: tool.description || '',
-        thumbnail_url: tool.thumbnail_url || '',
-        download_url: tool.download_url,
-        category: tool.category,
-        tags: tool.tags?.join(', ') || '',
-        is_active: tool.is_active,
-        is_featured: tool.is_featured,
-        status_badge: tool.status_badge || '',
+        title: website.title,
+        slug: website.slug,
+        short_description: website.short_description || '',
+        description: website.description || '',
+        thumbnail_url: website.thumbnail_url || '',
+        download_url: website.download_url,
+        tags: website.tags?.join(', ') || '',
+        is_active: website.is_active,
+        is_featured: website.is_featured,
+        status_badge: website.status_badge || '',
       });
     } else {
-      setEditingTool(null);
+      setEditingWebsite(null);
       setFormData({
         title: '',
         slug: '',
@@ -75,7 +73,6 @@ export default function AdminTools() {
         description: '',
         thumbnail_url: '',
         download_url: '',
-        category: 'tool',
         tags: '',
         is_active: true,
         is_featured: false,
@@ -94,14 +91,14 @@ export default function AdminTools() {
       .map((tag) => tag.trim())
       .filter((tag) => tag);
 
-    const toolData = {
+    const websiteData = {
       title: formData.title,
       slug: formData.slug,
       short_description: formData.short_description,
       description: formData.description,
       thumbnail_url: formData.thumbnail_url,
       download_url: formData.download_url,
-      category: formData.category,
+      category: 'website',
       tags: tagsArray,
       is_active: formData.is_active,
       is_featured: formData.is_featured,
@@ -109,25 +106,25 @@ export default function AdminTools() {
     };
 
     try {
-      if (editingTool) {
+      if (editingWebsite) {
         const { error } = await supabase
           .from('tools')
-          .update(toolData)
-          .eq('id', editingTool.id);
+          .update(websiteData)
+          .eq('id', editingWebsite.id);
 
         if (error) throw error;
-        toast.success('Đã cập nhật tool');
+        toast.success('Đã cập nhật website');
       } else {
         const { error } = await supabase
           .from('tools')
-          .insert(toolData);
+          .insert(websiteData);
 
         if (error) throw error;
-        toast.success('Đã thêm tool mới');
+        toast.success('Đã thêm website mới');
       }
 
       setDialogOpen(false);
-      loadTools();
+      loadWebsites();
     } catch (error: any) {
       toast.error(error.message);
     }
@@ -136,7 +133,7 @@ export default function AdminTools() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc muốn xóa tool này?')) return;
+    if (!confirm('Bạn có chắc muốn xóa website này?')) return;
 
     const { error } = await supabase
       .from('tools')
@@ -146,8 +143,8 @@ export default function AdminTools() {
     if (error) {
       toast.error('Xóa thất bại');
     } else {
-      toast.success('Đã xóa tool');
-      loadTools();
+      toast.success('Đã xóa website');
+      loadWebsites();
     }
   };
 
@@ -166,31 +163,34 @@ export default function AdminTools() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Quản lý Tools</h1>
+            <h1 className="text-3xl font-bold flex items-center gap-3">
+              <Globe className="h-8 w-8 text-primary" />
+              Quản lý Website Templates
+            </h1>
             <p className="text-muted-foreground">
-              Thêm, sửa, xóa các tools trên hệ thống
+              Thêm, sửa, xóa các website templates trên hệ thống
             </p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => handleOpenDialog()} className="bg-gradient-primary">
                 <Plus className="mr-2 h-4 w-4" />
-                Thêm Tool
+                Thêm Website
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
-                  {editingTool ? 'Chỉnh sửa Tool' : 'Thêm Tool mới'}
+                  {editingWebsite ? 'Chỉnh sửa Website' : 'Thêm Website mới'}
                 </DialogTitle>
                 <DialogDescription>
-                  Điền đầy đủ thông tin tool
+                  Điền đầy đủ thông tin website template
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="title">Tên tool *</Label>
+                    <Label htmlFor="title">Tên website *</Label>
                     <Input
                       id="title"
                       value={formData.title}
@@ -249,29 +249,14 @@ export default function AdminTools() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Danh mục</Label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="tool">Tool</SelectItem>
-                        <SelectItem value="website">Website</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="tags">Tags (phân cách bằng dấu ,)</Label>
-                    <Input
-                      id="tags"
-                      value={formData.tags}
-                      onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                      placeholder="react, nodejs, api"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags (phân cách bằng dấu ,)</Label>
+                  <Input
+                    id="tags"
+                    value={formData.tags}
+                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                    placeholder="responsive, landing-page, ecommerce"
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -288,9 +273,6 @@ export default function AdminTools() {
                       <SelectItem value="popular">⭐ Phổ biến</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Tag sẽ hiển thị nổi bật trên card
-                  </p>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -336,16 +318,16 @@ export default function AdminTools() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {tools.map((tool) => (
-              <Card key={tool.id} className="bg-gradient-card border-border">
+            {websites.map((website) => (
+              <Card key={website.id} className="bg-gradient-card border-border">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className="h-20 w-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                      {tool.thumbnail_url ? (
-                        <img src={tool.thumbnail_url} alt={tool.title} className="w-full h-full object-cover" />
+                      {website.thumbnail_url ? (
+                        <img src={website.thumbnail_url} alt={website.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Eye className="h-8 w-8 text-muted-foreground" />
+                          <Globe className="h-8 w-8 text-muted-foreground" />
                         </div>
                       )}
                     </div>
@@ -353,38 +335,38 @@ export default function AdminTools() {
                     <div className="flex-1 space-y-2">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="font-semibold text-lg">{tool.title}</h3>
-                          <p className="text-sm text-muted-foreground">{tool.short_description}</p>
+                          <h3 className="font-semibold text-lg">{website.title}</h3>
+                          <p className="text-sm text-muted-foreground">{website.short_description}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(tool)}>
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(website)}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(tool.id)}>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(website.id)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary">{tool.category}</Badge>
-                        {tool.status_badge && (
-                          <Badge className={getBadgeStyle(tool.status_badge)}>
-                            {tool.status_badge === 'new' ? '🆕 Mới' :
-                             tool.status_badge === 'updated' ? '🔄 Cập nhật' :
-                             tool.status_badge === 'hot' ? '🔥 Hot' :
-                             tool.status_badge === 'popular' ? '⭐ Phổ biến' : tool.status_badge}
+                        <Badge variant="secondary">Website</Badge>
+                        {website.status_badge && (
+                          <Badge className={getBadgeStyle(website.status_badge)}>
+                            {website.status_badge === 'new' ? '🆕 Mới' :
+                             website.status_badge === 'updated' ? '🔄 Cập nhật' :
+                             website.status_badge === 'hot' ? '🔥 Hot' :
+                             website.status_badge === 'popular' ? '⭐ Phổ biến' : website.status_badge}
                           </Badge>
                         )}
-                        {tool.is_featured && <Badge className="bg-accent">Nổi bật</Badge>}
-                        {!tool.is_active && <Badge variant="destructive">Đã ẩn</Badge>}
-                        {tool.tags?.map((tag: string) => (
+                        {website.is_featured && <Badge className="bg-accent">Nổi bật</Badge>}
+                        {!website.is_active && <Badge variant="destructive">Đã ẩn</Badge>}
+                        {website.tags?.map((tag: string) => (
                           <Badge key={tag} variant="outline">{tag}</Badge>
                         ))}
                       </div>
 
                       <div className="text-sm text-muted-foreground">
-                        {tool.total_downloads} lượt tải
+                        {website.total_downloads} lượt tải
                       </div>
                     </div>
                   </div>

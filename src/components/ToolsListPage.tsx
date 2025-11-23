@@ -35,7 +35,7 @@ export function ToolsListPage({ title, description, category = 'all', icon }: To
       .select('*')
       .eq('is_active', true);
 
-    // Apply category filter
+    // Apply category filter  
     if (category && category !== 'all') {
       query = query.eq('category', category);
     }

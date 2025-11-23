@@ -4,7 +4,7 @@ import { Footer } from '@/components/Footer';
 import { ToolCard } from '@/components/ToolCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Sparkles, Download, Code2, Globe } from 'lucide-react';
+import { Search, Sparkles, Download, Globe } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
@@ -124,7 +124,7 @@ export default function Home() {
 
         {/* CTA Section */}
         <section className="container py-20">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 max-w-3xl mx-auto">
             <div 
               onClick={() => navigate('/tools')}
               className="group cursor-pointer bg-gradient-card border border-border rounded-xl p-8 hover:border-primary/50 transition-all hover:shadow-glow"
@@ -132,17 +132,7 @@ export default function Home() {
               <Download className="h-12 w-12 text-primary mb-4 group-hover:scale-110 transition-transform" />
               <h3 className="text-xl font-bold mb-2">Tools</h3>
               <p className="text-muted-foreground">
-                Các công cụ hữu ích và tiện lợi
-              </p>
-            </div>
-            <div 
-              onClick={() => navigate('/code')}
-              className="group cursor-pointer bg-gradient-card border border-border rounded-xl p-8 hover:border-primary/50 transition-all hover:shadow-glow"
-            >
-              <Code2 className="h-12 w-12 text-primary mb-4 group-hover:scale-110 transition-transform" />
-              <h3 className="text-xl font-bold mb-2">Code</h3>
-              <p className="text-muted-foreground">
-                Mã nguồn và script chất lượng cao
+                Các công cụ hữu ích và tiện lợi cho công việc
               </p>
             </div>
             <div 
@@ -150,9 +140,9 @@ export default function Home() {
               className="group cursor-pointer bg-gradient-card border border-border rounded-xl p-8 hover:border-primary/50 transition-all hover:shadow-glow"
             >
               <Globe className="h-12 w-12 text-primary mb-4 group-hover:scale-110 transition-transform" />
-              <h3 className="text-xl font-bold mb-2">Website</h3>
+              <h3 className="text-xl font-bold mb-2">Website Templates</h3>
               <p className="text-muted-foreground">
-                Template website đẹp và responsive
+                Mẫu website đẹp, responsive và dễ tùy chỉnh
               </p>
             </div>
           </div>

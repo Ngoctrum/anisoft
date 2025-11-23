@@ -23,7 +23,6 @@ const reportSchema = z.object({
 
 const supportTypes = [
   { value: 'tool_error', label: '🔧 Tools lỗi' },
-  { value: 'code_error', label: '💻 Code lỗi' },
   { value: 'website_error', label: '🌐 Website lỗi' },
   { value: 'website_report', label: '📝 Báo cáo website' },
   { value: 'general', label: '💬 Khách (nội dung chung)' },
@@ -61,7 +60,7 @@ export default function Report() {
     e.preventDefault();
 
     // For general inquiries and support requests, tool selection is optional
-    const requiresToolSelection = ['tool_error', 'code_error', 'website_error'].includes(supportType);
+    const requiresToolSelection = ['tool_error', 'website_error'].includes(supportType);
     
     if (requiresToolSelection && !selectedTool) {
       toast.error('Vui lòng chọn tool/code/website gặp lỗi');
@@ -141,10 +140,10 @@ export default function Report() {
                   </Select>
                 </div>
 
-                {(supportType === 'tool_error' || supportType === 'code_error' || supportType === 'website_error') && (
+                {(supportType === 'tool_error' || supportType === 'website_error') && (
                   <div className="space-y-2">
                     <Label htmlFor="tool">
-                      {supportType === 'tool_error' ? 'Tool' : supportType === 'code_error' ? 'Code' : 'Website'} gặp lỗi
+                      {supportType === 'tool_error' ? 'Tool' : 'Website'} gặp lỗi
                       <span className="text-destructive"> *</span>
                     </Label>
                     <Select value={selectedTool} onValueChange={setSelectedTool} required>

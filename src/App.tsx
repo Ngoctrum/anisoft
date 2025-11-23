@@ -7,7 +7,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ScrollManager } from "./components/ScrollManager";
 import Home from "./pages/Home";
 import Tools from "./pages/Tools";
-import Code from "./pages/Code";
 import Website from "./pages/Website";
 import ToolDetail from "./pages/ToolDetail";
 import Download from "./pages/Download";
@@ -19,6 +18,7 @@ import Support from "./pages/Support";
 import Report from "./pages/Report";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminTools from "./pages/admin/Tools";
+import AdminWebsites from "./pages/admin/Websites";
 import AdminUsers from "./pages/admin/Users";
 import AdminReports from "./pages/admin/Reports";
 import AdminSettings from "./pages/admin/Settings";
@@ -37,7 +37,6 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/tools" element={<Tools />} />
-            <Route path="/code" element={<Code />} />
             <Route path="/website" element={<Website />} />
             <Route path="/tools/:slug" element={<ToolDetail />} />
             <Route path="/download/:id" element={<Download />} />
@@ -49,6 +48,7 @@ const App = () => (
             <Route path="/report" element={<Report />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/tools" element={<AdminTools />} />
+            <Route path="/admin/websites" element={<AdminWebsites />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/reports" element={<AdminReports />} />
             <Route path="/admin/settings" element={<AdminSettings />} />

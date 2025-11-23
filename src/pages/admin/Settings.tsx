@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Settings as SettingsIcon, Download, Link, Palette } from 'lucide-react';
+import { Loader2, Settings as SettingsIcon, Download, Link, Palette, Mail } from 'lucide-react';
 
 export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
@@ -19,6 +19,7 @@ export default function AdminSettings() {
   const [download, setDownload] = useState<any>({});
   const [contact, setContact] = useState<any>({});
   const [theme, setTheme] = useState<any>({});
+  const [smtp, setSmtp] = useState<any>({});
 
   useEffect(() => {
     loadSettings();
@@ -45,6 +46,9 @@ export default function AdminSettings() {
           break;
         case 'theme':
           setTheme(value);
+          break;
+        case 'smtp':
+          setSmtp(value);
           break;
       }
     });
@@ -106,6 +110,10 @@ export default function AdminSettings() {
             <TabsTrigger value="theme">
               <Palette className="h-4 w-4 mr-2" />
               Giao diện
+            </TabsTrigger>
+            <TabsTrigger value="smtp">
+              <Mail className="h-4 w-4 mr-2" />
+              SMTP
             </TabsTrigger>
           </TabsList>
 
@@ -316,6 +324,90 @@ export default function AdminSettings() {
                 <p className="text-sm text-muted-foreground text-center py-8">
                   Tính năng đang phát triển
                 </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="smtp">
+            <Card>
+              <CardHeader>
+                <CardTitle>Cấu hình SMTP</CardTitle>
+                <CardDescription>
+                  Thiết lập máy chủ email để gửi thông báo
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="smtp_host">SMTP Host</Label>
+                  <Input
+                    id="smtp_host"
+                    placeholder="smtp.gmail.com"
+                    value={smtp.smtp_host || ''}
+                    onChange={(e) => setSmtp({ ...smtp, smtp_host: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="smtp_port">SMTP Port</Label>
+                  <Input
+                    id="smtp_port"
+                    type="number"
+                    placeholder="587"
+                    value={smtp.smtp_port || 587}
+                    onChange={(e) => setSmtp({ ...smtp, smtp_port: parseInt(e.target.value) })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="smtp_user">SMTP Username</Label>
+                  <Input
+                    id="smtp_user"
+                    placeholder="your-email@gmail.com"
+                    value={smtp.smtp_user || ''}
+                    onChange={(e) => setSmtp({ ...smtp, smtp_user: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="smtp_password">SMTP Password</Label>
+                  <Input
+                    id="smtp_password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={smtp.smtp_password || ''}
+                    onChange={(e) => setSmtp({ ...smtp, smtp_password: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="smtp_from_email">Email gửi đi</Label>
+                  <Input
+                    id="smtp_from_email"
+                    type="email"
+                    placeholder="noreply@anistudio.com"
+                    value={smtp.smtp_from_email || ''}
+                    onChange={(e) => setSmtp({ ...smtp, smtp_from_email: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="smtp_from_name">Tên người gửi</Label>
+                  <Input
+                    id="smtp_from_name"
+                    placeholder="Ani Studio"
+                    value={smtp.smtp_from_name || 'Ani Studio'}
+                    onChange={(e) => setSmtp({ ...smtp, smtp_from_name: e.target.value })}
+                  />
+                </div>
+
+                <Button
+                  onClick={() => handleSave('smtp', smtp)}
+                  disabled={saving}
+                  className="bg-gradient-primary"
+                >
+                  {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Lưu cấu hình
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

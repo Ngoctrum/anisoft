@@ -113,20 +113,26 @@ export default function AdminWebsites() {
           .eq('id', editingWebsite.id);
 
         if (error) throw error;
-        toast.success('Đã cập nhật website');
+        toast.success('Đã cập nhật website', {
+          description: `Website "${formData.title}" đã được cập nhật thành công`
+        });
       } else {
         const { error } = await supabase
           .from('tools')
           .insert(websiteData);
 
         if (error) throw error;
-        toast.success('Đã thêm website mới');
+        toast.success('Đã thêm website mới', {
+          description: `Website "${formData.title}" đã được thêm vào hệ thống`
+        });
       }
 
       setDialogOpen(false);
       loadWebsites();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error('Có lỗi xảy ra', {
+        description: error.message
+      });
     }
 
     setSubmitting(false);
@@ -141,9 +147,13 @@ export default function AdminWebsites() {
       .eq('id', id);
 
     if (error) {
-      toast.error('Xóa thất bại');
+      toast.error('Xóa thất bại', {
+        description: error.message
+      });
     } else {
-      toast.success('Đã xóa website');
+      toast.success('Đã xóa website', {
+        description: 'Website đã được xóa khỏi hệ thống'
+      });
       loadWebsites();
     }
   };

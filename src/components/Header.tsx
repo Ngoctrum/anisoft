@@ -1,9 +1,10 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, Search, User, LogOut, Download, Home, FileText, HelpCircle, Shield, Sparkles } from 'lucide-react';
+import { Menu, Search, User, LogOut, Download, Home, FileText, HelpCircle, Shield } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
+import mascotAvatar from '@/assets/mascot-avatar.jpg';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -162,9 +163,11 @@ export const Header = () => {
           <Link to="/" className="flex items-center space-x-3 group relative">
             <div className="relative">
               <div className="absolute inset-0 rounded-xl bg-gradient-primary blur-md opacity-50 group-hover:opacity-100 transition-opacity" />
-              <div className="relative h-9 w-9 rounded-xl bg-gradient-primary shadow-glow group-hover:scale-110 transition-transform flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-primary-foreground" />
-              </div>
+              <img 
+                src={mascotAvatar} 
+                alt="Ani Studio" 
+                className="relative h-10 w-10 rounded-xl shadow-glow group-hover:scale-110 transition-transform object-cover"
+              />
             </div>
             <div className="hidden sm:block">
               <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
@@ -221,8 +224,8 @@ export const Header = () => {
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:ring-2 hover:ring-primary/30 transition-all">
                     <Avatar className="h-10 w-10 border-2 border-primary/30">
                       <AvatarImage src={profile?.avatar_url} alt={profile?.display_name} />
-                      <AvatarFallback className="bg-gradient-primary text-primary-foreground font-semibold">
-                        {profile?.display_name?.[0] || profile?.username?.[0] || 'U'}
+                      <AvatarFallback className="p-0 overflow-hidden">
+                        <img src={mascotAvatar} alt="Avatar" className="h-full w-full object-cover" />
                       </AvatarFallback>
                     </Avatar>
                     {isAdmin && (
@@ -257,13 +260,16 @@ export const Header = () => {
                   </DropdownMenuItem>
                   {isAdmin && (
                     <>
-                      <DropdownMenuSeparator className="bg-border/50 md:hidden" />
+                      <DropdownMenuSeparator className="bg-border/50" />
                       <DropdownMenuItem 
                         onClick={() => navigate('/admin')}
-                        className="text-primary cursor-pointer md:hidden"
+                        className="text-primary cursor-pointer font-medium"
                       >
                         <Shield className="mr-2 h-4 w-4" />
-                        Admin Panel
+                        <span>Admin Panel</span>
+                        <Badge variant="secondary" className="ml-auto bg-primary/20 text-primary text-[10px] px-1.5">
+                          ADMIN
+                        </Badge>
                       </DropdownMenuItem>
                     </>
                   )}
@@ -305,9 +311,11 @@ export const Header = () => {
               <div className="flex items-center space-x-3 mb-8">
                 <div className="relative">
                   <div className="absolute inset-0 rounded-lg bg-gradient-primary blur-sm opacity-50" />
-                  <div className="relative h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
-                    <Sparkles className="h-5 w-5 text-primary-foreground" />
-                  </div>
+                  <img 
+                    src={mascotAvatar} 
+                    alt="Ani Studio" 
+                    className="relative h-12 w-12 rounded-lg object-cover shadow-glow"
+                  />
                 </div>
                 <div>
                   <span className="text-lg font-bold bg-gradient-primary bg-clip-text text-transparent">Ani Studio</span>

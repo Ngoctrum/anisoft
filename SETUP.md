@@ -35,13 +35,16 @@ Sau khi project tạo xong:
 
 ### 2.3. Import Database Schema
 1. Vào **SQL Editor** trong Supabase dashboard
-2. Copy toàn bộ nội dung từ các file trong folder `supabase/migrations/` của project
-3. Paste vào SQL Editor và chạy từng file theo thứ tự (từ file cũ nhất đến mới nhất)
-4. Hoặc dùng Supabase CLI:
-```bash
-npx supabase link --project-ref your-project-id
-npx supabase db push
-```
+2. Copy toàn bộ nội dung từ file **`database-schema.sql`** 
+3. Paste vào SQL Editor và click **Run**
+4. Chờ vài giây để tất cả tables, functions, triggers được tạo
+
+**Lưu ý**: File `database-schema.sql` đã bao gồm toàn bộ:
+- Tables (profiles, tools, error_reports, etc.)
+- Functions (has_role, handle_new_user, etc.)
+- Triggers (auto create profile, update timestamps)
+- RLS Policies (security rules)
+- Default settings data
 
 ## Bước 3: Cấu Hình Environment Variables
 

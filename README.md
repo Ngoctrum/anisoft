@@ -10,8 +10,10 @@
 
 Xem hướng dẫn chi tiết tại: [SETUP.md](./SETUP.md)
 
+**File Database Schema**: [database-schema.sql](./database-schema.sql)
+
 Bao gồm:
-- Tạo Supabase database riêng (miễn phí)
+- Tạo Supabase database riêng (miễn phí) với file SQL có sẵn
 - Cấu hình environment variables
 - Deploy lên cPanel hosting
 - Cấu hình SMTP, Admin user, v.v.

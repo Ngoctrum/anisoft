@@ -79,7 +79,6 @@ export default function AdminReports() {
   const getSupportTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       tool_error: '🔧 Tools lỗi',
-      code_error: '💻 Code lỗi',
       website_error: '🌐 Website lỗi',
       website_report: '📝 Báo cáo website',
       general: '💬 Khách',

@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, Search, User, LogOut, Download, Home, FileText, HelpCircle, Shield, Code2, Globe } from 'lucide-react';
+import { Menu, Search, User, LogOut, Download, Home, FileText, HelpCircle, Shield, Globe } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import mascotAvatar from '@/assets/mascot-avatar.jpg';
@@ -66,74 +66,62 @@ export const Header = () => {
       <Link 
         to="/" 
         className={cn(
-          "flex items-center gap-2 font-medium px-3 py-2 rounded-full transition-all",
+          "flex items-center gap-2 font-medium px-4 py-2 rounded-full transition-all",
           isActivePath('/') 
             ? "bg-gradient-primary text-primary-foreground shadow-glow" 
             : "text-foreground/70 hover:text-foreground hover:bg-muted/50"
         )}
       >
         <Home className="h-4 w-4" />
-        <span className="hidden xl:inline">Trang chủ</span>
+        <span className="hidden lg:inline">Trang chủ</span>
       </Link>
       <Link 
         to="/tools" 
         className={cn(
-          "flex items-center gap-2 font-medium px-3 py-2 rounded-full transition-all",
+          "flex items-center gap-2 font-medium px-4 py-2 rounded-full transition-all",
           isActivePath('/tools') 
             ? "bg-gradient-primary text-primary-foreground shadow-glow" 
             : "text-foreground/70 hover:text-foreground hover:bg-muted/50"
         )}
       >
         <Download className="h-4 w-4" />
-        <span className="hidden xl:inline">Tools</span>
-      </Link>
-      <Link 
-        to="/code" 
-        className={cn(
-          "flex items-center gap-2 font-medium px-3 py-2 rounded-full transition-all",
-          isActivePath('/code') 
-            ? "bg-gradient-primary text-primary-foreground shadow-glow" 
-            : "text-foreground/70 hover:text-foreground hover:bg-muted/50"
-        )}
-      >
-        <Code2 className="h-4 w-4" />
-        <span className="hidden xl:inline">Code</span>
+        <span className="hidden lg:inline">Tools</span>
       </Link>
       <Link 
         to="/website" 
         className={cn(
-          "flex items-center gap-2 font-medium px-3 py-2 rounded-full transition-all",
+          "flex items-center gap-2 font-medium px-4 py-2 rounded-full transition-all",
           isActivePath('/website') 
             ? "bg-gradient-primary text-primary-foreground shadow-glow" 
             : "text-foreground/70 hover:text-foreground hover:bg-muted/50"
         )}
       >
         <Globe className="h-4 w-4" />
-        <span className="hidden xl:inline">Website</span>
+        <span className="hidden lg:inline">Website</span>
       </Link>
       <Link 
         to="/docs" 
         className={cn(
-          "flex items-center gap-2 font-medium px-3 py-2 rounded-full transition-all",
+          "flex items-center gap-2 font-medium px-4 py-2 rounded-full transition-all",
           isActivePath('/docs') 
             ? "bg-gradient-primary text-primary-foreground shadow-glow" 
             : "text-foreground/70 hover:text-foreground hover:bg-muted/50"
         )}
       >
         <FileText className="h-4 w-4" />
-        <span className="hidden xl:inline">Hướng dẫn</span>
+        <span className="hidden lg:inline">Hướng dẫn</span>
       </Link>
       <Link 
         to="/support" 
         className={cn(
-          "flex items-center gap-2 font-medium px-3 py-2 rounded-full transition-all",
+          "flex items-center gap-2 font-medium px-4 py-2 rounded-full transition-all",
           isActivePath('/support') 
             ? "bg-gradient-primary text-primary-foreground shadow-glow" 
             : "text-foreground/70 hover:text-foreground hover:bg-muted/50"
         )}
       >
         <HelpCircle className="h-4 w-4" />
-        <span className="hidden xl:inline">Hỗ trợ</span>
+        <span className="hidden lg:inline">Hỗ trợ</span>
       </Link>
     </div>
   );
@@ -143,38 +131,50 @@ export const Header = () => {
       <Link 
         to="/admin" 
         className={cn(
-          "flex items-center gap-2 font-medium px-4 py-2 rounded-full transition-all",
+          "flex items-center gap-2 font-medium px-3 py-2 rounded-full transition-all",
           location.pathname === '/admin'
             ? "bg-gradient-primary text-primary-foreground shadow-glow" 
             : "text-primary hover:bg-primary/20"
         )}
       >
         <Shield className="h-4 w-4" />
-        <span className="hidden lg:inline">Dashboard</span>
+        <span className="hidden xl:inline">Dashboard</span>
       </Link>
       <Link 
         to="/admin/tools" 
         className={cn(
-          "flex items-center gap-2 font-medium px-4 py-2 rounded-full transition-all",
+          "flex items-center gap-2 font-medium px-3 py-2 rounded-full transition-all",
           location.pathname === '/admin/tools'
             ? "bg-gradient-primary text-primary-foreground shadow-glow" 
             : "text-primary hover:bg-primary/20"
         )}
       >
         <Download className="h-4 w-4" />
-        <span className="hidden lg:inline">Tools</span>
+        <span className="hidden xl:inline">Tools</span>
+      </Link>
+      <Link 
+        to="/admin/websites" 
+        className={cn(
+          "flex items-center gap-2 font-medium px-3 py-2 rounded-full transition-all",
+          location.pathname === '/admin/websites'
+            ? "bg-gradient-primary text-primary-foreground shadow-glow" 
+            : "text-primary hover:bg-primary/20"
+        )}
+      >
+        <Globe className="h-4 w-4" />
+        <span className="hidden xl:inline">Websites</span>
       </Link>
       <Link 
         to="/admin/users" 
         className={cn(
-          "flex items-center gap-2 font-medium px-4 py-2 rounded-full transition-all",
+          "flex items-center gap-2 font-medium px-3 py-2 rounded-full transition-all",
           location.pathname === '/admin/users'
             ? "bg-gradient-primary text-primary-foreground shadow-glow" 
             : "text-primary hover:bg-primary/20"
         )}
       >
         <User className="h-4 w-4" />
-        <span className="hidden lg:inline">Users</span>
+        <span className="hidden xl:inline">Users</span>
       </Link>
     </div>
   );
@@ -429,19 +429,6 @@ export const Header = () => {
                     >
                       <Download className="h-4 w-4" />
                       <span>Tools</span>
-                    </Link>
-                    <Link 
-                      to="/code"
-                      onClick={() => setMobileOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
-                        isActivePath('/code')
-                          ? "bg-gradient-primary text-primary-foreground shadow-glow" 
-                          : "text-foreground/80 hover:bg-muted/50"
-                      )}
-                    >
-                      <Code2 className="h-4 w-4" />
-                      <span>Code</span>
                     </Link>
                     <Link 
                       to="/website"

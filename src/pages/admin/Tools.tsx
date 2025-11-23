@@ -33,6 +33,8 @@ export default function AdminTools() {
     is_active: true,
     is_featured: false,
     status_badge: '',
+    tool_type: 'download',
+    app_config: '{}',
   });
 
   useEffect(() => {
@@ -65,6 +67,8 @@ export default function AdminTools() {
         is_active: tool.is_active,
         is_featured: tool.is_featured,
         status_badge: tool.status_badge || '',
+        tool_type: tool.tool_type || 'download',
+        app_config: JSON.stringify(tool.app_config || {}, null, 2),
       });
     } else {
       setEditingTool(null);
@@ -80,6 +84,8 @@ export default function AdminTools() {
         is_active: true,
         is_featured: false,
         status_badge: '',
+        tool_type: 'download',
+        app_config: '{}',
       });
     }
     setDialogOpen(true);
@@ -94,6 +100,15 @@ export default function AdminTools() {
       .map((tag) => tag.trim())
       .filter((tag) => tag);
 
+    let appConfigObj = {};
+    try {
+      appConfigObj = JSON.parse(formData.app_config);
+    } catch (e) {
+      toast.error('App Config phải là JSON hợp lệ');
+      setSubmitting(false);
+      return;
+    }
+
     const toolData = {
       title: formData.title,
       slug: formData.slug,
@@ -106,6 +121,8 @@ export default function AdminTools() {
       is_active: formData.is_active,
       is_featured: formData.is_featured,
       status_badge: formData.status_badge || null,
+      tool_type: formData.tool_type,
+      app_config: appConfigObj,
     };
 
     try {
@@ -249,15 +266,47 @@ export default function AdminTools() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="download_url">URL tải xuống *</Label>
+                  <Label htmlFor="tool_type">Loại Tool</Label>
+                  <Select value={formData.tool_type} onValueChange={(value) => setFormData({ ...formData, tool_type: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="download">Download (Link tải)</SelectItem>
+                      <SelectItem value="interactive">Interactive (Phần mềm web)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="download_url">
+                    {formData.tool_type === 'download' ? 'URL tải xuống *' : 'URL (tùy chọn)'}
+                  </Label>
                   <Input
                     id="download_url"
                     type="url"
                     value={formData.download_url}
                     onChange={(e) => setFormData({ ...formData, download_url: e.target.value })}
-                    required
+                    required={formData.tool_type === 'download'}
                   />
                 </div>
+
+                {formData.tool_type === 'interactive' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="app_config">App Config (JSON)</Label>
+                    <Textarea
+                      id="app_config"
+                      value={formData.app_config}
+                      onChange={(e) => setFormData({ ...formData, app_config: e.target.value })}
+                      rows={6}
+                      placeholder='{"type": "image-generator", "model": "flux-schnell"}'
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Ví dụ: {`{"type": "image-generator", "model": "flux-schnell"}`}
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -378,6 +427,9 @@ export default function AdminTools() {
 
                       <div className="flex flex-wrap gap-2">
                         <Badge variant="secondary">{tool.category}</Badge>
+                        <Badge className={tool.tool_type === 'interactive' ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-muted'}>
+                          {tool.tool_type === 'interactive' ? '⚡ App' : '📥 Download'}
+                        </Badge>
                         {tool.status_badge && (
                           <Badge className={getBadgeStyle(tool.status_badge)}>
                             {tool.status_badge === 'new' ? '🆕 Mới' :

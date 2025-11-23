@@ -33,6 +33,7 @@ export function ToolsListPage({ title, description, category = 'all', icon }: To
     let query = supabase
       .from('tools')
       .select('*')
+      .eq('tool_type', 'download')
       .eq('is_active', true);
 
     // Apply category filter  

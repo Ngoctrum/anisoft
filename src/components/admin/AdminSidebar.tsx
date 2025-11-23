@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Settings,
   Home,
+  Sparkles,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -24,6 +25,7 @@ import {
 const menuItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard, end: true },
   { title: 'Quản lý Tools', url: '/admin/tools', icon: Package },
+  { title: 'Quản lý Apps', url: '/admin/apps', icon: Sparkles },
   { title: 'Quản lý Users', url: '/admin/users', icon: Users },
   { title: 'Báo lỗi', url: '/admin/reports', icon: AlertCircle },
   { title: 'Cài đặt', url: '/admin/settings', icon: Settings },

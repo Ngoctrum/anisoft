@@ -23,16 +23,8 @@ export default function AdminApps() {
   // Form state
   const [formData, setFormData] = useState({
     title: '',
-    slug: '',
-    short_description: '',
-    description: '',
-    thumbnail_url: '',
     redirect_url: '',
-    category: 'tool',
-    tags: '',
     is_active: true,
-    is_featured: false,
-    status_badge: '',
   });
 
   useEffect(() => {
@@ -51,36 +43,31 @@ export default function AdminApps() {
     setLoading(false);
   };
 
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-');
+  };
+
   const handleOpenDialog = (app?: any) => {
     if (app) {
       setEditingApp(app);
       setFormData({
         title: app.title,
-        slug: app.slug,
-        short_description: app.short_description || '',
-        description: app.description || '',
-        thumbnail_url: app.thumbnail_url || '',
         redirect_url: app.download_url || '',
-        category: app.category,
-        tags: app.tags?.join(', ') || '',
         is_active: app.is_active,
-        is_featured: app.is_featured,
-        status_badge: app.status_badge || '',
       });
     } else {
       setEditingApp(null);
       setFormData({
         title: '',
-        slug: '',
-        short_description: '',
-        description: '',
-        thumbnail_url: '',
         redirect_url: '',
-        category: 'tool',
-        tags: '',
         is_active: true,
-        is_featured: false,
-        status_badge: '',
       });
     }
     setDialogOpen(true);
@@ -90,23 +77,20 @@ export default function AdminApps() {
     e.preventDefault();
     setSubmitting(true);
 
-    const tagsArray = formData.tags
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter((tag) => tag);
+    const slug = generateSlug(formData.title);
 
     const appData = {
       title: formData.title,
-      slug: formData.slug,
-      short_description: formData.short_description,
-      description: formData.description,
-      thumbnail_url: formData.thumbnail_url,
+      slug: editingApp ? editingApp.slug : slug,
+      short_description: '',
+      description: '',
+      thumbnail_url: '',
       download_url: formData.redirect_url,
-      category: formData.category,
-      tags: tagsArray,
+      category: 'tool',
+      tags: [],
       is_active: formData.is_active,
-      is_featured: formData.is_featured,
-      status_badge: formData.status_badge || null,
+      is_featured: false,
+      status_badge: null,
       tool_type: 'interactive',
       app_config: {},
     };
@@ -203,55 +187,15 @@ export default function AdminApps() {
                   Điền đầy đủ thông tin ứng dụng tương tác
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Tên app *</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="slug">Slug *</Label>
-                    <Input
-                      id="slug"
-                      value={formData.slug}
-                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="short_description">Mô tả ngắn</Label>
+                  <Label htmlFor="title">Tên app *</Label>
                   <Input
-                    id="short_description"
-                    value={formData.short_description}
-                    onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Hướng dẫn sử dụng</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={4}
-                    placeholder="Hướng dẫn chi tiết cách sử dụng app..."
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="thumbnail_url">URL ảnh thumbnail</Label>
-                  <Input
-                    id="thumbnail_url"
-                    type="url"
-                    value={formData.thumbnail_url}
-                    onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Ví dụ: Tools chỉnh ảnh"
+                    required
                   />
                 </div>
 
@@ -270,65 +214,13 @@ export default function AdminApps() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Danh mục</Label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="tool">Tool</SelectItem>
-                        <SelectItem value="website">Website</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="tags">Tags (phân cách bằng dấu ,)</Label>
-                    <Input
-                      id="tags"
-                      value={formData.tags}
-                      onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                      placeholder="ai, image, generator"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="status-badge">Tag trạng thái</Label>
-                  <Select value={formData.status_badge || 'none'} onValueChange={(value) => setFormData({ ...formData, status_badge: value === 'none' ? '' : value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn tag (tùy chọn)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Không có</SelectItem>
-                      <SelectItem value="new">🆕 Mới</SelectItem>
-                      <SelectItem value="updated">🔄 Cập nhật</SelectItem>
-                      <SelectItem value="hot">🔥 Hot</SelectItem>
-                      <SelectItem value="popular">⭐ Phổ biến</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="is_active"
-                      checked={formData.is_active}
-                      onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                    />
-                    <Label htmlFor="is_active">Kích hoạt</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="is_featured"
-                      checked={formData.is_featured}
-                      onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
-                    />
-                    <Label htmlFor="is_featured">Nổi bật</Label>
-                  </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_active"
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                  />
+                  <Label htmlFor="is_active">Kích hoạt</Label>
                 </div>
 
                 <DialogFooter>

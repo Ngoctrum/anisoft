@@ -24,6 +24,7 @@ export default function AdminApps() {
   const [formData, setFormData] = useState({
     title: '',
     redirect_url: '',
+    status_badge: '',
     is_active: true,
   });
 
@@ -60,6 +61,7 @@ export default function AdminApps() {
       setFormData({
         title: app.title,
         redirect_url: app.download_url || '',
+        status_badge: app.status_badge || '',
         is_active: app.is_active,
       });
     } else {
@@ -67,6 +69,7 @@ export default function AdminApps() {
       setFormData({
         title: '',
         redirect_url: '',
+        status_badge: '',
         is_active: true,
       });
     }
@@ -90,7 +93,7 @@ export default function AdminApps() {
       tags: [],
       is_active: formData.is_active,
       is_featured: false,
-      status_badge: null,
+      status_badge: formData.status_badge || null,
       tool_type: 'interactive',
       app_config: {},
     };
@@ -212,6 +215,22 @@ export default function AdminApps() {
                   <p className="text-xs text-muted-foreground">
                     URL của tool/website bên ngoài mà bạn muốn chuyển hướng đến
                   </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="status-badge">Trạng thái</Label>
+                  <Select value={formData.status_badge || 'none'} onValueChange={(value) => setFormData({ ...formData, status_badge: value === 'none' ? '' : value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Không có" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Không có</SelectItem>
+                      <SelectItem value="new">🆕 Mới</SelectItem>
+                      <SelectItem value="updated">🔄 Cập nhật</SelectItem>
+                      <SelectItem value="hot">🔥 Hot</SelectItem>
+                      <SelectItem value="popular">⭐ Phổ biến</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex items-center space-x-2">

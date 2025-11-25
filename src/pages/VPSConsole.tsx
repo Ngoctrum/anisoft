@@ -121,44 +121,34 @@ export default function VPSConsole() {
     return await response.json();
   };
 
-  const createSecret = async (token: string, owner: string, repo: string, secretName: string, secretValue: string) => {
-    // Get public key first
-    const keyResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/secrets/public-key`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  const getSecretInstructions = (repoUrl: string, ngrokToken: string) => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-    if (!keyResponse.ok) {
-      throw new Error('Failed to get public key');
-    }
+    return `
+📋 CẦN THÊM 3 SECRETS VÀO REPOSITORY:
 
-    const { key, key_id } = await keyResponse.json();
+Bước 1: Mở Repository Settings → Secrets and variables → Actions
+Link: ${repoUrl}/settings/secrets/actions
 
-    // Encrypt secret using libsodium
-    const sodium = await import('libsodium-wrappers');
-    await sodium.ready;
-    const messageBytes = sodium.from_string(secretValue);
-    const keyBytes = sodium.from_base64(key, sodium.base64_variants.ORIGINAL);
-    const encryptedBytes = sodium.crypto_box_seal(messageBytes, keyBytes);
-    const encrypted = sodium.to_base64(encryptedBytes, sodium.base64_variants.ORIGINAL);
+Bước 2: Nhấn "New repository secret" và thêm lần lượt 3 secrets sau:
 
-    // Create secret
-    const secretResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/secrets/${secretName}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        encrypted_value: encrypted,
-        key_id: key_id,
-      }),
-    });
+Secret 1:
+  Name: NGROK_AUTH_TOKEN
+  Value: ${ngrokToken}
 
-    if (!secretResponse.ok) {
-      throw new Error(`Failed to create secret ${secretName}`);
-    }
+Secret 2:
+  Name: SUPABASE_URL
+  Value: ${supabaseUrl}
+
+Secret 3:
+  Name: SUPABASE_ANON_KEY
+  Value: ${supabaseKey}
+
+Bước 3: Sau khi thêm đủ 3 secrets, vào tab "Actions" của repo và chạy workflow "SEVER AI STV PREMIUM" thủ công.
+
+✅ Xong! VPS sẽ tự động gửi thông tin về website sau 5-10 phút.
+    `.trim();
   };
 
   const triggerWorkflow = async (token: string, owner: string, repo: string) => {
@@ -235,28 +225,11 @@ export default function VPSConsole() {
       await uploadWorkflowFile(githubToken, repo.owner.login, repo.name);
       setLogs((prev) => [...prev, '✅ Workflow đã sẵn sàng']);
 
-      // Step 4: Create secrets
-      setLogs((prev) => [...prev, '🔐 Đang tạo secrets...']);
-      
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      
-      await createSecret(githubToken, repo.owner.login, repo.name, 'NGROK_AUTH_TOKEN', ngrokToken);
-      await createSecret(githubToken, repo.owner.login, repo.name, 'SUPABASE_URL', supabaseUrl);
-      await createSecret(githubToken, repo.owner.login, repo.name, 'SUPABASE_ANON_KEY', supabaseKey);
-      
-      setLogs((prev) => [...prev, '✅ Secrets đã được tạo']);
+      // Step 4: Show instructions to add secrets manually
+      const instructions = getSecretInstructions(repo.html_url, ngrokToken);
+      setLogs((prev) => [...prev, '', '🔐 CẦN THÊM SECRETS THỦ CÔNG:', '', ...instructions.split('\n')]);
 
-      // Wait for workflow to be registered
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-
-      // Step 5: Trigger workflow
-      setLogs((prev) => [...prev, '▶️ Đang khởi động workflow...']);
-      await triggerWorkflow(githubToken, repo.owner.login, repo.name);
-      setLogs((prev) => [...prev, '✅ Workflow đã được kích hoạt!']);
-      setLogs((prev) => [...prev, '👀 Thông tin VPS sẽ tự động hiển thị khi workflow hoàn tất...']);
-
-      toast.success('🎉 Đã tạo VPS! Đợi 5-10 phút để workflow hoàn tất.');
+      toast.info('📋 Vui lòng thêm 3 secrets vào Repository theo hướng dẫn!', { duration: 10000 });
       
       // Reset form
       setGithubToken('');

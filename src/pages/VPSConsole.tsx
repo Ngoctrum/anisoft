@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Server, Play, Terminal, ExternalLink, Key } from 'lucide-react';
+import { Loader2, Server, Play, Terminal, ExternalLink, Key, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { RDPSessionCard } from '@/components/RDPSessionCard';
@@ -71,6 +71,23 @@ export default function VPSConsole() {
       setSessions(data || []);
     } catch (error) {
       console.error('Error loading sessions:', error);
+    }
+  };
+
+  const deleteSession = async (sessionId: string) => {
+    try {
+      const { error } = await supabase
+        .from('rdp_sessions')
+        .delete()
+        .eq('id', sessionId);
+
+      if (error) throw error;
+      
+      toast.success('Đã xóa session');
+      await loadSessions();
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      toast.error('Không thể xóa session');
     }
   };
 
@@ -352,7 +369,21 @@ Bước 3: Sau khi thêm đủ 3 secrets, vào tab "Actions" của repo và ch�
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {sessions.map((session) => (
-                <RDPSessionCard key={session.id} session={session} />
+                <div key={session.id} className="relative">
+                  <RDPSessionCard session={session} />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8"
+                    onClick={() => {
+                      if (confirm('Bạn có chắc muốn xóa session này?')) {
+                        deleteSession(session.id);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               ))}
             </div>
           )}

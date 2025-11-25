@@ -25,12 +25,14 @@ interface VPSInfo {
 export default function VPSConsole() {
   const [githubToken, setGithubToken] = useState('');
   const [ngrokToken, setNgrokToken] = useState('');
+  const [repoInfo, setRepoInfo] = useState<{ owner: string; name: string; url: string } | null>(null);
   const [vpsInfo, setVpsInfo] = useState<VPSInfo>({
     status: 'idle',
     logs: [],
     uptimeSeconds: 0,
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [waitingForSecret, setWaitingForSecret] = useState(false);
 
   const createRepository = async (token: string) => {
     const repoName = `windows-rdp-${Date.now()}`;
@@ -56,8 +58,8 @@ export default function VPSConsole() {
     return await response.json();
   };
 
-  const prepareWorkflow = (ngrokAuthToken: string) => {
-    // Replace Tailscale with Ngrok setup
+  const prepareWorkflow = () => {
+    // Replace Tailscale with Ngrok setup and remove Websockify
     let modifiedWorkflow = workflowTemplate;
     
     // Replace Tailscale section with Ngrok
@@ -94,33 +96,54 @@ export default function VPSConsole() {
           # Start Ngrok tunnel cho RDP (port 3389)
           Start-Process -FilePath "$env:TEMP\\ngrok\\ngrok.exe" -ArgumentList "tcp", "3389", "--log=stdout" -RedirectStandardOutput "$env:TEMP\\ngrok.log" -NoNewWindow
           
-          Write-Host "🔄 Đang khởi động Ngrok tunnel..." -NoNewline -ForegroundColor Blue
-          Start-Sleep -Seconds 10
+          Write-Host "🔄 Đang khởi động Ngrok tunnel..." -ForegroundColor Blue
+          Start-Sleep -Seconds 15
           
-          # Lấy thông tin tunnel từ Ngrok API
-          try {
-              $ngrokApi = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels"
-              $tunnel = $ngrokApi.tunnels[0]
-              $publicUrl = $tunnel.public_url
-              
-              # Parse địa chỉ và port từ URL (tcp://x.tcp.ngrok.io:12345)
-              if ($publicUrl -match 'tcp://([^:]+):(\\d+)') {
-                  $ngrokHost = $matches[1]
-                  $ngrokPort = $matches[2]
+          # Lấy thông tin tunnel từ Ngrok API với retry
+          $maxRetries = 10
+          $retryCount = 0
+          $tunnelInfo = $null
+          
+          while ($retryCount -lt $maxRetries) {
+              try {
+                  $ngrokApi = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels" -ErrorAction Stop
+                  $tunnel = $ngrokApi.tunnels[0]
                   
-                  echo "NGROK_HOST=$ngrokHost" >> $env:GITHUB_ENV
-                  echo "NGROK_PORT=$ngrokPort" >> $env:GITHUB_ENV
-                  echo "VPS_IP=$ngrokHost" >> $env:GITHUB_ENV
-                  echo "VPS_PORT=$ngrokPort" >> $env:GITHUB_ENV
-                  
-                  Write-Host "\\r✅ Ngrok URL: $publicUrl" -ForegroundColor Green
-                  Write-Host "│ 🌐 Host: $ngrokHost" -ForegroundColor Cyan
-                  Write-Host "│ 🔌 Port: $ngrokPort" -ForegroundColor Cyan
-              } else {
-                  throw "Không thể parse Ngrok URL"
+                  if ($tunnel -and $tunnel.public_url) {
+                      $tunnelInfo = $tunnel
+                      break
+                  }
+              } catch {
+                  Write-Host "│ ⏳ Chờ Ngrok API... (Thử $($retryCount + 1)/$maxRetries)" -ForegroundColor Yellow
               }
-          } catch {
-              Write-Host "\\r❌ Lỗi lấy thông tin Ngrok: $($_.Exception.Message)" -ForegroundColor Red
+              
+              Start-Sleep -Seconds 3
+              $retryCount++
+          }
+          
+          if (-not $tunnelInfo) {
+              Write-Host "│ ❌ Không thể lấy thông tin từ Ngrok API" -ForegroundColor Red
+              Write-Host "│ 💡 Kiểm tra log: Get-Content $env:TEMP\\ngrok.log" -ForegroundColor Yellow
+              exit 1
+          }
+          
+          $publicUrl = $tunnelInfo.public_url
+          
+          # Parse địa chỉ và port từ URL (tcp://x.tcp.ngrok.io:12345)
+          if ($publicUrl -match 'tcp://([^:]+):(\\d+)') {
+              $ngrokHost = $matches[1]
+              $ngrokPort = $matches[2]
+              
+              echo "NGROK_HOST=$ngrokHost" >> $env:GITHUB_ENV
+              echo "NGROK_PORT=$ngrokPort" >> $env:GITHUB_ENV
+              echo "VPS_IP=$ngrokHost" >> $env:GITHUB_ENV
+              echo "VPS_PORT=$ngrokPort" >> $env:GITHUB_ENV
+              
+              Write-Host "✅ Ngrok URL: $publicUrl" -ForegroundColor Green
+              Write-Host "│ 🌐 Host: $ngrokHost" -ForegroundColor Cyan
+              Write-Host "│ 🔌 Port: $ngrokPort" -ForegroundColor Cyan
+          } else {
+              Write-Host "│ ❌ Không thể parse Ngrok URL: $publicUrl" -ForegroundColor Red
               exit 1
           }`;
     
@@ -151,7 +174,7 @@ export default function VPSConsole() {
 
   const uploadWorkflowFile = async (token: string, owner: string, repo: string) => {
     const path = '.github/workflows/windows-rdp.yml';
-    const workflowContent = prepareWorkflow(ngrokToken);
+    const workflowContent = prepareWorkflow();
     const encodedContent = btoa(unescape(encodeURIComponent(workflowContent)));
 
     const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
@@ -173,33 +196,27 @@ export default function VPSConsole() {
     return await response.json();
   };
 
-  const createSecret = async (token: string, owner: string, repo: string, secretName: string, secretValue: string) => {
-    // Get repository public key first
-    const keyResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/secrets/public-key`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    
-    const { key, key_id } = await keyResponse.json();
-    
-    // Encrypt the secret (simplified - in production use proper encryption)
-    // For now, we'll use base64 (GitHub API will handle the actual encryption)
-    const encryptedValue = btoa(secretValue);
-    
-    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/secrets/${secretName}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        encrypted_value: encryptedValue,
-        key_id: key_id,
-      }),
-    });
+  const addSecretInstructions = (repoUrl: string, ngrokToken: string) => {
+    const instructions = `
+📋 HƯỚNG DẪN THÊM NGROK TOKEN:
 
-    return response.ok;
+Bước 1: Mở link này (nó sẽ mở repo settings):
+  ${repoUrl}/settings/secrets/actions
+
+Bước 2: Nhấn nút "New repository secret" (màu xanh)
+
+Bước 3: Điền thông tin:
+  - Name: NGROK_AUTH_TOKEN
+  - Secret: ${ngrokToken}
+
+Bước 4: Nhấn "Add secret"
+
+Bước 5: Quay lại đây và nhấn nút "Trigger Workflow" ở trên ⬆️
+
+✅ Xong! Hệ thống sẽ tự động tạo VPS.
+    `.trim();
+    
+    return instructions;
   };
 
   const triggerWorkflow = async (token: string, owner: string, repo: string) => {
@@ -334,11 +351,24 @@ export default function VPSConsole() {
           const logsBlob = await logsResponse.blob();
           const logsText = await logsBlob.text();
           
-          // Extract info from logs
-          const hostMatch = logsText.match(/NGROK_HOST=([^\s\r\n]+)/);
-          const portMatch = logsText.match(/NGROK_PORT=(\d+)/);
-          const userMatch = logsText.match(/Tài khoản: ([^\s\r\n]+)/);
-          const passMatch = logsText.match(/Mật khẩu: ([^\s\r\n]+)/);
+          // Extract info from logs - look for various patterns
+          const hostMatch = logsText.match(/(?:NGROK_HOST|VPS_IP)=([^\s\r\n]+)/);
+          const portMatch = logsText.match(/(?:NGROK_PORT|VPS_PORT)=(\d+)/);
+          
+          // Look for password in different formats
+          let passwordMatch = logsText.match(/Mật khẩu:\s*([^\s\r\n]+)/);
+          if (!passwordMatch) {
+            passwordMatch = logsText.match(/RDP_PASS=([^\s\r\n]+)/);
+          }
+          if (!passwordMatch) {
+            passwordMatch = logsText.match(/Password:\s*([^\s\r\n]+)/);
+          }
+          
+          // Look for username
+          let userMatch = logsText.match(/Tài khoản:\s*([^\s\r\n]+)/);
+          if (!userMatch) {
+            userMatch = logsText.match(/RDP_USER=([^\s\r\n]+)/);
+          }
 
           const host = hostMatch?.[1];
           const port = portMatch?.[1];
@@ -349,8 +379,8 @@ export default function VPSConsole() {
               ip: host,
               port: port,
               user: userMatch?.[1] || 'AISTV-PREMIUM',
-              password: passMatch?.[1] || 'Đang tải...',
-              logs: [...prev.logs, '✅ Đã lấy được thông tin kết nối từ workflow!'],
+              password: passwordMatch?.[1] || 'Xem trong GitHub Actions logs',
+              logs: [...prev.logs, '✅ Đã lấy được thông tin kết nối từ workflow!', `🔑 Host: ${host}:${port}`],
             }));
           }
         }
@@ -359,6 +389,37 @@ export default function VPSConsole() {
       }
     } catch (error) {
       console.error('Error extracting VPS info:', error);
+    }
+  };
+
+  const handleTriggerWorkflow = async () => {
+    if (!repoInfo) {
+      toast.error('Không tìm thấy thông tin repository');
+      return;
+    }
+
+    setIsProcessing(true);
+    setWaitingForSecret(false);
+    setVpsInfo((prev) => ({ ...prev, status: 'creating', logs: [...prev.logs, '▶️ Đang khởi động workflow...'] }));
+
+    try {
+      await triggerWorkflow(githubToken, repoInfo.owner, repoInfo.name);
+      setVpsInfo((prev) => ({ ...prev, logs: [...prev.logs, '✅ Workflow đã được kích hoạt!'] }));
+
+      setVpsInfo((prev) => ({ ...prev, logs: [...prev.logs, '👀 Đang theo dõi tiến trình...'] }));
+      await monitorWorkflow(githubToken, repoInfo.owner, repoInfo.name);
+
+      toast.success('🎉 Windows RDP Server đã sẵn sàng!');
+    } catch (error: any) {
+      console.error('Error triggering workflow:', error);
+      toast.error(error.message || 'Có lỗi xảy ra');
+      setVpsInfo((prev) => ({
+        ...prev,
+        status: 'failed',
+        logs: [...prev.logs, `❌ Lỗi: ${error.message}`],
+      }));
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -387,12 +448,31 @@ export default function VPSConsole() {
         repoUrl: repo.html_url,
       }));
 
-      // Step 2: Create Ngrok secret
-      setVpsInfo((prev) => ({ ...prev, logs: [...prev.logs, '🔐 Đang lưu Ngrok token...'] }));
-      await createSecret(githubToken, repo.owner.login, repo.name, 'NGROK_AUTH_TOKEN', ngrokToken);
-      setVpsInfo((prev) => ({ ...prev, logs: [...prev.logs, '✅ Đã lưu secret'] }));
+      // Save repo info for later
+      setRepoInfo({
+        owner: repo.owner.login,
+        name: repo.name,
+        url: repo.html_url,
+      });
 
-      // Step 3: Upload workflow
+      // Step 2: Upload workflow
+      setVpsInfo((prev) => ({ ...prev, logs: [...prev.logs, '📄 Đang upload workflow file...'] }));
+      await uploadWorkflowFile(githubToken, repo.owner.login, repo.name);
+      setVpsInfo((prev) => ({ ...prev, logs: [...prev.logs, '✅ Workflow đã sẵn sàng'] }));
+
+      // Step 3: Show instructions to add secret
+      const secretInstructions = addSecretInstructions(repo.html_url, ngrokToken);
+      setVpsInfo((prev) => ({ 
+        ...prev, 
+        logs: [...prev.logs, '📋 HƯỚNG DẪN THÊM SECRET:', '', secretInstructions, '', '⬇️ Sau khi thêm xong, nhấn nút "Trigger Workflow" bên dưới'],
+        status: 'idle',
+        repoUrl: repo.html_url,
+      }));
+      
+      setWaitingForSecret(true);
+      toast.info('Vui lòng thêm Ngrok Token vào Repository Settings!', { duration: 10000 });
+
+      // Step 3: Upload workflow (removed secret creation)
       setVpsInfo((prev) => ({ ...prev, logs: [...prev.logs, '📄 Đang upload workflow file...'] }));
       await uploadWorkflowFile(githubToken, repo.owner.login, repo.name);
       setVpsInfo((prev) => ({ ...prev, logs: [...prev.logs, '✅ Workflow đã sẵn sàng'] }));
@@ -400,16 +480,8 @@ export default function VPSConsole() {
       // Wait for workflow to be registered
       await new Promise((resolve) => setTimeout(resolve, 5000));
 
-      // Step 4: Trigger workflow
-      setVpsInfo((prev) => ({ ...prev, logs: [...prev.logs, '▶️ Đang khởi động workflow...'] }));
-      await triggerWorkflow(githubToken, repo.owner.login, repo.name);
-      setVpsInfo((prev) => ({ ...prev, logs: [...prev.logs, '✅ Workflow đã được kích hoạt!'] }));
-
-      // Step 5: Monitor workflow
-      setVpsInfo((prev) => ({ ...prev, logs: [...prev.logs, '👀 Đang theo dõi tiến trình...'] }));
-      await monitorWorkflow(githubToken, repo.owner.login, repo.name);
-
-      toast.success('🎉 Windows RDP Server đã sẵn sàng!');
+      // Step 4: Trigger workflow (removed)
+      // User will trigger manually after adding secret
     } catch (error: any) {
       console.error('Error creating VPS:', error);
       toast.error(error.message || 'Có lỗi xảy ra khi tạo VPS');
@@ -513,7 +585,7 @@ export default function VPSConsole() {
 
               <Button
                 onClick={handleCreateVPS}
-                disabled={isProcessing || vpsInfo.status === 'running'}
+                disabled={isProcessing || vpsInfo.status === 'running' || waitingForSecret}
                 className="w-full"
                 size="lg"
               >
@@ -529,6 +601,27 @@ export default function VPSConsole() {
                   </>
                 )}
               </Button>
+
+              {waitingForSecret && (
+                <Button
+                  onClick={handleTriggerWorkflow}
+                  disabled={isProcessing}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  size="lg"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Đang khởi động...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Trigger Workflow (Sau khi thêm secret)
+                    </>
+                  )}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -602,11 +695,23 @@ export default function VPSConsole() {
                 </>
               )}
 
-              {vpsInfo.status === 'idle' && (
+              {vpsInfo.status === 'idle' && !waitingForSecret && (
                 <Alert>
                   <AlertDescription className="text-center py-8">
                     <Terminal className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                     <p>Nhập GitHub Token và Ngrok Token để bắt đầu</p>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {waitingForSecret && (
+                <Alert className="bg-yellow-500/10 border-yellow-500/30">
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <p className="font-semibold text-yellow-600 dark:text-yellow-400">⚠️ Cần thêm Ngrok Token vào Repository</p>
+                      <p className="text-sm">Xem hướng dẫn chi tiết ở phần <strong>Live Logs</strong> bên dưới ⬇️</p>
+                      <p className="text-sm">Sau khi thêm xong, nhấn nút <strong>"Trigger Workflow"</strong> ở trên ⬆️</p>
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}

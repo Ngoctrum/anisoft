@@ -170,6 +170,15 @@ export default function VPSConsole() {
 
     if (!response.ok) {
       const error = await response.json();
+      
+      if (response.status === 401) {
+        throw new Error('❌ GitHub Token không hợp lệ!\n\n📋 Hướng dẫn tạo token:\n1. Vào https://github.com/settings/tokens/new\n2. Đặt tên token: "Lovable VPS Console"\n3. Chọn quyền: ✅ repo, ✅ workflow\n4. Click "Generate token"\n5. Copy token và paste vào đây');
+      }
+      
+      if (response.status === 403) {
+        throw new Error('❌ GitHub Token thiếu quyền!\n\nToken cần có quyền:\n✅ repo (full control)\n✅ workflow (update workflows)\n\nVào https://github.com/settings/tokens để cập nhật token.');
+      }
+      
       throw new Error(error.message || 'Failed to create repository');
     }
 
@@ -364,9 +373,19 @@ Bước 3: Sau khi thêm đủ 3 secrets, vào tab "Actions" của repo và ch�
                   onChange={(e) => setGithubToken(e.target.value)}
                   disabled={isProcessing}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Cần quyền: <code className="bg-muted px-1 rounded">repo</code>, <code className="bg-muted px-1 rounded">workflow</code>
-                </p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Cần quyền:</strong> <code className="bg-muted px-1 rounded">repo</code> (full), <code className="bg-muted px-1 rounded">workflow</code>
+                  </p>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-primary"
+                    onClick={() => window.open('https://github.com/settings/tokens/new?scopes=repo,workflow&description=Lovable%20VPS%20Console', '_blank')}
+                  >
+                    📋 Tạo GitHub Token mới (Click here)
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">

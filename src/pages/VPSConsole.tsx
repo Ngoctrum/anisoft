@@ -29,6 +29,15 @@ export default function VPSConsole() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
+  const [savedGithubToken, setSavedGithubToken] = useState('');
+
+  // Load saved tokens from localStorage
+  useEffect(() => {
+    const savedToken = localStorage.getItem('github_token');
+    if (savedToken) {
+      setSavedGithubToken(savedToken);
+    }
+  }, []);
 
   // Load existing sessions
   useEffect(() => {
@@ -74,8 +83,60 @@ export default function VPSConsole() {
     }
   };
 
-  const deleteSession = async (sessionId: string) => {
+  const deleteGithubRepo = async (repoUrl: string, token: string) => {
     try {
+      // Extract owner and repo name from URL
+      // Format: https://github.com/owner/repo
+      const match = repoUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+      if (!match) {
+        throw new Error('Invalid GitHub URL');
+      }
+
+      const [, owner, repo] = match;
+
+      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('Repository already deleted or not found');
+          return; // Don't throw error if repo doesn't exist
+        }
+        throw new Error(`Failed to delete repository: ${response.status}`);
+      }
+
+      console.log(`Successfully deleted repository: ${owner}/${repo}`);
+    } catch (error) {
+      console.error('Error deleting GitHub repo:', error);
+      throw error;
+    }
+  };
+
+  const deleteSession = async (sessionId: string, repoUrl?: string) => {
+    if (!confirm('⚠️ Xóa session sẽ XÓA LUÔN REPOSITORY trên GitHub!\n\nBạn có chắc chắn muốn tiếp tục?')) {
+      return;
+    }
+
+    const deletingToast = toast.loading('Đang xóa session và repository...');
+
+    try {
+      // Delete GitHub repository first if repo URL exists
+      if (repoUrl && savedGithubToken) {
+        try {
+          await deleteGithubRepo(repoUrl, savedGithubToken);
+          toast.loading('✅ Đã xóa GitHub repo. Đang xóa session...', { id: deletingToast });
+        } catch (repoError) {
+          console.error('Error deleting repo:', repoError);
+          toast.warning('Không thể xóa GitHub repo, nhưng sẽ xóa session', { id: deletingToast });
+        }
+      }
+
+      // Delete session from database
       const { error } = await supabase
         .from('rdp_sessions')
         .delete()
@@ -83,11 +144,11 @@ export default function VPSConsole() {
 
       if (error) throw error;
       
-      toast.success('Đã xóa session');
+      toast.success('✅ Đã xóa session và repository thành công!', { id: deletingToast });
       await loadSessions();
     } catch (error) {
       console.error('Error deleting session:', error);
-      toast.error('Không thể xóa session');
+      toast.error('Không thể xóa session', { id: deletingToast });
     }
   };
 
@@ -248,6 +309,10 @@ Bước 3: Sau khi thêm đủ 3 secrets, vào tab "Actions" của repo và ch�
 
       toast.info('📋 Vui lòng thêm 3 secrets vào Repository theo hướng dẫn!', { duration: 10000 });
       
+      // Save GitHub token to localStorage for later deletion
+      localStorage.setItem('github_token', githubToken);
+      setSavedGithubToken(githubToken);
+      
       // Reset form
       setGithubToken('');
       setNgrokToken('');
@@ -375,11 +440,8 @@ Bước 3: Sau khi thêm đủ 3 secrets, vào tab "Actions" của repo và ch�
                     variant="destructive"
                     size="icon"
                     className="absolute top-2 right-2 h-8 w-8"
-                    onClick={() => {
-                      if (confirm('Bạn có chắc muốn xóa session này?')) {
-                        deleteSession(session.id);
-                      }
-                    }}
+                    onClick={() => deleteSession(session.id, session.repo_url)}
+                    title="Xóa session và GitHub repository"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

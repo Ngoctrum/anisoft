@@ -146,6 +146,48 @@ export type Database = {
         }
         Relationships: []
       }
+      rdp_sessions: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          github_repo: string
+          id: string
+          rdp_password: string | null
+          rdp_user: string | null
+          repo_url: string | null
+          status: string | null
+          tailscale_ip: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          github_repo: string
+          id?: string
+          rdp_password?: string | null
+          rdp_user?: string | null
+          repo_url?: string | null
+          status?: string | null
+          tailscale_ip?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          github_repo?: string
+          id?: string
+          rdp_password?: string | null
+          rdp_user?: string | null
+          repo_url?: string | null
+          status?: string | null
+          tailscale_ip?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           id: string

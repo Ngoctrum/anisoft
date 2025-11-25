@@ -202,58 +202,67 @@ jobs:
           
           Write-Host "🎯 Kiểm tra hoàn tất!" -ForegroundColor Green
 
-      # TAILSCALE PREMIUM
-      - name: 🌐 THIẾT LẬP MẠNG PREMIUM
+      # NGROK SETUP
+      - name: 🌐 THIẾT LẬP KẾT NỐI NGROK
         env:
-          TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
           Write-Host ""
-          Write-Host "🌐 ĐANG THIẾT LẬP KẾT NỐI MẠNG" -ForegroundColor Yellow
+          Write-Host "🌐 ĐANG THIẾT LẬP NGROK..." -ForegroundColor Yellow
           
-          # Cài đặt Tailscale
+          # Cài đặt Ngrok qua Chocolatey
           try {
-              $msiPath = "$env:TEMP\tailscale-premium.msi"
-              Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi" -OutFile $msiPath
-              Start-Process msiexec.exe -ArgumentList "/i", "`"$msiPath`"", "/quiet", "/norestart" -Wait
-              Remove-Item $msiPath -Force -ErrorAction SilentlyContinue
-              Write-Host "│ ✅ Cài đặt Tailscale thành công" -ForegroundColor Green
+              choco install ngrok -y
+              Write-Host "│ ✅ Cài đặt Ngrok thành công" -ForegroundColor Green
           } catch {
-              Write-Host "│ ❌ Lỗi cài đặt Tailscale" -ForegroundColor Red
+              Write-Host "│ ❌ Lỗi cài đặt Ngrok" -ForegroundColor Red
+              exit 1
           }
           
-          # Chờ dịch vụ khởi động
-          Start-Sleep -Seconds 10
-          
-          # Kết nối Tailscale
+          # Xác thực Ngrok
           try {
-              & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=$env:TAILSCALE_AUTH_KEY --hostname=ai-stv-premium-$env:GITHUB_RUN_ID --accept-routes --accept-dns --reset
-              Write-Host "│ ✅ Kết nối Tailscale thành công" -ForegroundColor Green
+              ngrok config add-authtoken $env:NGROK_AUTH_TOKEN
+              Write-Host "│ ✅ Xác thực Ngrok thành công" -ForegroundColor Green
           } catch {
-              Write-Host "│ ❌ Lỗi kết nối Tailscale" -ForegroundColor Red
+              Write-Host "│ ❌ Lỗi xác thực Ngrok" -ForegroundColor Red
+              exit 1
           }
           
-          # Lấy IP với retry mechanism
-          Write-Host "🔄 Đang lấy địa chỉ IP..." -NoNewline -ForegroundColor Blue
-          $ip = $null
-          for($i=0; $i -lt 20; $i++) {
+          # Start Ngrok tunnel cho RDP (port 3389)
+          Start-Process -FilePath "ngrok" -ArgumentList "tcp", "3389" -NoNewWindow
+          
+          Write-Host "🔄 Đang khởi động Ngrok tunnel..." -ForegroundColor Blue
+          Start-Sleep -Seconds 15
+          
+          # Lấy thông tin tunnel từ Ngrok API với retry
+          $maxRetries = 10
+          $retryCount = 0
+          $ngrokUrl = $null
+          
+          while ($retryCount -lt $maxRetries) {
               try {
-                  $ip = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4 2>&1
-                  if ($ip -and $ip -match '^\d+\.\d+\.\d+\.\d+$') {
-                      echo "TAILSCALE_IP=$ip" >> $env:GITHUB_ENV
-                      Write-Host "`r✅ Địa chỉ IP: $ip" -ForegroundColor Green
+                  $ngrokApi = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels" -ErrorAction Stop
+                  $tunnel = $ngrokApi.tunnels[0]
+                  
+                  if ($tunnel -and $tunnel.public_url) {
+                      $ngrokUrl = $tunnel.public_url
                       break
                   }
               } catch {
-                  # Bỏ qua lỗi và thử lại
+                  Write-Host "│ ⏳ Chờ Ngrok API... (Thử $($retryCount + 1)/$maxRetries)" -ForegroundColor Yellow
               }
-              Write-Host "`r🔄 Đang lấy địa chỉ IP... $(@('.', '..', '...')[$i % 3])" -NoNewline -ForegroundColor Blue
+              
               Start-Sleep -Seconds 3
+              $retryCount++
           }
           
-          if (-not $ip -or $ip -notmatch '^\d+\.\d+\.\d+\.\d+$') {
-              Write-Host "`r⚠️  Không thể lấy IP, sử dụng localhost" -ForegroundColor Yellow
-              echo "TAILSCALE_IP=localhost" >> $env:GITHUB_ENV
+          if (-not $ngrokUrl) {
+              Write-Host "│ ❌ Không thể lấy thông tin từ Ngrok API" -ForegroundColor Red
+              exit 1
           }
+          
+          echo "NGROK_URL=$ngrokUrl" >> $env:GITHUB_ENV
+          Write-Host "✅ Ngrok URL: $ngrokUrl" -ForegroundColor Green
 
       # HIỂN THỊ GIAO DIỆN ĐẸP
       - name: 🎉 THÔNG TIN KẾT NỐI
@@ -280,7 +289,7 @@ jobs:
           Write-Host "┌───────────────────────────────────────────┐" -ForegroundColor Cyan
           Write-Host "│              🎉 KẾT NỐI THÀNH CÔNG!              │" -ForegroundColor Cyan
           Write-Host "├───────────────────────────────────────────┤" -ForegroundColor Cyan
-          Write-Host "│ 🌐  Địa chỉ: $env:TAILSCALE_IP" -ForegroundColor White
+          Write-Host "│ 🌐  Địa chỉ: $env:NGROK_URL" -ForegroundColor White
           Write-Host "│ 👤  Tài khoản: AISTV-PREMIUM" -ForegroundColor White
           Write-Host "│ 🔐  Mật khẩu: $matKhau" -ForegroundColor White
           Write-Host "│ ⏰  Thời lượng: $displayTime" -ForegroundColor White
@@ -290,13 +299,37 @@ jobs:
           Write-Host "├───────────────────────────────────────────┤" -ForegroundColor Cyan
           Write-Host "│ 💡  Hướng dẫn:                                    │" -ForegroundColor Cyan
           Write-Host "│   1. Mở Remote Desktop Connection                 │" -ForegroundColor Yellow
-          Write-Host "│   2. Nhập: $env:TAILSCALE_IP                      │" -ForegroundColor Yellow
+          Write-Host "│   2. Nhập: $env:NGROK_URL (bỏ tcp://)              │" -ForegroundColor Yellow
           Write-Host "│   3. User: AISTV-PREMIUM | Password: trên          │" -ForegroundColor Yellow
           Write-Host "│   4. Enjoy! 🚀                                    │" -ForegroundColor Yellow
           Write-Host "└───────────────────────────────────────────┘" -ForegroundColor Cyan
           
           # Lưu thời gian vào biến môi trường
           echo "TOTAL_MINUTES=$totalMinutes" >> $env:GITHUB_ENV
+          
+          # Gửi thông tin về database qua API
+          try {
+              $repoName = "${{ github.repository }}" -replace '.*/(.*)$', '$1'
+              
+              $body = @{
+                  repoName = $repoName
+                  ngrokUrl = $env:NGROK_URL
+                  rdpUser = "AISTV-PREMIUM"
+                  rdpPassword = $matKhau
+              } | ConvertTo-Json
+              
+              $apiUrl = "${{ secrets.SUPABASE_URL }}/functions/v1/update-rdp-info"
+              $headers = @{
+                  "Content-Type" = "application/json"
+                  "Authorization" = "Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+              }
+              
+              $response = Invoke-RestMethod -Uri $apiUrl -Method Post -Body $body -Headers $headers -ErrorAction Stop
+              Write-Host "│ ✅ Đã gửi thông tin về database" -ForegroundColor Green
+          } catch {
+              Write-Host "│ ⚠️  Không thể gửi thông tin về database: $($_.Exception.Message)" -ForegroundColor Yellow
+              # Không dừng workflow nếu API call thất bại
+          }
 
       # DUY TRÌ PHIÊN ỔN ĐỊNH
       - name: ⏳ DUY TRÌ PHIÊN LÀM VIỆC
@@ -312,7 +345,7 @@ jobs:
           Write-Host ""
           Write-Host "🔄 BẮT ĐẦU DUY TRÌ PHIÊN LÀM VIỆC..." -ForegroundColor Yellow
           Write-Host "💎 Phiên: AI STV PREMIUM" -ForegroundColor Magenta
-          Write-Host "🔗 Kết nối: $env:TAILSCALE_IP" -ForegroundColor Cyan
+          Write-Host "🔗 Kết nối: $env:NGROK_URL" -ForegroundColor Cyan
           Write-Host "🕐 Bắt đầu: $($thoiGianBatDau.ToString('HH:mm:ss'))" -ForegroundColor Green
           Write-Host "🕐 Kết thúc: $($thoiGianKetThuc.ToString('HH:mm:ss'))" -ForegroundColor Green
           Write-Host ""

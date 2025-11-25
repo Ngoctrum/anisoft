@@ -19,6 +19,7 @@ import Account from "./pages/Account";
 import Docs from "./pages/Docs";
 import Support from "./pages/Support";
 import Report from "./pages/Report";
+import VPSConsole from "./pages/VPSConsole";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminTools from "./pages/admin/Tools";
 import AdminApps from "./pages/admin/Apps";
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/docs" element={<Docs />} />
             <Route path="/support" element={<Support />} />
             <Route path="/report" element={<Report />} />
+            <Route path="/vps-console" element={<VPSConsole />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/tools" element={<AdminTools />} />
             <Route path="/admin/apps" element={<AdminApps />} />

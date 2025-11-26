@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Server, Play, Terminal, ExternalLink, Key, Trash2, Settings } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Loader2, Server, Play, Terminal, ExternalLink, Key, Trash2, Settings, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { RDPSessionCard } from '@/components/RDPSessionCard';
@@ -657,41 +658,68 @@ export default function VPSConsole() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="vps-config">Cấu hình VPS</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="vps-config">Cấu hình VPS</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-primary/10">
+                        <Info className="h-4 w-4 text-primary" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-4 bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20" align="start">
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-lg flex items-center gap-2">
+                          <span className="text-2xl">
+                            {vpsConfig === 'basic' ? '⚡' : vpsConfig === 'standard' ? '💎' : '👑'}
+                          </span>
+                          {vpsConfig === 'basic' ? 'Basic' : vpsConfig === 'standard' ? 'Standard' : 'Premium'}
+                        </h4>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between p-2 bg-background/50 rounded-lg">
+                            <span className="text-sm text-muted-foreground">CPU</span>
+                            <span className="font-bold text-primary">{CONFIG_INFO[vpsConfig].cpu}</span>
+                          </div>
+                          <div className="flex items-center justify-between p-2 bg-background/50 rounded-lg">
+                            <span className="text-sm text-muted-foreground">RAM</span>
+                            <span className="font-bold text-primary">{CONFIG_INFO[vpsConfig].ram}</span>
+                          </div>
+                          <div className="flex items-center justify-between p-2 bg-background/50 rounded-lg">
+                            <span className="text-sm text-muted-foreground">Disk</span>
+                            <span className="font-bold text-primary">{CONFIG_INFO[vpsConfig].disk}</span>
+                          </div>
+                        </div>
+                        <div className="p-3 bg-muted/50 rounded-lg border border-primary/20">
+                          <p className="text-sm italic text-muted-foreground">{CONFIG_INFO[vpsConfig].description}</p>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <Select value={vpsConfig} onValueChange={(value: 'basic' | 'standard' | 'premium') => setVpsConfig(value)}>
                   <SelectTrigger id="vps-config">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="basic">
-                      <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
                         <span>⚡ Basic</span>
-                        <span className="text-xs text-muted-foreground">{CONFIG_INFO.basic.cpu} • {CONFIG_INFO.basic.ram}</span>
+                        <span className="text-xs text-muted-foreground">{CONFIG_INFO.basic.cpu}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="standard">
-                      <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
                         <span>💎 Standard</span>
-                        <span className="text-xs text-muted-foreground">{CONFIG_INFO.standard.cpu} • {CONFIG_INFO.standard.ram}</span>
+                        <span className="text-xs text-muted-foreground">{CONFIG_INFO.standard.cpu}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="premium">
-                      <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
                         <span>👑 Premium</span>
-                        <span className="text-xs text-muted-foreground">{CONFIG_INFO.premium.cpu} • {CONFIG_INFO.premium.ram}</span>
+                        <span className="text-xs text-muted-foreground">{CONFIG_INFO.premium.cpu}</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                <div className="bg-muted/50 p-3 rounded-lg border">
-                  <p className="text-sm font-medium mb-1">📊 Cấu hình chi tiết:</p>
-                  <div className="text-xs space-y-1 text-muted-foreground">
-                    <p>• CPU: <span className="text-foreground font-medium">{CONFIG_INFO[vpsConfig].cpu}</span></p>
-                    <p>• RAM: <span className="text-foreground font-medium">{CONFIG_INFO[vpsConfig].ram}</span></p>
-                    <p>• Disk: <span className="text-foreground font-medium">{CONFIG_INFO[vpsConfig].disk}</span></p>
-                    <p className="text-xs italic mt-2">{CONFIG_INFO[vpsConfig].description}</p>
-                  </div>
-                </div>
               </div>
 
               <div className="space-y-2">

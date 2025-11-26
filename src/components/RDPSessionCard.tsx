@@ -272,8 +272,22 @@ username:s:${username}`;
                 </Button>
               </div>
             </div>
+            
+            {/* Hướng dẫn quan trọng */}
+            <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <p className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 mb-2">
+                ⚠️ Quan trọng: Cài Tailscale trước khi kết nối
+              </p>
+              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                <li>Tải Tailscale: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">tailscale.com/download</a></li>
+                <li>Cài đặt và đăng nhập Tailscale (dùng token đã nhập)</li>
+                <li>Sau đó mới mở Remote Desktop Connection</li>
+                <li>Nhập Server + Username + Password bên dưới</li>
+              </ol>
+            </div>
+            
             <div className="text-sm space-y-1">
-              <p className="text-muted-foreground">Kết nối RDP với:</p>
+              <p className="text-muted-foreground font-semibold">Thông tin kết nối:</p>
               <div className="bg-background/50 p-3 rounded font-mono text-xs space-y-1">
                 <div>Server: {session.tailscale_ip?.replace(/^tcp:\/\//, '')}</div>
                 <div>Username: {session.rdp_user}</div>

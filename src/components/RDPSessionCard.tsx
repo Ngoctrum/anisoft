@@ -83,7 +83,16 @@ export function RDPSessionCard({ session }: RDPSessionCardProps) {
 
   const copySSHCommand = () => {
     const server = getServerAddress();
-    const sshCommand = `ssh ${session.rdp_user}@${server}`;
+    
+    // Parse Ngrok URL format (host:port) to SSH format (ssh user@host -p port)
+    let sshCommand: string;
+    if (session.networking_type === 'ngrok' && server.includes(':')) {
+      const [host, port] = server.split(':');
+      sshCommand = `ssh ${session.rdp_user}@${host} -p ${port}`;
+    } else {
+      sshCommand = `ssh ${session.rdp_user}@${server}`;
+    }
+    
     navigator.clipboard.writeText(sshCommand);
     toast.success('✅ Đã copy lệnh SSH!', {
       description: `${sshCommand}\nPaste vào CMD/Terminal để kết nối`

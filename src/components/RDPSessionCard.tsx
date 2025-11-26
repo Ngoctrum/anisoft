@@ -72,6 +72,15 @@ export function RDPSessionCard({ session }: RDPSessionCardProps) {
     toast.success('Đã copy toàn bộ thông tin');
   };
 
+  const copySSHCommand = () => {
+    const server = session.tailscale_ip?.replace(/^tcp:\/\//, '') || '';
+    const sshCommand = `ssh ${session.rdp_user}@${server}`;
+    navigator.clipboard.writeText(sshCommand);
+    toast.success('✅ Đã copy lệnh SSH!', {
+      description: `${sshCommand}\nPaste vào CMD/Terminal để kết nối`
+    });
+  };
+
   const downloadRDPFile = () => {
     const server = session.tailscale_ip?.replace(/^tcp:\/\//, '') || '';
     const username = session.rdp_user || '';
@@ -358,15 +367,27 @@ username:s:${username}`;
                   <Copy className="h-4 w-4" />
                   Copy All
                 </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={downloadRDPFile}
-                  className="gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Tải RDP
-                </Button>
+                {session.os_type === 'ubuntu' ? (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={copySSHCommand}
+                    className="gap-2"
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copy SSH Command
+                  </Button>
+                ) : (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={downloadRDPFile}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Tải RDP
+                  </Button>
+                )}
               </div>
             </div>
             
@@ -375,12 +396,21 @@ username:s:${username}`;
               <p className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 mb-2">
                 ⚠️ Hướng dẫn kết nối VPS
               </p>
-              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                <li>Cài Tailscale: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">tailscale.com/download</a> và đăng nhập</li>
-                <li>Nhấn "Tải RDP" → mật khẩu tự động copy vào clipboard</li>
-                <li>Mở file .rdp → khi hỏi password, Paste (Ctrl+V)</li>
-                <li><strong>Nếu paste không được:</strong> gõ thủ công password bên dưới</li>
-              </ol>
+              {session.os_type === 'ubuntu' ? (
+                <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Cài Tailscale: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">tailscale.com/download</a> và đăng nhập</li>
+                  <li>Nhấn "Copy SSH Command" → lệnh SSH tự động copy vào clipboard</li>
+                  <li>Mở CMD/Terminal → Paste lệnh (Ctrl+V hoặc Cmd+V) → Enter</li>
+                  <li>Nhập password khi được hỏi (copy password bên dưới)</li>
+                </ol>
+              ) : (
+                <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Cài Tailscale: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">tailscale.com/download</a> và đăng nhập</li>
+                  <li>Nhấn "Tải RDP" → mật khẩu tự động copy vào clipboard</li>
+                  <li>Mở file .rdp → khi hỏi password, Paste (Ctrl+V)</li>
+                  <li><strong>Nếu paste không được:</strong> gõ thủ công password bên dưới</li>
+                </ol>
+              )}
             </div>
             
             <div className="text-sm space-y-2">

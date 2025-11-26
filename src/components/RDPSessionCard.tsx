@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, Server, User, Key, Copy, ExternalLink } from 'lucide-react';
+import { Clock, Server, User, Key, Copy, ExternalLink, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RDPSession {
@@ -60,6 +60,71 @@ export function RDPSessionCard({ session }: RDPSessionCardProps) {
     const info = `Server: ${server}\nUsername: ${session.rdp_user || ''}\nPassword: ${session.rdp_password || ''}`;
     navigator.clipboard.writeText(info);
     toast.success('Đã copy toàn bộ thông tin');
+  };
+
+  const downloadRDPFile = () => {
+    const server = session.tailscale_ip?.replace(/^tcp:\/\//, '') || '';
+    const username = session.rdp_user || '';
+    
+    const rdpContent = `screen mode id:i:2
+use multimon:i:0
+desktopwidth:i:1920
+desktopheight:i:1080
+session bpp:i:32
+winposstr:s:0,3,0,0,800,600
+compression:i:1
+keyboardhook:i:2
+audiocapturemode:i:0
+videoplaybackmode:i:1
+connection type:i:7
+networkautodetect:i:1
+bandwidthautodetect:i:1
+displayconnectionbar:i:1
+enableworkspacereconnect:i:0
+disable wallpaper:i:0
+allow font smoothing:i:0
+allow desktop composition:i:0
+disable full window drag:i:1
+disable menu anims:i:1
+disable themes:i:0
+disable cursor setting:i:0
+bitmapcachepersistenable:i:1
+full address:s:${server}
+audiomode:i:0
+redirectprinters:i:1
+redirectcomports:i:0
+redirectsmartcards:i:1
+redirectclipboard:i:1
+redirectposdevices:i:0
+autoreconnection enabled:i:1
+authentication level:i:0
+prompt for credentials:i:0
+negotiate security layer:i:1
+remoteapplicationmode:i:0
+alternate shell:s:
+shell working directory:s:
+gatewayhostname:s:
+gatewayusagemethod:i:4
+gatewaycredentialssource:i:4
+gatewayprofileusagemethod:i:0
+promptcredentialonce:i:0
+gatewaybrokeringtype:i:0
+use redirection server name:i:0
+rdgiskdcproxy:i:0
+kdcproxyname:s:
+username:s:${username}`;
+
+    const blob = new Blob([rdpContent], { type: 'application/x-rdp' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${session.github_repo}.rdp`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success('Đã tải file RDP');
   };
 
   const getStatusColor = () => {
@@ -186,15 +251,26 @@ export function RDPSessionCard({ session }: RDPSessionCardProps) {
               <h4 className="font-semibold text-green-600 dark:text-green-400">
                 ✅ VPS Đã Sẵn Sàng
               </h4>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={copyAllInfo}
-                className="gap-2"
-              >
-                <Copy className="h-4 w-4" />
-                Copy All
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyAllInfo}
+                  className="gap-2"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copy All
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={downloadRDPFile}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Tải RDP
+                </Button>
+              </div>
             </div>
             <div className="text-sm space-y-1">
               <p className="text-muted-foreground">Kết nối RDP với:</p>

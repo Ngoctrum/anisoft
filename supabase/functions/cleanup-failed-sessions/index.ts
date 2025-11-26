@@ -12,6 +12,20 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Verify API key for cron job access
+    const apiKey = req.headers.get('x-api-key');
+    const expectedKey = Deno.env.get('CLEANUP_API_KEY');
+    
+    if (!expectedKey || apiKey !== expectedKey) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''

@@ -1,1 +1,7 @@
 project_id = "wxqxriwodkgzpzqaxigp"
+
+[functions.manage-vps]
+verify_jwt = true
+
+[functions.cleanup-failed-sessions]
+verify_jwt = false  # Called by cron, will use API key validation instead

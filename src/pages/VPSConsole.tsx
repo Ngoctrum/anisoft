@@ -386,7 +386,9 @@ export default function VPSConsole() {
           const workflow = data.workflows.find((w: any) => w.path === `.github/workflows/${workflowFileName}`);
           
           if (workflow) {
-            logFn(`✅ Workflow đã được GitHub Actions nhận diện!`);
+            logFn(`✅ Workflow đã được GitHub Actions nhận diện! Chờ thêm 10s trước khi trigger...`);
+            // Chờ thêm 10s sau khi workflow được nhận diện để GitHub index đủ trigger
+            await new Promise(resolve => setTimeout(resolve, 10000));
             return true;
           }
         }

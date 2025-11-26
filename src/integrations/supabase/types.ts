@@ -154,6 +154,8 @@ export type Database = {
           github_repo: string
           id: string
           is_active: boolean | null
+          networking_type: string | null
+          ngrok_url: string | null
           os_type: string | null
           rdp_password: string | null
           rdp_user: string | null
@@ -173,6 +175,8 @@ export type Database = {
           github_repo: string
           id?: string
           is_active?: boolean | null
+          networking_type?: string | null
+          ngrok_url?: string | null
           os_type?: string | null
           rdp_password?: string | null
           rdp_user?: string | null
@@ -192,6 +196,8 @@ export type Database = {
           github_repo?: string
           id?: string
           is_active?: boolean | null
+          networking_type?: string | null
+          ngrok_url?: string | null
           os_type?: string | null
           rdp_password?: string | null
           rdp_user?: string | null

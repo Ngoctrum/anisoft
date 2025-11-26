@@ -12,6 +12,8 @@ interface RDPSession {
   github_repo: string;
   repo_url?: string;
   tailscale_ip?: string;
+  ngrok_url?: string;
+  networking_type?: string;
   rdp_user?: string;
   rdp_password?: string;
   status: string;
@@ -65,15 +67,22 @@ export function RDPSessionCard({ session }: RDPSessionCardProps) {
     toast.success(`Đã copy ${label}`);
   };
 
+  const getServerAddress = () => {
+    if (session.networking_type === 'ngrok' && session.ngrok_url) {
+      return session.ngrok_url.replace(/^tcp:\/\//, '');
+    }
+    return session.tailscale_ip?.replace(/^tcp:\/\//, '') || '';
+  };
+
   const copyAllInfo = () => {
-    const server = session.tailscale_ip?.replace(/^tcp:\/\//, '') || '';
+    const server = getServerAddress();
     const info = `Server: ${server}\nUsername: ${session.rdp_user || ''}\nPassword: ${session.rdp_password || ''}`;
     navigator.clipboard.writeText(info);
     toast.success('Đã copy toàn bộ thông tin');
   };
 
   const copySSHCommand = () => {
-    const server = session.tailscale_ip?.replace(/^tcp:\/\//, '') || '';
+    const server = getServerAddress();
     const sshCommand = `ssh ${session.rdp_user}@${server}`;
     navigator.clipboard.writeText(sshCommand);
     toast.success('✅ Đã copy lệnh SSH!', {
@@ -82,7 +91,7 @@ export function RDPSessionCard({ session }: RDPSessionCardProps) {
   };
 
   const downloadRDPFile = () => {
-    const server = session.tailscale_ip?.replace(/^tcp:\/\//, '') || '';
+    const server = getServerAddress();
     const username = session.rdp_user || '';
     
     const rdpContent = `screen mode id:i:2
@@ -187,11 +196,14 @@ username:s:${username}`;
     }
   };
 
-  const hasFullInfo = session.tailscale_ip && session.rdp_user && session.rdp_password;
+  const hasFullInfo = (session.tailscale_ip || session.ngrok_url) && session.rdp_user && session.rdp_password;
   const osIcon = session.os_type === 'ubuntu' ? '🐧' : '🪟';
   const osName = session.os_type === 'ubuntu' ? 'Ubuntu SSH' : 'Windows RDP';
+  const networkingIcon = session.networking_type === 'ngrok' ? '🌐' : '🔒';
+  const networkingName = session.networking_type === 'ngrok' ? 'Ngrok' : 'Tailscale';
+  const serverAddress = getServerAddress();
   const connectionCommand = session.os_type === 'ubuntu' 
-    ? `ssh ${session.rdp_user}@${session.tailscale_ip?.replace(/^tcp:\/\//, '')}` 
+    ? `ssh ${session.rdp_user}@${serverAddress}` 
     : 'RDP';
 
   const handleKillVPS = async () => {
@@ -251,6 +263,9 @@ username:s:${username}`;
           </CardTitle>
           <div className="flex gap-2">
             <Badge className={getStatusColor()}>{getStatusText()}</Badge>
+            <Badge variant="outline" className="gap-1">
+              {networkingIcon} {networkingName}
+            </Badge>
             {session.vps_config && (
               <Badge variant="outline">
                 {session.vps_config === 'premium' ? '👑' : session.vps_config === 'standard' ? '💎' : '⚡'} {session.vps_config}
@@ -289,7 +304,7 @@ username:s:${username}`;
         )}
 
         {/* Connection Info */}
-        {session.tailscale_ip && (
+        {(session.tailscale_ip || session.ngrok_url) && (
           <div className="space-y-2">
             <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
               <div className="flex items-center gap-2">
@@ -298,12 +313,12 @@ username:s:${username}`;
               </div>
               <div className="flex items-center gap-2">
                 <code className="text-sm bg-background px-2 py-1 rounded">
-                  {session.tailscale_ip.replace(/^tcp:\/\//, '')}
+                  {serverAddress}
                 </code>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => copyToClipboard(session.tailscale_ip!.replace(/^tcp:\/\//, ''), 'Server')}
+                  onClick={() => copyToClipboard(serverAddress, 'Server')}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -396,20 +411,39 @@ username:s:${username}`;
               <p className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 mb-2">
                 ⚠️ Hướng dẫn kết nối VPS
               </p>
-              {session.os_type === 'ubuntu' ? (
+              {session.networking_type === 'ngrok' ? (
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Cài Tailscale: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">tailscale.com/download</a> và đăng nhập</li>
-                  <li>Nhấn "Copy SSH Command" → lệnh SSH tự động copy vào clipboard</li>
-                  <li>Mở CMD/Terminal → Paste lệnh (Ctrl+V hoặc Cmd+V) → Enter</li>
-                  <li>Nhập password khi được hỏi (copy password bên dưới)</li>
+                  <li>✅ Không cần cài Tailscale - truy cập trực tiếp qua Ngrok URL</li>
+                  {session.os_type === 'ubuntu' ? (
+                    <>
+                      <li>Nhấn "Copy SSH Command" → lệnh SSH tự động copy vào clipboard</li>
+                      <li>Mở CMD/Terminal → Paste lệnh (Ctrl+V hoặc Cmd+V) → Enter</li>
+                      <li>Nhập password khi được hỏi (copy password bên dưới)</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>Nhấn "Tải RDP" → mật khẩu tự động copy vào clipboard</li>
+                      <li>Mở file .rdp → khi hỏi password, Paste (Ctrl+V)</li>
+                      <li><strong>Nếu paste không được:</strong> gõ thủ công password bên dưới</li>
+                    </>
+                  )}
                 </ol>
               ) : (
-                <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Cài Tailscale: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">tailscale.com/download</a> và đăng nhập</li>
-                  <li>Nhấn "Tải RDP" → mật khẩu tự động copy vào clipboard</li>
-                  <li>Mở file .rdp → khi hỏi password, Paste (Ctrl+V)</li>
-                  <li><strong>Nếu paste không được:</strong> gõ thủ công password bên dưới</li>
-                </ol>
+                session.os_type === 'ubuntu' ? (
+                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                    <li>Cài Tailscale: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">tailscale.com/download</a> và đăng nhập</li>
+                    <li>Nhấn "Copy SSH Command" → lệnh SSH tự động copy vào clipboard</li>
+                    <li>Mở CMD/Terminal → Paste lệnh (Ctrl+V hoặc Cmd+V) → Enter</li>
+                    <li>Nhập password khi được hỏi (copy password bên dưới)</li>
+                  </ol>
+                ) : (
+                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                    <li>Cài Tailscale: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">tailscale.com/download</a> và đăng nhập</li>
+                    <li>Nhấn "Tải RDP" → mật khẩu tự động copy vào clipboard</li>
+                    <li>Mở file .rdp → khi hỏi password, Paste (Ctrl+V)</li>
+                    <li><strong>Nếu paste không được:</strong> gõ thủ công password bên dưới</li>
+                  </ol>
+                )
               )}
             </div>
             
@@ -418,7 +452,7 @@ username:s:${username}`;
               <div className="bg-background/50 p-3 rounded font-mono text-xs space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Server:</span>
-                  <span className="font-semibold">{session.tailscale_ip?.replace(/^tcp:\/\//, '')}</span>
+                  <span className="font-semibold">{serverAddress}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Username:</span>
@@ -439,7 +473,7 @@ username:s:${username}`;
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground italic">💡 Nếu paste không được, click-chọn password trên → gõ thủ công vào RDP</p>
+              <p className="text-xs text-muted-foreground italic">💡 {session.networking_type === 'ngrok' ? 'Ngrok public URL - truy cập trực tiếp không cần VPN' : 'Nếu paste không được, click-chọn password trên → gõ thủ công vào RDP'}</p>
             </div>
           </div>
         )}

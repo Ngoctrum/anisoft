@@ -249,6 +249,14 @@ export default function VPSConsole() {
       osType === 'debian' ? debianWorkflowTemplate :
       osType === 'archlinux' ? archlinuxWorkflowTemplate : centosWorkflowTemplate;
     const path = `.github/workflows/${workflowFileName}`;
+    
+    console.log('📄 Uploading workflow:', workflowFileName);
+    console.log('📝 Workflow content length:', workflowContent?.length || 0);
+    
+    if (!workflowContent || workflowContent.length === 0) {
+      throw new Error(`❌ Workflow template trống cho ${osType}! Vui lòng thử lại.`);
+    }
+    
     const encodedContent = btoa(unescape(encodeURIComponent(workflowContent)));
 
     const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
@@ -264,10 +272,14 @@ export default function VPSConsole() {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to upload workflow file');
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Upload workflow failed:', errorData);
+      throw new Error(`❌ Lỗi upload workflow: ${errorData.message || response.statusText}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log('✅ Workflow uploaded successfully:', result.content?.name);
+    return result;
   };
 
   const addGithubSecret = async (token: string, owner: string, repo: string, secretName: string, secretValue: string) => {
@@ -478,9 +490,14 @@ export default function VPSConsole() {
       setLogs((prev) => [...prev, '✅ Session đã được tạo']);
 
       // Step 3: Upload workflow
-      setLogs((prev) => [...prev, '📄 Đang upload workflow file...']);
-      await uploadWorkflowFile(githubToken, repo.owner.login, repo.name);
-      setLogs((prev) => [...prev, '✅ Workflow đã sẵn sàng']);
+      setLogs((prev) => [...prev, `📄 Đang upload workflow file cho ${osType}...`]);
+      try {
+        await uploadWorkflowFile(githubToken, repo.owner.login, repo.name);
+        setLogs((prev) => [...prev, '✅ Workflow file đã được upload thành công!']);
+      } catch (uploadError: any) {
+        setLogs((prev) => [...prev, `❌ Lỗi upload workflow: ${uploadError.message}`]);
+        throw uploadError;
+      }
 
       // Step 4: Wait for workflow file to be committed
       setLogs((prev) => [...prev, '⏳ Đợi 5 giây để workflow được xử lý...']);

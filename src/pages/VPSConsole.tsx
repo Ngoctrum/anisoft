@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Server, Play, Terminal, ExternalLink, Key, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { RDPSessionCard } from '@/components/RDPSessionCard';
-import workflowTemplate from '@/assets/windows-rdp-workflow.yml?raw';
+import windowsWorkflowTemplate from '@/assets/windows-rdp-workflow.yml?raw';
+import ubuntuWorkflowTemplate from '@/assets/ubuntu-ssh-workflow.yml?raw';
 import _sodium from 'libsodium-wrappers';
 
 interface Session {
@@ -22,11 +24,19 @@ interface Session {
   status: string;
   created_at: string;
   expires_at?: string;
+  os_type?: string;
+  vps_config?: string;
+  duration_hours?: number;
+  is_active?: boolean;
+  ssh_port?: number;
 }
 
 export default function VPSConsole() {
   const [githubToken, setGithubToken] = useState('');
   const [tailscaleToken, setTailscaleToken] = useState('');
+  const [osType, setOsType] = useState<'windows' | 'ubuntu'>('windows');
+  const [vpsConfig, setVpsConfig] = useState<'basic' | 'standard' | 'premium'>('basic');
+  const [durationHours, setDurationHours] = useState(6);
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
@@ -154,7 +164,12 @@ export default function VPSConsole() {
   };
 
   const createRepository = async (token: string) => {
-    const repoName = `windows-rdp-${Date.now()}`;
+    const osPrefix = osType === 'ubuntu' ? 'ubuntu-ssh' : 'windows-rdp';
+    const repoName = `${osPrefix}-${Date.now()}`;
+    const description = osType === 'ubuntu' 
+      ? 'Ubuntu SSH Server via GitHub Actions & Tailscale'
+      : 'Windows RDP Server via GitHub Actions & Tailscale';
+    
     const response = await fetch('https://api.github.com/user/repos', {
       method: 'POST',
       headers: {
@@ -163,7 +178,7 @@ export default function VPSConsole() {
       },
       body: JSON.stringify({
         name: repoName,
-        description: 'Windows RDP Server via GitHub Actions & Tailscale',
+        description,
         private: false,
         auto_init: true,
       }),
@@ -187,8 +202,10 @@ export default function VPSConsole() {
   };
 
   const uploadWorkflowFile = async (token: string, owner: string, repo: string) => {
-    const path = '.github/workflows/windows-rdp.yml';
-    const encodedContent = btoa(unescape(encodeURIComponent(workflowTemplate)));
+    const workflowFileName = osType === 'ubuntu' ? 'ubuntu-ssh.yml' : 'windows-rdp.yml';
+    const workflowContent = osType === 'ubuntu' ? ubuntuWorkflowTemplate : windowsWorkflowTemplate;
+    const path = `.github/workflows/${workflowFileName}`;
+    const encodedContent = btoa(unescape(encodeURIComponent(workflowContent)));
 
     const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
       method: 'PUT',
@@ -197,7 +214,7 @@ export default function VPSConsole() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: 'Add Windows RDP workflow with Tailscale',
+        message: `Add ${osType} workflow with Tailscale`,
         content: encodedContent,
       }),
     });
@@ -257,8 +274,13 @@ export default function VPSConsole() {
   };
 
   const triggerWorkflow = async (token: string, owner: string, repo: string) => {
+    const workflowFileName = osType === 'ubuntu' ? 'ubuntu-ssh.yml' : 'windows-rdp.yml';
+    const durationInput = osType === 'ubuntu' ? `${durationHours}h` : 
+      durationHours === 1 ? '1h' : 
+      durationHours === 3 ? '3h' : '5h40m';
+    
     const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/actions/workflows/windows-rdp.yml/dispatches`,
+      `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/dispatches`,
       {
         method: 'POST',
         headers: {
@@ -268,7 +290,8 @@ export default function VPSConsole() {
         body: JSON.stringify({
           ref: 'main',
           inputs: {
-            duration: '5h40m',
+            duration: durationInput,
+            config: vpsConfig,
           },
         }),
       }
@@ -342,7 +365,8 @@ export default function VPSConsole() {
     }
 
     setIsProcessing(true);
-    setLogs(['🚀 Bắt đầu tạo Windows RDP Server...']);
+    const osName = osType === 'ubuntu' ? 'Ubuntu SSH' : 'Windows RDP';
+    setLogs([`🚀 Bắt đầu tạo ${osName} Server...`]);
 
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -359,7 +383,7 @@ export default function VPSConsole() {
       // Step 2: Create session in database
       setLogs((prev) => [...prev, '💾 Đang lưu session vào database...']);
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 5, expiresAt.getMinutes() + 40);
+      expiresAt.setHours(expiresAt.getHours() + durationHours);
 
       const { data: session, error: sessionError } = await supabase
         .from('rdp_sessions')
@@ -369,6 +393,10 @@ export default function VPSConsole() {
           repo_url: repo.html_url,
           status: 'pending',
           expires_at: expiresAt.toISOString(),
+          os_type: osType,
+          vps_config: vpsConfig,
+          duration_hours: durationHours,
+          is_active: true,
         })
         .select()
         .single();
@@ -436,7 +464,7 @@ export default function VPSConsole() {
               VPS Console
             </h1>
             <p className="text-muted-foreground mt-2">
-              Tự động tạo Windows RDP Server qua GitHub Actions + Tailscale
+              Tự động tạo Windows/Ubuntu VPS qua GitHub Actions + Tailscale
             </p>
           </div>
         </div>
@@ -503,6 +531,59 @@ export default function VPSConsole() {
               </div>
             </div>
 
+            {/* VPS Configuration */}
+            <div className="grid gap-4 md:grid-cols-3 border-t pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="os-type">Hệ điều hành</Label>
+                <Select value={osType} onValueChange={(value: 'windows' | 'ubuntu') => setOsType(value)}>
+                  <SelectTrigger id="os-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="windows">🪟 Windows RDP</SelectItem>
+                    <SelectItem value="ubuntu">🐧 Ubuntu SSH</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="vps-config">Cấu hình VPS</Label>
+                <Select value={vpsConfig} onValueChange={(value: 'basic' | 'standard' | 'premium') => setVpsConfig(value)}>
+                  <SelectTrigger id="vps-config">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="basic">⚡ Basic</SelectItem>
+                    <SelectItem value="standard">💎 Standard</SelectItem>
+                    <SelectItem value="premium">👑 Premium</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="duration">Thời gian (giờ)</Label>
+                <Select value={durationHours.toString()} onValueChange={(value) => setDurationHours(parseInt(value))}>
+                  <SelectTrigger id="duration">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 giờ</SelectItem>
+                    <SelectItem value="2">2 giờ</SelectItem>
+                    <SelectItem value="3">3 giờ</SelectItem>
+                    <SelectItem value="4">4 giờ</SelectItem>
+                    <SelectItem value="5">5 giờ</SelectItem>
+                    <SelectItem value="6">6 giờ</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Alert className="bg-blue-500/10 border-blue-500/20">
+              <AlertDescription className="text-sm">
+                💡 <strong>Thông tin:</strong> {osType === 'windows' ? 'Windows RDP' : 'Ubuntu SSH'} • {vpsConfig.toUpperCase()} • Tự động xóa sau {durationHours}h
+              </AlertDescription>
+            </Alert>
+
             <Button
               onClick={handleCreateVPS}
               disabled={isProcessing}
@@ -517,7 +598,7 @@ export default function VPSConsole() {
               ) : (
                 <>
                   <Play className="h-4 w-4 mr-2" />
-                  Tạo Windows RDP Server
+                  Tạo {osType === 'windows' ? 'Windows RDP' : 'Ubuntu SSH'} Server
                 </>
               )}
             </Button>

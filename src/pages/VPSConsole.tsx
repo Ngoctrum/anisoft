@@ -366,6 +366,43 @@ export default function VPSConsole() {
     return response.ok;
   };
 
+  const waitForWorkflowReady = async (token: string, owner: string, repo: string, workflowFileName: string, logFn: (log: string) => void): Promise<boolean> => {
+    const maxAttempts = 10;
+    const waitTime = 3000; // 3 seconds between checks
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        logFn(`🔍 Kiểm tra workflow có sẵn sàng không... (lần ${attempt}/${maxAttempts})`);
+        
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const workflow = data.workflows.find((w: any) => w.path === `.github/workflows/${workflowFileName}`);
+          
+          if (workflow) {
+            logFn(`✅ Workflow đã được GitHub Actions nhận diện!`);
+            return true;
+          }
+        }
+
+        if (attempt < maxAttempts) {
+          logFn(`⏳ Workflow chưa sẵn sàng, đợi ${waitTime / 1000}s...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+      } catch (error) {
+        console.error('Error checking workflow:', error);
+      }
+    }
+
+    return false;
+  };
+
   const triggerWorkflow = async (token: string, owner: string, repo: string, logFn: (log: string) => void = () => {}) => {
     const isWindows = osType === 'windows';
     const workflowFileName = isWindows ? 'windows-rdp.yml' : `${osType}-ssh.yml`;
@@ -604,9 +641,19 @@ export default function VPSConsole() {
         throw uploadError;
       }
 
-      // Step 4: Wait for workflow file to be committed
-      setLogs((prev) => [...prev, '⏳ Đợi 15 giây để workflow được xử lý và đăng ký với GitHub Actions...']);
-      await new Promise(resolve => setTimeout(resolve, 15000));
+      // Step 4: Wait for workflow to be ready
+      const workflowFileName = osType === 'windows' ? 'windows-rdp.yml' : `${osType}-ssh.yml`;
+      const isWorkflowReady = await waitForWorkflowReady(
+        githubToken,
+        repo.owner.login,
+        repo.name,
+        workflowFileName,
+        (log: string) => setLogs((prev) => [...prev, log])
+      );
+
+      if (!isWorkflowReady) {
+        throw new Error('Workflow không được GitHub Actions nhận diện sau 30 giây. Vui lòng thử lại.');
+      }
 
       // Step 5: Add Tailscale secret automatically
       setLogs((prev) => [...prev, '🔐 Đang thêm Tailscale Auth Key vào repository...']);

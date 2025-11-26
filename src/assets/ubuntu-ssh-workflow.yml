@@ -71,30 +71,6 @@ jobs:
           # Cho phép sudo không cần password
           echo "aistv-ubuntu ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/aistv-ubuntu
           
-          # Tạo welcome message
-          sudo tee /home/aistv-ubuntu/.welcome_message << 'EOF'
-
-╔════════════════════════════════════════════════════════════╗
-║                                                            ║
-║        🎉 CHÀO MỪNG ĐẾN VỚI VPS ANI STUDIO! 🎉            ║
-║                                                            ║
-║  Bạn đã đăng nhập thành công vào VPS Ubuntu của mình     ║
-║  Powered by AI STV - https://anishop.site                 ║
-║                                                            ║
-╚════════════════════════════════════════════════════════════╝
-
-EOF
-          
-          # Thêm vào .bashrc để hiển thị welcome message khi login
-          echo '' | sudo tee -a /home/aistv-ubuntu/.bashrc
-          echo '# Clear screen và hiển thị welcome message' | sudo tee -a /home/aistv-ubuntu/.bashrc
-          echo 'clear' | sudo tee -a /home/aistv-ubuntu/.bashrc
-          echo 'cat ~/.welcome_message' | sudo tee -a /home/aistv-ubuntu/.bashrc
-          echo '' | sudo tee -a /home/aistv-ubuntu/.bashrc
-          
-          sudo chown aistv-ubuntu:aistv-ubuntu /home/aistv-ubuntu/.welcome_message
-          sudo chmod 644 /home/aistv-ubuntu/.welcome_message
-          
           # Lưu thông tin
           echo "SSH_USER=aistv-ubuntu" >> $GITHUB_ENV
           echo "SSH_PASS=$PASSWORD" >> $GITHUB_ENV

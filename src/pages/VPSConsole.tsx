@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -49,7 +48,6 @@ export default function VPSConsole() {
   const [logs, setLogs] = useState<string[]>([]);
   const [savedGithubToken, setSavedGithubToken] = useState('');
   const [showSettings, setShowSettings] = useState(false);
-  const [saveTokens, setSaveTokens] = useState(false);
 
   // Config info
   const CONFIG_INFO = {
@@ -75,20 +73,15 @@ export default function VPSConsole() {
 
   // Load saved tokens from sessionStorage (cleared when browser closes)
   useEffect(() => {
-    const shouldSaveTokens = sessionStorage.getItem('save_tokens') === 'true';
-    setSaveTokens(shouldSaveTokens);
+    const savedGithub = sessionStorage.getItem('github_token');
+    const savedTailscale = sessionStorage.getItem('tailscale_token');
     
-    if (shouldSaveTokens) {
-      const savedGithub = sessionStorage.getItem('github_token');
-      const savedTailscale = sessionStorage.getItem('tailscale_token');
-      
-      if (savedGithub) {
-        setSavedGithubToken(savedGithub);
-        setGithubToken(savedGithub);
-      }
-      if (savedTailscale) {
-        setTailscaleToken(savedTailscale);
-      }
+    if (savedGithub) {
+      setSavedGithubToken(savedGithub);
+      setGithubToken(savedGithub);
+    }
+    if (savedTailscale) {
+      setTailscaleToken(savedTailscale);
     }
   }, []);
 
@@ -366,44 +359,6 @@ export default function VPSConsole() {
     return response.ok;
   };
 
-  const waitForWorkflowIndexing = async (token: string, owner: string, repo: string, workflowFileName: string): Promise<boolean> => {
-    // GitHub needs time to index the workflow file before it can be dispatched
-    // We'll check the workflows API endpoint which only lists dispatchable workflows
-    console.log('⏳ Đợi GitHub index workflow...');
-    
-    for (let attempt = 1; attempt <= 10; attempt++) {
-      try {
-        const response = await fetch(
-          `https://api.github.com/repos/${owner}/${repo}/actions/workflows`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              Accept: 'application/vnd.github.v3+json',
-            },
-          }
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          const workflow = data.workflows?.find((w: any) => w.path === `.github/workflows/${workflowFileName}`);
-          
-          if (workflow) {
-            console.log(`✅ Workflow đã được index (attempt ${attempt})`);
-            return true;
-          }
-        }
-        
-        console.log(`⏳ Chưa thấy workflow, đợi thêm... (${attempt}/10)`);
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds between checks
-      } catch (error) {
-        console.error(`Lỗi kiểm tra workflow (attempt ${attempt}):`, error);
-      }
-    }
-    
-    console.warn('⚠️ Workflow chưa được index sau 30 giây, thử trigger anyway');
-    return false;
-  };
-
   const triggerWorkflow = async (token: string, owner: string, repo: string) => {
     const isWindows = osType === 'windows';
     const workflowFileName = isWindows ? 'windows-rdp.yml' : `${osType}-ssh.yml`;
@@ -420,10 +375,6 @@ export default function VPSConsole() {
     if (!workflowExists) {
       throw new Error(`Workflow file ${workflowFileName} không tồn tại trong repo. Đợi thêm vài giây và thử lại.`);
     }
-
-    // Wait for GitHub to index the workflow (CRITICAL - GitHub needs time to process the workflow file)
-    console.log('⏳ Đợi GitHub xử lý workflow file...');
-    await waitForWorkflowIndexing(token, owner, repo, workflowFileName);
 
     console.log('🚀 Triggering workflow', {
       owner,
@@ -474,14 +425,10 @@ export default function VPSConsole() {
         } else if (response.status === 403) {
           throw new Error('GitHub Token thiếu quyền "workflow". Hãy tạo lại Classic token với scopes: ✅ repo + ✅ workflow');
         } else if (response.status === 422) {
-          const errorData = await response.json().catch(() => ({ message: '' }));
-          if (errorData.message?.includes('workflow_dispatch')) {
-            throw new Error(`❌ Workflow file chưa có trigger 'workflow_dispatch'.\n\nKiểm tra file ${workflowFileName} phải có:\n\non:\n  workflow_dispatch:\n    inputs:\n      duration: ...\n      config: ...`);
-          }
-          // Workflow might not be indexed yet, retry with longer delay
+          // Workflow might not be ready yet, retry
           if (attempt < 3) {
-            console.log(`⏳ GitHub chưa index workflow, đợi ${attempt * 5} giây...`);
-            await new Promise(resolve => setTimeout(resolve, attempt * 5000));
+            console.log(`⏳ Workflow chưa sẵn sàng, đợi ${attempt * 2} giây...`);
+            await new Promise(resolve => setTimeout(resolve, attempt * 2000));
             continue;
           }
         }
@@ -571,9 +518,6 @@ export default function VPSConsole() {
     if (tailscaleToken.trim()) {
       sessionStorage.setItem('tailscale_token', tailscaleToken);
     }
-    // Lưu trạng thái saveTokens = true
-    sessionStorage.setItem('save_tokens', 'true');
-    setSaveTokens(true);
     toast.success('✅ Tokens đã được lưu và sẽ tự động điền cho lần tạo VPS tiếp theo!');
     setShowSettings(false);
   };
@@ -679,15 +623,15 @@ export default function VPSConsole() {
 
       toast.success('🎉 VPS đang được tạo! Xem logs bên dưới hoặc trên GitHub Actions', { duration: 5000 });
       
-      // Chỉ xóa tokens nếu người dùng không chọn lưu
-      if (!saveTokens) {
-        sessionStorage.removeItem('github_token');
-        sessionStorage.removeItem('tailscale_token');
-        sessionStorage.removeItem('save_tokens');
-        setGithubToken('');
-        setTailscaleToken('');
-        setSavedGithubToken('');
-      }
+      // Save GitHub token to localStorage for later deletion
+      localStorage.setItem('github_token', githubToken);
+      setSavedGithubToken(githubToken);
+      
+      // Automatically save tokens to sessionStorage for next time
+      sessionStorage.setItem('github_token', githubToken);
+      sessionStorage.setItem('tailscale_token', tailscaleToken);
+      
+      // Note: NOT resetting form tokens so user can create another VPS quickly
       
       // Reload sessions
       await loadSessions();
@@ -823,29 +767,6 @@ export default function VPSConsole() {
                   </Button>
                 </div>
               </div>
-            </div>
-
-            {/* Checkbox lưu token */}
-            <div className="flex items-center space-x-2 border-t pt-4">
-              <Checkbox
-                id="save-tokens"
-                checked={saveTokens}
-                onCheckedChange={(checked) => {
-                  const isChecked = checked === true;
-                  setSaveTokens(isChecked);
-                  sessionStorage.setItem('save_tokens', isChecked.toString());
-                  if (isChecked) {
-                    if (githubToken) sessionStorage.setItem('github_token', githubToken);
-                    if (tailscaleToken) sessionStorage.setItem('tailscale_token', tailscaleToken);
-                  } else {
-                    sessionStorage.removeItem('github_token');
-                    sessionStorage.removeItem('tailscale_token');
-                  }
-                }}
-              />
-              <Label htmlFor="save-tokens" className="text-sm font-normal cursor-pointer">
-                💾 Lưu token để lần sau (tokens sẽ tự động xóa khi tạo VPS xong nếu không tick)
-              </Label>
             </div>
 
             {/* VPS Configuration */}

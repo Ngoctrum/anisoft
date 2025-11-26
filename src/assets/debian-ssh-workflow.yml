@@ -65,30 +65,6 @@ jobs:
           # Cho phép sudo không cần password
           echo "anistudio-debian ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/anistudio-debian
           
-          # Tạo welcome message
-          sudo tee /home/anistudio-debian/.welcome_message << 'EOF'
-
-╔════════════════════════════════════════════════════════════╗
-║                                                            ║
-║        🎉 CHÀO MỪNG ĐẾN VỚI VPS ANI STUDIO! 🎉            ║
-║                                                            ║
-║  Bạn đã đăng nhập thành công vào VPS Debian của mình     ║
-║  Powered by AI STV - https://anishop.site                 ║
-║                                                            ║
-╚════════════════════════════════════════════════════════════╝
-
-EOF
-          
-          # Thêm vào .bashrc để hiển thị welcome message khi login
-          echo '' | sudo tee -a /home/anistudio-debian/.bashrc
-          echo '# Clear screen và hiển thị welcome message' | sudo tee -a /home/anistudio-debian/.bashrc
-          echo 'clear' | sudo tee -a /home/anistudio-debian/.bashrc
-          echo 'cat ~/.welcome_message' | sudo tee -a /home/anistudio-debian/.bashrc
-          echo '' | sudo tee -a /home/anistudio-debian/.bashrc
-          
-          sudo chown anistudio-debian:anistudio-debian /home/anistudio-debian/.welcome_message
-          sudo chmod 644 /home/anistudio-debian/.welcome_message
-          
           # Lưu thông tin
           echo "SSH_USER=anistudio-debian" >> $GITHUB_ENV
           echo "SSH_PASS=$PASSWORD" >> $GITHUB_ENV

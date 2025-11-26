@@ -7,19 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { User, Download, Loader2, Server } from 'lucide-react';
+import { User, Download, Loader2 } from 'lucide-react';
 
 export default function Account() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [downloadHistory, setDownloadHistory] = useState<any[]>([]);
-  const [vpsSessions, setVpsSessions] = useState<any[]>([]);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -31,7 +29,6 @@ export default function Account() {
     } else if (user) {
       loadProfile();
       loadDownloadHistory();
-      loadVpsSessions();
     }
   }, [user, authLoading, navigate]);
 
@@ -67,17 +64,6 @@ export default function Account() {
       .limit(20);
 
     setDownloadHistory(data || []);
-  };
-
-  const loadVpsSessions = async () => {
-    const { data } = await supabase
-      .from('rdp_sessions')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    setVpsSessions(data || []);
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -131,10 +117,6 @@ export default function Account() {
             <TabsTrigger value="history">
               <Download className="h-4 w-4 mr-2" />
               Lịch sử tải
-            </TabsTrigger>
-            <TabsTrigger value="vps">
-              <Server className="h-4 w-4 mr-2" />
-              VPS của tôi
             </TabsTrigger>
           </TabsList>
 
@@ -254,71 +236,6 @@ export default function Account() {
                 ) : (
                   <p className="text-center text-muted-foreground py-8">
                     Bạn chưa tải tool nào
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="vps">
-            <Card>
-              <CardHeader>
-                <CardTitle>VPS của tôi đã tạo</CardTitle>
-                <CardDescription>
-                  Danh sách các VPS bạn đã tạo
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {vpsSessions.length > 0 ? (
-                  <div className="space-y-4">
-                    {vpsSessions.map((session) => {
-                      const isActive = session.is_active && session.status === 'running';
-                      const statusColor = isActive ? 'bg-green-500' : 
-                                        session.status === 'pending' ? 'bg-yellow-500' : 
-                                        'bg-red-500';
-                      
-                      return (
-                        <div
-                          key={session.id}
-                          className="flex items-center gap-4 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-semibold">{session.github_repo}</h3>
-                              <Badge className={`${statusColor} text-white`}>
-                                {session.status}
-                              </Badge>
-                              <Badge variant="outline">
-                                {session.os_type || 'windows'}
-                              </Badge>
-                            </div>
-                            {session.tailscale_ip && (
-                              <p className="text-sm text-muted-foreground">
-                                IP: {session.tailscale_ip}
-                              </p>
-                            )}
-                            <p className="text-sm text-muted-foreground">
-                              Tạo: {new Date(session.created_at).toLocaleString('vi-VN')}
-                            </p>
-                            {session.expires_at && (
-                              <p className="text-sm text-muted-foreground">
-                                Hết hạn: {new Date(session.expires_at).toLocaleString('vi-VN')}
-                              </p>
-                            )}
-                          </div>
-                          <Button
-                            variant="outline"
-                            onClick={() => navigate('/vps-console')}
-                          >
-                            Xem chi tiết
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    Bạn chưa tạo VPS nào
                   </p>
                 )}
               </CardContent>

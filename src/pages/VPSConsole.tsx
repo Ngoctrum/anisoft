@@ -366,6 +366,44 @@ export default function VPSConsole() {
     return response.ok;
   };
 
+  const waitForWorkflowIndexing = async (token: string, owner: string, repo: string, workflowFileName: string): Promise<boolean> => {
+    // GitHub needs time to index the workflow file before it can be dispatched
+    // We'll check the workflows API endpoint which only lists dispatchable workflows
+    console.log('⏳ Đợi GitHub index workflow...');
+    
+    for (let attempt = 1; attempt <= 10; attempt++) {
+      try {
+        const response = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/actions/workflows`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/vnd.github.v3+json',
+            },
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          const workflow = data.workflows?.find((w: any) => w.path === `.github/workflows/${workflowFileName}`);
+          
+          if (workflow) {
+            console.log(`✅ Workflow đã được index (attempt ${attempt})`);
+            return true;
+          }
+        }
+        
+        console.log(`⏳ Chưa thấy workflow, đợi thêm... (${attempt}/10)`);
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds between checks
+      } catch (error) {
+        console.error(`Lỗi kiểm tra workflow (attempt ${attempt}):`, error);
+      }
+    }
+    
+    console.warn('⚠️ Workflow chưa được index sau 30 giây, thử trigger anyway');
+    return false;
+  };
+
   const triggerWorkflow = async (token: string, owner: string, repo: string) => {
     const isWindows = osType === 'windows';
     const workflowFileName = isWindows ? 'windows-rdp.yml' : `${osType}-ssh.yml`;
@@ -382,6 +420,10 @@ export default function VPSConsole() {
     if (!workflowExists) {
       throw new Error(`Workflow file ${workflowFileName} không tồn tại trong repo. Đợi thêm vài giây và thử lại.`);
     }
+
+    // Wait for GitHub to index the workflow (CRITICAL - GitHub needs time to process the workflow file)
+    console.log('⏳ Đợi GitHub xử lý workflow file...');
+    await waitForWorkflowIndexing(token, owner, repo, workflowFileName);
 
     console.log('🚀 Triggering workflow', {
       owner,
@@ -432,10 +474,14 @@ export default function VPSConsole() {
         } else if (response.status === 403) {
           throw new Error('GitHub Token thiếu quyền "workflow". Hãy tạo lại Classic token với scopes: ✅ repo + ✅ workflow');
         } else if (response.status === 422) {
-          // Workflow might not be ready yet, retry
+          const errorData = await response.json().catch(() => ({ message: '' }));
+          if (errorData.message?.includes('workflow_dispatch')) {
+            throw new Error(`❌ Workflow file chưa có trigger 'workflow_dispatch'.\n\nKiểm tra file ${workflowFileName} phải có:\n\non:\n  workflow_dispatch:\n    inputs:\n      duration: ...\n      config: ...`);
+          }
+          // Workflow might not be indexed yet, retry with longer delay
           if (attempt < 3) {
-            console.log(`⏳ Workflow chưa sẵn sàng, đợi ${attempt * 2} giây...`);
-            await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+            console.log(`⏳ GitHub chưa index workflow, đợi ${attempt * 5} giây...`);
+            await new Promise(resolve => setTimeout(resolve, attempt * 5000));
             continue;
           }
         }

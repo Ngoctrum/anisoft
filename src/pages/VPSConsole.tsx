@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -48,6 +49,7 @@ export default function VPSConsole() {
   const [logs, setLogs] = useState<string[]>([]);
   const [savedGithubToken, setSavedGithubToken] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [saveTokens, setSaveTokens] = useState(false);
 
   // Config info
   const CONFIG_INFO = {
@@ -73,15 +75,20 @@ export default function VPSConsole() {
 
   // Load saved tokens from sessionStorage (cleared when browser closes)
   useEffect(() => {
-    const savedGithub = sessionStorage.getItem('github_token');
-    const savedTailscale = sessionStorage.getItem('tailscale_token');
+    const shouldSaveTokens = sessionStorage.getItem('save_tokens') === 'true';
+    setSaveTokens(shouldSaveTokens);
     
-    if (savedGithub) {
-      setSavedGithubToken(savedGithub);
-      setGithubToken(savedGithub);
-    }
-    if (savedTailscale) {
-      setTailscaleToken(savedTailscale);
+    if (shouldSaveTokens) {
+      const savedGithub = sessionStorage.getItem('github_token');
+      const savedTailscale = sessionStorage.getItem('tailscale_token');
+      
+      if (savedGithub) {
+        setSavedGithubToken(savedGithub);
+        setGithubToken(savedGithub);
+      }
+      if (savedTailscale) {
+        setTailscaleToken(savedTailscale);
+      }
     }
   }, []);
 
@@ -518,6 +525,9 @@ export default function VPSConsole() {
     if (tailscaleToken.trim()) {
       sessionStorage.setItem('tailscale_token', tailscaleToken);
     }
+    // Lưu trạng thái saveTokens = true
+    sessionStorage.setItem('save_tokens', 'true');
+    setSaveTokens(true);
     toast.success('✅ Tokens đã được lưu và sẽ tự động điền cho lần tạo VPS tiếp theo!');
     setShowSettings(false);
   };
@@ -623,12 +633,15 @@ export default function VPSConsole() {
 
       toast.success('🎉 VPS đang được tạo! Xem logs bên dưới hoặc trên GitHub Actions', { duration: 5000 });
       
-      // Clear tokens from sessionStorage after successful creation
-      sessionStorage.removeItem('github_token');
-      sessionStorage.removeItem('tailscale_token');
-      setGithubToken('');
-      setTailscaleToken('');
-      setSavedGithubToken('');
+      // Chỉ xóa tokens nếu người dùng không chọn lưu
+      if (!saveTokens) {
+        sessionStorage.removeItem('github_token');
+        sessionStorage.removeItem('tailscale_token');
+        sessionStorage.removeItem('save_tokens');
+        setGithubToken('');
+        setTailscaleToken('');
+        setSavedGithubToken('');
+      }
       
       // Reload sessions
       await loadSessions();
@@ -764,6 +777,29 @@ export default function VPSConsole() {
                   </Button>
                 </div>
               </div>
+            </div>
+
+            {/* Checkbox lưu token */}
+            <div className="flex items-center space-x-2 border-t pt-4">
+              <Checkbox
+                id="save-tokens"
+                checked={saveTokens}
+                onCheckedChange={(checked) => {
+                  const isChecked = checked === true;
+                  setSaveTokens(isChecked);
+                  sessionStorage.setItem('save_tokens', isChecked.toString());
+                  if (isChecked) {
+                    if (githubToken) sessionStorage.setItem('github_token', githubToken);
+                    if (tailscaleToken) sessionStorage.setItem('tailscale_token', tailscaleToken);
+                  } else {
+                    sessionStorage.removeItem('github_token');
+                    sessionStorage.removeItem('tailscale_token');
+                  }
+                }}
+              />
+              <Label htmlFor="save-tokens" className="text-sm font-normal cursor-pointer">
+                💾 Lưu token để lần sau (tokens sẽ tự động xóa khi tạo VPS xong nếu không tick)
+              </Label>
             </div>
 
             {/* VPS Configuration */}

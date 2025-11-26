@@ -35,7 +35,7 @@ interface Session {
 export default function VPSConsole() {
   const [githubToken, setGithubToken] = useState('');
   const [tailscaleToken, setTailscaleToken] = useState('');
-  const [osType, setOsType] = useState<'windows' | 'ubuntu'>('windows');
+  const [osType, setOsType] = useState<'windows' | 'ubuntu' | 'debian' | 'archlinux' | 'centos'>('windows');
   const [vpsConfig, setVpsConfig] = useState<'basic' | 'standard' | 'premium'>('basic');
   const [durationHours, setDurationHours] = useState(6);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -59,10 +59,10 @@ export default function VPSConsole() {
       description: 'Phù hợp cho dev, website nhỏ',
     },
     premium: {
-      cpu: '8 vCPU',
-      ram: '8 GB RAM',
-      disk: '80 GB SSD',
-      description: 'Phù hợp cho production, app lớn',
+      cpu: '16 vCPU',
+      ram: '16 GB RAM',
+      disk: '160 GB SSD',
+      description: 'Hiệu năng cao nhất - Production & App lớn',
     },
   };
 
@@ -194,11 +194,16 @@ export default function VPSConsole() {
   };
 
   const createRepository = async (token: string) => {
-    const osPrefix = osType === 'ubuntu' ? 'ubuntu-ssh' : 'windows-rdp';
+    const isWindows = osType === 'windows';
+    const osPrefix = isWindows ? 'windows-rdp' : `${osType}-ssh`;
     const repoName = `${osPrefix}-${Date.now()}`;
-    const description = osType === 'ubuntu' 
-      ? 'Ubuntu SSH Server via GitHub Actions & Tailscale'
-      : 'Windows RDP Server via GitHub Actions & Tailscale';
+    const osName = osType === 'windows' ? 'Windows' : 
+                   osType === 'ubuntu' ? 'Ubuntu' : 
+                   osType === 'debian' ? 'Debian' : 
+                   osType === 'archlinux' ? 'Arch Linux' : 'CentOS';
+    const description = isWindows
+      ? 'Windows RDP Server via GitHub Actions & Tailscale'
+      : `${osName} SSH Server via GitHub Actions & Tailscale`;
     
     const response = await fetch('https://api.github.com/user/repos', {
       method: 'POST',
@@ -232,8 +237,9 @@ export default function VPSConsole() {
   };
 
   const uploadWorkflowFile = async (token: string, owner: string, repo: string) => {
-    const workflowFileName = osType === 'ubuntu' ? 'ubuntu-ssh.yml' : 'windows-rdp.yml';
-    const workflowContent = osType === 'ubuntu' ? ubuntuWorkflowTemplate : windowsWorkflowTemplate;
+    const isWindows = osType === 'windows';
+    const workflowFileName = isWindows ? 'windows-rdp.yml' : `${osType}-ssh.yml`;
+    const workflowContent = isWindows ? windowsWorkflowTemplate : ubuntuWorkflowTemplate;
     const path = `.github/workflows/${workflowFileName}`;
     const encodedContent = btoa(unescape(encodeURIComponent(workflowContent)));
 
@@ -304,10 +310,11 @@ export default function VPSConsole() {
   };
 
   const triggerWorkflow = async (token: string, owner: string, repo: string) => {
-    const workflowFileName = osType === 'ubuntu' ? 'ubuntu-ssh.yml' : 'windows-rdp.yml';
-    const durationInput = osType === 'ubuntu' ? `${durationHours}h` : 
-      durationHours === 1 ? '1h' : 
-      durationHours === 3 ? '3h' : '5h40m';
+    const isWindows = osType === 'windows';
+    const workflowFileName = isWindows ? 'windows-rdp.yml' : `${osType}-ssh.yml`;
+    const durationInput = isWindows
+      ? (durationHours === 1 ? '1h' : durationHours === 3 ? '3h' : '5h40m')
+      : `${durationHours}h`;
     
     const response = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/dispatches`,
@@ -407,8 +414,11 @@ export default function VPSConsole() {
     }
 
     setIsProcessing(true);
-    const osName = osType === 'ubuntu' ? 'Ubuntu SSH' : 'Windows RDP';
-    setLogs([`🚀 Bắt đầu tạo ${osName} Server...`]);
+    const osDisplayName = osType === 'windows' ? 'Windows RDP' : 
+                         osType === 'ubuntu' ? 'Ubuntu SSH' : 
+                         osType === 'debian' ? 'Debian SSH' : 
+                         osType === 'archlinux' ? 'Arch Linux SSH' : 'CentOS SSH';
+    setLogs([`🚀 Bắt đầu tạo ${osDisplayName} Server...`]);
 
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -623,13 +633,16 @@ export default function VPSConsole() {
             <div className="grid gap-4 md:grid-cols-3 border-t pt-4">
               <div className="space-y-2">
                 <Label htmlFor="os-type">Hệ điều hành</Label>
-                <Select value={osType} onValueChange={(value: 'windows' | 'ubuntu') => setOsType(value)}>
+                <Select value={osType} onValueChange={(value: 'windows' | 'ubuntu' | 'debian' | 'archlinux' | 'centos') => setOsType(value)}>
                   <SelectTrigger id="os-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="windows">🪟 Windows Server 2025</SelectItem>
                     <SelectItem value="ubuntu">🐧 Ubuntu 22.04 LTS</SelectItem>
+                    <SelectItem value="debian">🌀 Debian 12</SelectItem>
+                    <SelectItem value="archlinux">⚡ Arch Linux</SelectItem>
+                    <SelectItem value="centos">🔷 CentOS Stream 9</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -661,7 +674,15 @@ export default function VPSConsole() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">{CONFIG_INFO[vpsConfig].description}</p>
+                <div className="bg-muted/50 p-3 rounded-lg border">
+                  <p className="text-sm font-medium mb-1">📊 Cấu hình chi tiết:</p>
+                  <div className="text-xs space-y-1 text-muted-foreground">
+                    <p>• CPU: <span className="text-foreground font-medium">{CONFIG_INFO[vpsConfig].cpu}</span></p>
+                    <p>• RAM: <span className="text-foreground font-medium">{CONFIG_INFO[vpsConfig].ram}</span></p>
+                    <p>• Disk: <span className="text-foreground font-medium">{CONFIG_INFO[vpsConfig].disk}</span></p>
+                    <p className="text-xs italic mt-2">{CONFIG_INFO[vpsConfig].description}</p>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -684,7 +705,10 @@ export default function VPSConsole() {
 
             <Alert className="bg-blue-500/10 border-blue-500/20">
               <AlertDescription className="text-sm">
-                💡 <strong>Thông tin:</strong> {osType === 'windows' ? 'Windows RDP' : 'Ubuntu SSH'} • {vpsConfig.toUpperCase()} • Tự động xóa sau {durationHours}h
+                💡 <strong>Thông tin:</strong> {osType === 'windows' ? 'Windows RDP' : 
+                  osType === 'ubuntu' ? 'Ubuntu SSH' : 
+                  osType === 'debian' ? 'Debian SSH' : 
+                  osType === 'archlinux' ? 'Arch Linux SSH' : 'CentOS SSH'} • {vpsConfig.toUpperCase()} • Tự động xóa sau {durationHours}h
               </AlertDescription>
             </Alert>
 
@@ -702,7 +726,10 @@ export default function VPSConsole() {
               ) : (
                 <>
                   <Play className="h-4 w-4 mr-2" />
-                  Tạo {osType === 'windows' ? 'Windows RDP' : 'Ubuntu SSH'} Server
+                  Tạo {osType === 'windows' ? 'Windows RDP' : 
+                    osType === 'ubuntu' ? 'Ubuntu SSH' : 
+                    osType === 'debian' ? 'Debian SSH' : 
+                    osType === 'archlinux' ? 'Arch Linux SSH' : 'CentOS SSH'} Server
                 </>
               )}
             </Button>

@@ -53,6 +53,7 @@ export default function VPSConsole() {
   const [logs, setLogs] = useState<string[]>([]);
   const [savedGithubToken, setSavedGithubToken] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [saveTokensEnabled, setSaveTokensEnabled] = useState(false);
 
   // Config info
   const CONFIG_INFO = {
@@ -106,9 +107,13 @@ export default function VPSConsole() {
         if (vpsSettings.ngrok_auth_token) {
           setNgrokAuthToken(vpsSettings.ngrok_auth_token);
         }
+        // Load networking type from settings
+        if (vpsSettings.networking_type) {
+          setNetworkingType(vpsSettings.networking_type);
+        }
       }
     } catch (error) {
-      console.error('Error loading Ngrok token:', error);
+      console.error('Error loading VPS settings:', error);
     }
   };
 
@@ -532,8 +537,8 @@ export default function VPSConsole() {
       return;
     }
 
-    // Validate Tailscale token format
-    if (tailscaleToken.trim() && !tailscaleToken.trim().startsWith('tskey-auth-')) {
+    // Validate Tailscale token format if networking type is tailscale
+    if (networkingType === 'tailscale' && tailscaleToken.trim() && !tailscaleToken.trim().startsWith('tskey-auth-')) {
       toast.error('Tailscale Token không đúng định dạng (phải bắt đầu bằng tskey-auth-)');
       return;
     }
@@ -542,7 +547,7 @@ export default function VPSConsole() {
       sessionStorage.setItem('github_token', githubToken);
       setSavedGithubToken(githubToken);
     }
-    if (tailscaleToken.trim()) {
+    if (networkingType === 'tailscale' && tailscaleToken.trim()) {
       sessionStorage.setItem('tailscale_token', tailscaleToken);
     }
     toast.success('✅ Tokens đã được lưu và sẽ tự động điền cho lần tạo VPS tiếp theo!');
@@ -671,10 +676,17 @@ export default function VPSConsole() {
       localStorage.setItem('github_token', githubToken);
       setSavedGithubToken(githubToken);
       
-      // Automatically save tokens to sessionStorage for next time
-      sessionStorage.setItem('github_token', githubToken);
-      if (networkingType === 'tailscale') {
-        sessionStorage.setItem('tailscale_token', tailscaleToken);
+      // Save tokens if checkbox is enabled
+      if (saveTokensEnabled) {
+        sessionStorage.setItem('github_token', githubToken);
+        if (networkingType === 'tailscale') {
+          sessionStorage.setItem('tailscale_token', tailscaleToken);
+        }
+        toast.success('✅ Tokens đã được lưu cho lần sau');
+      } else {
+        // Clear tokens after successful VPS creation
+        sessionStorage.removeItem('github_token');
+        sessionStorage.removeItem('tailscale_token');
       }
       
       // Note: NOT resetting form tokens so user can create another VPS quickly
@@ -760,59 +772,22 @@ export default function VPSConsole() {
               <Key className="h-5 w-5 text-primary" />
               Tạo VPS Mới
             </CardTitle>
-            <CardDescription>Nhập GitHub Token và chọn loại networking (Tailscale hoặc Ngrok)</CardDescription>
+            <CardDescription>
+              Loại kết nối: <strong>{networkingType === 'tailscale' ? '🔒 Tailscale' : '🌐 Ngrok'}</strong> (thay đổi trong Admin Settings)
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Networking Type Toggle */}
-            <div className="p-4 bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h4 className="font-semibold text-sm">Chọn loại networking</h4>
-                  <p className="text-xs text-muted-foreground mt-1">Bật 1 trong 2: Tailscale hoặc Ngrok</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                {/* Tailscale Option */}
-                <div className={`p-3 rounded-lg border-2 transition-all ${networkingType === 'tailscale' ? 'border-primary bg-primary/5' : 'border-muted bg-muted/30'}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-sm">🔒 Tailscale</span>
-                    <Switch
-                      checked={networkingType === 'tailscale'}
-                      onCheckedChange={(checked) => {
-                        if (checked) setNetworkingType('tailscale');
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Bảo mật cao, cần cài app</p>
-                </div>
-
-                {/* Ngrok Option */}
-                <div className={`p-3 rounded-lg border-2 transition-all ${networkingType === 'ngrok' ? 'border-primary bg-primary/5' : 'border-muted bg-muted/30'}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-sm">🌐 Ngrok</span>
-                    <Switch
-                      checked={networkingType === 'ngrok'}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          if (!ngrokAuthToken) {
-                            toast.error('⚠️ Chưa cấu hình Ngrok Token!\n\nVào Admin Settings → VPS để thêm token.', { duration: 5000 });
-                            return;
-                          }
-                          setNetworkingType('ngrok');
-                        }
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Public access, không cần cài app</p>
-                  {networkingType === 'ngrok' && ngrokAuthToken && (
-                    <div className="mt-2 flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                      <span>✅</span>
-                      <span>Token đã cấu hình</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            {/* Networking Type Info */}
+            <Alert className="bg-muted/50">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                {networkingType === 'tailscale' ? (
+                  <span>Đang dùng <strong>Tailscale</strong> - Mạng riêng bảo mật, cần cài Tailscale trên máy</span>
+                ) : (
+                  <span>Đang dùng <strong>Ngrok</strong> - Internet công khai, truy cập từ bất kỳ đâu</span>
+                )}
+              </AlertDescription>
+            </Alert>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -1006,6 +981,17 @@ export default function VPSConsole() {
                   osType === 'archlinux' ? 'Arch Linux SSH' : 'CentOS SSH'} • {vpsConfig.toUpperCase()} • Tự động xóa sau {durationHours}h
               </AlertDescription>
             </Alert>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="save-tokens"
+                checked={saveTokensEnabled}
+                onCheckedChange={setSaveTokensEnabled}
+              />
+              <Label htmlFor="save-tokens" className="cursor-pointer">
+                Lưu tokens cho lần sau
+              </Label>
+            </div>
 
             <Button
               onClick={handleCreateVPS}

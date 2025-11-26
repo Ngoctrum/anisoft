@@ -666,8 +666,9 @@ export default function VPSConsole() {
         throw uploadError;
       }
 
-      // Step 4: Log sau khi upload workflow
-      setLogs((prev) => [...prev, '✅ Workflow đã được cấu hình, chuẩn bị trigger bằng sự kiện push...']);
+      // Step 4: Wait for workflow to be indexed (30s)
+      setLogs((prev) => [...prev, '⏳ Đợi 30 giây để GitHub Actions index workflow...']);
+      await new Promise(resolve => setTimeout(resolve, 30000));
 
       // Step 5: Add Tailscale secret automatically
       setLogs((prev) => [...prev, '🔐 Đang thêm Tailscale Auth Key vào repository...']);
@@ -679,17 +680,18 @@ export default function VPSConsole() {
         // Fallback: Continue anyway, user might add manually
       }
 
-      // Step 6: Trigger workflow automatically via commit (push event)
-      setLogs((prev) => [...prev, '🚀 Đang tạo commit trigger workflow (sự kiện push)...']);
+      // Step 6: Trigger workflow automatically via workflow_dispatch
+      setLogs((prev) => [...prev, '🚀 Đang trigger workflow tự động (workflow_dispatch)...']);
       try {
-        await triggerWorkflowByCommit(
-          githubToken,
-          repo.owner.login,
+        await triggerWorkflow(
+          githubToken, 
+          repo.owner.login, 
           repo.name,
+          (log: string) => setLogs((prev) => [...prev, log])
         );
-        setLogs((prev) => [...prev, '✅ Đã tạo commit, GitHub Actions sẽ tự động chạy workflow!']);
+        setLogs((prev) => [...prev, '✅ Workflow đã được trigger thành công!']);
       } catch (triggerError: any) {
-        setLogs((prev) => [...prev, `❌ Lỗi trigger (commit): ${triggerError.message}`]);
+        setLogs((prev) => [...prev, `❌ Lỗi trigger: ${triggerError.message}`]);
         throw triggerError;
       }
 

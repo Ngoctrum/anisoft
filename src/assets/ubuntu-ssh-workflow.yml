@@ -44,9 +44,15 @@ jobs:
           echo "🛠️ ĐANG CẤU HÌNH HỆ THỐNG"
           sudo apt-get update -qq
           sudo apt-get install -y openssh-server curl
-          sudo systemctl start ssh
+          
+          # Enable password authentication
+          sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/^#\?PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/^#\?ChallengeResponseAuthentication.*/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config
+          
+          sudo systemctl restart ssh
           sudo systemctl enable ssh
-          echo "✅ SSH Server đã khởi động"
+          echo "✅ SSH Server đã khởi động với Password Authentication"
 
       - name: 👤 TẠO TÀI KHOẢN SSH
         run: |

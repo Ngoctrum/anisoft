@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Server, Play, Terminal, ExternalLink, Key, Trash2 } from 'lucide-react';
+import { Loader2, Server, Play, Terminal, ExternalLink, Key, Trash2, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { RDPSessionCard } from '@/components/RDPSessionCard';
@@ -29,6 +29,7 @@ interface Session {
   duration_hours?: number;
   is_active?: boolean;
   ssh_port?: number;
+  workflow_run_id?: string;
 }
 
 export default function VPSConsole() {
@@ -41,12 +42,41 @@ export default function VPSConsole() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
   const [savedGithubToken, setSavedGithubToken] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Config info
+  const CONFIG_INFO = {
+    basic: {
+      cpu: '2 vCPU',
+      ram: '2 GB RAM',
+      disk: '20 GB SSD',
+      description: 'Phù hợp cho việc học tập, test nhỏ',
+    },
+    standard: {
+      cpu: '4 vCPU',
+      ram: '4 GB RAM',
+      disk: '40 GB SSD',
+      description: 'Phù hợp cho dev, website nhỏ',
+    },
+    premium: {
+      cpu: '8 vCPU',
+      ram: '8 GB RAM',
+      disk: '80 GB SSD',
+      description: 'Phù hợp cho production, app lớn',
+    },
+  };
 
   // Load saved tokens from localStorage
   useEffect(() => {
-    const savedToken = localStorage.getItem('github_token');
-    if (savedToken) {
-      setSavedGithubToken(savedToken);
+    const savedGithub = localStorage.getItem('github_token');
+    const savedTailscale = localStorage.getItem('tailscale_token');
+    
+    if (savedGithub) {
+      setSavedGithubToken(savedGithub);
+      setGithubToken(savedGithub);
+    }
+    if (savedTailscale) {
+      setTailscaleToken(savedTailscale);
     }
   }, []);
 
@@ -353,6 +383,18 @@ export default function VPSConsole() {
     }
   };
 
+  const handleSaveTokens = () => {
+    if (githubToken.trim()) {
+      localStorage.setItem('github_token', githubToken);
+      setSavedGithubToken(githubToken);
+    }
+    if (tailscaleToken.trim()) {
+      localStorage.setItem('tailscale_token', tailscaleToken);
+    }
+    toast.success('✅ Đã lưu tokens!');
+    setShowSettings(false);
+  };
+
   const handleCreateVPS = async () => {
     if (!githubToken.trim()) {
       toast.error('Vui lòng nhập GitHub Token');
@@ -467,7 +509,53 @@ export default function VPSConsole() {
               Tự động tạo Windows/Ubuntu VPS qua GitHub Actions + Tailscale
             </p>
           </div>
+          <Button variant="outline" size="icon" onClick={() => setShowSettings(!showSettings)} title="Settings">
+            <Settings className="h-5 w-5" />
+          </Button>
         </div>
+
+        {/* Settings Panel */}
+        {showSettings && (
+          <Card className="border-2 shadow-lg bg-muted/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-primary" />
+                Cài đặt Token
+              </CardTitle>
+              <CardDescription>Lưu token để không cần nhập lại mỗi lần tạo VPS</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="saved-github-token">GitHub Personal Access Token</Label>
+                  <Input
+                    id="saved-github-token"
+                    type="password"
+                    placeholder="ghp_xxxxxxxxxxxx"
+                    value={githubToken}
+                    onChange={(e) => setGithubToken(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="saved-tailscale-token">Tailscale Auth Key</Label>
+                  <Input
+                    id="saved-tailscale-token"
+                    type="password"
+                    placeholder="tskey-auth-xxx..."
+                    value={tailscaleToken}
+                    onChange={(e) => setTailscaleToken(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setShowSettings(false)}>Hủy</Button>
+                <Button onClick={handleSaveTokens}>
+                  💾 Lưu Tokens
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Create VPS Form */}
         <Card className="border-2 shadow-lg">
@@ -540,8 +628,8 @@ export default function VPSConsole() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="windows">🪟 Windows RDP</SelectItem>
-                    <SelectItem value="ubuntu">🐧 Ubuntu SSH</SelectItem>
+                    <SelectItem value="windows">🪟 Windows Server 2025</SelectItem>
+                    <SelectItem value="ubuntu">🐧 Ubuntu 22.04 LTS</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -553,11 +641,27 @@ export default function VPSConsole() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="basic">⚡ Basic</SelectItem>
-                    <SelectItem value="standard">💎 Standard</SelectItem>
-                    <SelectItem value="premium">👑 Premium</SelectItem>
+                    <SelectItem value="basic">
+                      <div className="flex flex-col">
+                        <span>⚡ Basic</span>
+                        <span className="text-xs text-muted-foreground">{CONFIG_INFO.basic.cpu} • {CONFIG_INFO.basic.ram}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="standard">
+                      <div className="flex flex-col">
+                        <span>💎 Standard</span>
+                        <span className="text-xs text-muted-foreground">{CONFIG_INFO.standard.cpu} • {CONFIG_INFO.standard.ram}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="premium">
+                      <div className="flex flex-col">
+                        <span>👑 Premium</span>
+                        <span className="text-xs text-muted-foreground">{CONFIG_INFO.premium.cpu} • {CONFIG_INFO.premium.ram}</span>
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">{CONFIG_INFO[vpsConfig].description}</p>
               </div>
 
               <div className="space-y-2">

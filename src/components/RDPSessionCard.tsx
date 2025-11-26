@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, Server, User, Key, Copy, ExternalLink, Download, Power, PowerOff } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Clock, Server, User, Key, Copy, ExternalLink, Download, Power, PowerOff, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -250,6 +251,19 @@ username:s:${username}`;
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Failed Status Alert */}
+        {session.status === 'failed' && (
+          <Alert className="bg-destructive/10 border-destructive/50">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <AlertDescription className="ml-2">
+              <p className="font-semibold text-destructive">VPS tạo thất bại!</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Không thể khởi động VPS. VPS này sẽ tự động bị xóa trong vòng 1 giờ tới.
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {/* Repo Link */}
         {session.repo_url && (
           <div className="flex items-center justify-between p-3 bg-muted rounded-lg">

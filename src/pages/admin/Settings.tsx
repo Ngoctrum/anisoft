@@ -52,7 +52,7 @@ export default function AdminSettings() {
           setSmtp(value);
           break;
         case 'vps_settings':
-          setVpsSettings(value);
+          setVpsSettings(value || { networking_type: 'tailscale' });
           break;
       }
     });
@@ -429,30 +429,81 @@ export default function AdminSettings() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="ngrok_auth_token">Ngrok Authtoken</Label>
-                  <Input
-                    id="ngrok_auth_token"
-                    type="password"
-                    placeholder="2c..."
-                    value={vpsSettings.ngrok_auth_token || ''}
-                    onChange={(e) => setVpsSettings({ ...vpsSettings, ngrok_auth_token: e.target.value })}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Lấy token tại: <a href="https://dashboard.ngrok.com/get-started/your-authtoken" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">dashboard.ngrok.com/get-started/your-authtoken</a>
-                  </p>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Loại kết nối mạng</Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Chọn phương thức kết nối cho tất cả VPS
+                    </p>
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="networking_tailscale"
+                          name="networking_type"
+                          value="tailscale"
+                          checked={vpsSettings.networking_type === 'tailscale'}
+                          onChange={(e) => setVpsSettings({ ...vpsSettings, networking_type: e.target.value })}
+                          className="w-4 h-4"
+                        />
+                        <Label htmlFor="networking_tailscale" className="font-normal cursor-pointer">
+                          Tailscale (Mạng riêng)
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="networking_ngrok"
+                          name="networking_type"
+                          value="ngrok"
+                          checked={vpsSettings.networking_type === 'ngrok'}
+                          onChange={(e) => setVpsSettings({ ...vpsSettings, networking_type: e.target.value })}
+                          className="w-4 h-4"
+                        />
+                        <Label htmlFor="networking_ngrok" className="font-normal cursor-pointer">
+                          Ngrok (Internet công khai)
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {vpsSettings.networking_type === 'ngrok' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="ngrok_auth_token">Ngrok Authtoken</Label>
+                      <Input
+                        id="ngrok_auth_token"
+                        type="password"
+                        placeholder="2c..."
+                        value={vpsSettings.ngrok_auth_token || ''}
+                        onChange={(e) => setVpsSettings({ ...vpsSettings, ngrok_auth_token: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Lấy token tại: <a href="https://dashboard.ngrok.com/get-started/your-authtoken" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">dashboard.ngrok.com/get-started/your-authtoken</a>
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2">
-                    ℹ️ Hướng dẫn Ngrok
+                    ℹ️ Hướng dẫn
                   </p>
-                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                    <li>Đăng ký miễn phí tại <a href="https://ngrok.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">ngrok.com</a></li>
-                    <li>Vào Dashboard → Your Authtoken</li>
-                    <li>Copy token và paste vào ô trên</li>
-                    <li>Ngrok cho phép truy cập VPS mà không cần cài Tailscale</li>
-                  </ol>
+                  <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                    {vpsSettings.networking_type === 'tailscale' ? (
+                      <>
+                        <li>Tailscale tạo mạng riêng ảo bảo mật</li>
+                        <li>Cần cài Tailscale trên máy bạn để kết nối VPS</li>
+                        <li>Chỉ thiết bị trong mạng Tailscale mới truy cập được</li>
+                      </>
+                    ) : (
+                      <>
+                        <li>Đăng ký miễn phí tại <a href="https://ngrok.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">ngrok.com</a></li>
+                        <li>Ngrok tạo URL công khai truy cập từ bất kỳ đâu</li>
+                        <li>Không cần cài phần mềm trên máy bạn</li>
+                        <li>Phù hợp khi muốn chia sẻ VPS với người khác</li>
+                      </>
+                    )}
+                  </ul>
                 </div>
 
                 <Button

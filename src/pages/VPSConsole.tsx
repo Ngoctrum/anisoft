@@ -519,20 +519,32 @@ export default function VPSConsole() {
       return;
     }
 
-    // Validate Tailscale token format if networking type is tailscale
-    if (networkingType === 'tailscale' && tailscaleToken.trim() && !tailscaleToken.trim().startsWith('tskey-auth-')) {
-      toast.error('Tailscale Token không đúng định dạng (phải bắt đầu bằng tskey-auth-)');
-      return;
+    // Validate networking tokens based on type
+    if (networkingType === 'tailscale') {
+      if (tailscaleToken.trim() && !tailscaleToken.trim().startsWith('tskey-auth-')) {
+        toast.error('Tailscale Token không đúng định dạng (phải bắt đầu bằng tskey-auth-)');
+        return;
+      }
+    } else {
+      if (ngrokToken.trim() && ngrokToken.trim().length < 10) {
+        toast.error('Ngrok Token không hợp lệ');
+        return;
+      }
     }
 
+    // Save tokens
     if (githubToken.trim()) {
       sessionStorage.setItem('github_token', githubToken);
       setSavedGithubToken(githubToken);
     }
+    sessionStorage.setItem('networking_type', networkingType);
     if (networkingType === 'tailscale' && tailscaleToken.trim()) {
       sessionStorage.setItem('tailscale_token', tailscaleToken);
+    } else if (networkingType === 'ngrok' && ngrokToken.trim()) {
+      sessionStorage.setItem('ngrok_token', ngrokToken);
     }
-    toast.success('✅ Tokens đã được lưu và sẽ tự động điền cho lần tạo VPS tiếp theo!');
+    
+    toast.success('✅ Settings đã được lưu!');
     setShowSettings(false);
   };
 
@@ -719,37 +731,115 @@ export default function VPSConsole() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5 text-primary" />
-                Cài đặt Token
+                Cài đặt Networking & Tokens
               </CardTitle>
-              <CardDescription>Lưu token để không cần nhập lại mỗi lần tạo VPS</CardDescription>
+              <CardDescription>Chọn loại kết nối và lưu tokens để không cần nhập lại</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="saved-github-token">GitHub Personal Access Token</Label>
-                  <Input
-                    id="saved-github-token"
-                    type="password"
-                    placeholder="ghp_xxxxxxxxxxxx"
-                    value={githubToken}
-                    onChange={(e) => setGithubToken(e.target.value)}
-                  />
+            <CardContent className="space-y-6">
+              {/* Networking Type Selection */}
+              <div className="space-y-3 p-4 bg-muted/50 rounded-lg border-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">Loại kết nối mạng</Label>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="saved-tailscale-token">Tailscale Auth Key</Label>
-                  <Input
-                    id="saved-tailscale-token"
-                    type="password"
-                    placeholder="tskey-auth-xxx..."
-                    value={tailscaleToken}
-                    onChange={(e) => setTailscaleToken(e.target.value)}
-                  />
+                <p className="text-sm text-muted-foreground">
+                  Chọn phương thức kết nối từ xa cho VPS
+                </p>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="settings_networking_tailscale"
+                      name="settings_networking_type"
+                      value="tailscale"
+                      checked={networkingType === 'tailscale'}
+                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok')}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="settings_networking_tailscale" className="font-normal cursor-pointer">
+                      🔒 Tailscale (Mạng riêng)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="settings_networking_ngrok"
+                      name="settings_networking_type"
+                      value="ngrok"
+                      checked={networkingType === 'ngrok'}
+                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok')}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="settings_networking_ngrok" className="font-normal cursor-pointer">
+                      🌐 Ngrok (Internet công khai)
+                    </Label>
+                  </div>
+                </div>
+                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded">
+                  <p className="text-xs text-muted-foreground">
+                    {networkingType === 'tailscale' ? (
+                      <>✅ <strong>Tailscale:</strong> Mạng riêng bảo mật, cần cài Tailscale trên máy</>
+                    ) : (
+                      <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm</>
+                    )}
+                  </p>
                 </div>
               </div>
+
+              {/* Tokens Section */}
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Networking Tokens</Label>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="saved-github-token">GitHub Personal Access Token</Label>
+                    <Input
+                      id="saved-github-token"
+                      type="password"
+                      placeholder="ghp_xxxxxxxxxxxx"
+                      value={githubToken}
+                      onChange={(e) => setGithubToken(e.target.value)}
+                    />
+                  </div>
+                  
+                  {networkingType === 'tailscale' ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="saved-tailscale-token">Tailscale Auth Key</Label>
+                      <Input
+                        id="saved-tailscale-token"
+                        type="password"
+                        placeholder="tskey-auth-xxx..."
+                        value={tailscaleToken}
+                        onChange={(e) => setTailscaleToken(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        <a href="https://login.tailscale.com/admin/settings/keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          🔑 Lấy Tailscale Auth Key
+                        </a>
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="saved-ngrok-token">Ngrok Authtoken</Label>
+                      <Input
+                        id="saved-ngrok-token"
+                        type="password"
+                        placeholder="2c..."
+                        value={ngrokToken}
+                        onChange={(e) => setNgrokToken(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        <a href="https://dashboard.ngrok.com/get-started/your-authtoken" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          🔑 Lấy Ngrok Authtoken
+                        </a>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setShowSettings(false)}>Hủy</Button>
                 <Button onClick={handleSaveTokens}>
-                  💾 Lưu Tokens
+                  💾 Lưu Settings
                 </Button>
               </div>
             </CardContent>
@@ -768,54 +858,14 @@ export default function VPSConsole() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Networking Type Selection */}
-            <div className="space-y-2 p-4 bg-muted/30 rounded-lg border">
-              <Label>Loại kết nối mạng</Label>
-              <p className="text-xs text-muted-foreground mb-3">
-                Chọn phương thức kết nối từ xa cho VPS
-              </p>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="networking_tailscale"
-                    name="networking_type"
-                    value="tailscale"
-                    checked={networkingType === 'tailscale'}
-                    onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok')}
-                    className="w-4 h-4"
-                    disabled={isProcessing}
-                  />
-                  <Label htmlFor="networking_tailscale" className="font-normal cursor-pointer">
-                    🔒 Tailscale (Mạng riêng)
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="networking_ngrok"
-                    name="networking_type"
-                    value="ngrok"
-                    checked={networkingType === 'ngrok'}
-                    onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok')}
-                    className="w-4 h-4"
-                    disabled={isProcessing}
-                  />
-                  <Label htmlFor="networking_ngrok" className="font-normal cursor-pointer">
-                    🌐 Ngrok (Internet công khai)
-                  </Label>
-                </div>
-              </div>
-              <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded">
-                <p className="text-xs text-muted-foreground">
-                  {networkingType === 'tailscale' ? (
-                    <>✅ <strong>Tailscale:</strong> Mạng riêng bảo mật, cần cài Tailscale trên máy</>
-                  ) : (
-                    <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm</>
-                  )}
-                </p>
-              </div>
-            </div>
+            {/* Current Networking Type Display */}
+            <Alert className="bg-muted/50">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <span>Đang dùng: <strong>{networkingType === 'tailscale' ? '🔒 Tailscale' : '🌐 Ngrok'}</strong></span>
+                <span className="text-xs ml-2 text-muted-foreground">(Thay đổi trong Settings)</span>
+              </AlertDescription>
+            </Alert>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -843,58 +893,6 @@ export default function VPSConsole() {
                 </div>
               </div>
 
-              {/* Tailscale Token - Only show when Tailscale is selected */}
-              {networkingType === 'tailscale' ? (
-                <div className="space-y-2">
-                  <Label htmlFor="tailscale-token">Tailscale Auth Key</Label>
-                  <Input
-                    id="tailscale-token"
-                    type="password"
-                    placeholder="tskey-auth-xxx..."
-                    value={tailscaleToken}
-                    onChange={(e) => setTailscaleToken(e.target.value)}
-                    disabled={isProcessing}
-                  />
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">
-                      <strong>Auth Key:</strong> Reusable, không hết hạn
-                    </p>
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-xs text-primary"
-                      onClick={() => window.open('https://login.tailscale.com/admin/settings/keys', '_blank')}
-                    >
-                      🔑 Tạo Tailscale Auth Key (Click here)
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Label htmlFor="ngrok-token">Ngrok Authtoken</Label>
-                  <Input
-                    id="ngrok-token"
-                    type="password"
-                    placeholder="2c..."
-                    value={ngrokToken}
-                    onChange={(e) => setNgrokToken(e.target.value)}
-                    disabled={isProcessing}
-                  />
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">
-                      <strong>Authtoken:</strong> Lấy từ Ngrok dashboard
-                    </p>
-                    <Button
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 text-xs text-primary"
-                      onClick={() => window.open('https://dashboard.ngrok.com/get-started/your-authtoken', '_blank')}
-                    >
-                      🔑 Lấy Ngrok Authtoken (Click here)
-                    </Button>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* VPS Configuration */}

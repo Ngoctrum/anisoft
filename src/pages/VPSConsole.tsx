@@ -366,7 +366,7 @@ export default function VPSConsole() {
     return response.ok;
   };
 
-  const triggerWorkflow = async (token: string, owner: string, repo: string) => {
+  const triggerWorkflow = async (token: string, owner: string, repo: string, logFn: (log: string) => void = () => {}) => {
     const isWindows = osType === 'windows';
     const workflowFileName = isWindows ? 'windows-rdp.yml' : `${osType}-ssh.yml`;
     const durationInput = isWindows
@@ -432,10 +432,12 @@ export default function VPSConsole() {
         } else if (response.status === 403) {
           throw new Error('GitHub Token thiếu quyền "workflow". Hãy tạo lại Classic token với scopes: ✅ repo + ✅ workflow');
         } else if (response.status === 422) {
-          // Workflow might not be ready yet, retry
+          // Workflow might not be ready yet, retry with longer wait
           if (attempt < 3) {
-            console.log(`⏳ Workflow chưa sẵn sàng, đợi ${attempt * 2} giây...`);
-            await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+            const waitTime = attempt * 5; // 5s, 10s
+            console.log(`⏳ Workflow chưa sẵn sàng, đợi ${waitTime} giây...`);
+            logFn(`⏳ Workflow chưa sẵn sàng, đợi ${waitTime} giây và thử lại (lần ${attempt}/3)...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
             continue;
           }
         }
@@ -603,8 +605,8 @@ export default function VPSConsole() {
       }
 
       // Step 4: Wait for workflow file to be committed
-      setLogs((prev) => [...prev, '⏳ Đợi 8 giây để workflow được xử lý...']);
-      await new Promise(resolve => setTimeout(resolve, 8000));
+      setLogs((prev) => [...prev, '⏳ Đợi 15 giây để workflow được xử lý và đăng ký với GitHub Actions...']);
+      await new Promise(resolve => setTimeout(resolve, 15000));
 
       // Step 5: Add Tailscale secret automatically
       setLogs((prev) => [...prev, '🔐 Đang thêm Tailscale Auth Key vào repository...']);
@@ -619,7 +621,12 @@ export default function VPSConsole() {
       // Step 6: Trigger workflow automatically
       setLogs((prev) => [...prev, '🚀 Đang trigger workflow tự động...']);
       try {
-        await triggerWorkflow(githubToken, repo.owner.login, repo.name);
+        await triggerWorkflow(
+          githubToken, 
+          repo.owner.login, 
+          repo.name,
+          (log: string) => setLogs((prev) => [...prev, log])
+        );
         setLogs((prev) => [...prev, '✅ Workflow đã được trigger thành công!']);
       } catch (triggerError: any) {
         setLogs((prev) => [...prev, `❌ Lỗi trigger: ${triggerError.message}`]);

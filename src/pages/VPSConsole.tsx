@@ -14,10 +14,15 @@ import { RDPSessionCard } from '@/components/RDPSessionCard';
 import { Header } from '@/components/Header';
 import { Switch } from '@/components/ui/switch';
 import windowsWorkflowTemplate from '@/assets/windows-rdp-workflow.yml?raw';
+import windowsNgrokWorkflowTemplate from '@/assets/windows-rdp-ngrok-workflow.yml?raw';
 import ubuntuWorkflowTemplate from '@/assets/ubuntu-ssh-workflow.yml?raw';
+import ubuntuNgrokWorkflowTemplate from '@/assets/ubuntu-ssh-ngrok-workflow.yml?raw';
 import debianWorkflowTemplate from '@/assets/debian-ssh-workflow.yml?raw';
+import debianNgrokWorkflowTemplate from '@/assets/debian-ssh-ngrok-workflow.yml?raw';
 import archlinuxWorkflowTemplate from '@/assets/archlinux-ssh-workflow.yml?raw';
+import archlinuxNgrokWorkflowTemplate from '@/assets/archlinux-ssh-ngrok-workflow.yml?raw';
 import centosWorkflowTemplate from '@/assets/centos-ssh-workflow.yml?raw';
+import centosNgrokWorkflowTemplate from '@/assets/centos-ssh-ngrok-workflow.yml?raw';
 import _sodium from 'libsodium-wrappers';
 
 interface Session {
@@ -257,18 +262,39 @@ export default function VPSConsole() {
 
   const uploadWorkflowFile = async (token: string, owner: string, repo: string) => {
     const isWindows = osType === 'windows';
-    const workflowFileName = isWindows ? 'windows-rdp.yml' : `${osType}-ssh.yml`;
-    const workflowContent = isWindows ? windowsWorkflowTemplate : 
-      osType === 'ubuntu' ? ubuntuWorkflowTemplate :
-      osType === 'debian' ? debianWorkflowTemplate :
-      osType === 'archlinux' ? archlinuxWorkflowTemplate : centosWorkflowTemplate;
+    const isTailscale = networkingType === 'tailscale';
+    
+    // Tên workflow file dựa trên OS và networking type
+    let workflowFileName: string;
+    if (isWindows) {
+      workflowFileName = isTailscale ? 'windows-rdp.yml' : 'windows-rdp-ngrok.yml';
+    } else {
+      workflowFileName = isTailscale ? `${osType}-ssh.yml` : `${osType}-ssh-ngrok.yml`;
+    }
+    
+    // Chọn workflow content dựa trên OS và networking type
+    let workflowContent: string;
+    if (isWindows) {
+      workflowContent = isTailscale ? windowsWorkflowTemplate : windowsNgrokWorkflowTemplate;
+    } else if (osType === 'ubuntu') {
+      workflowContent = isTailscale ? ubuntuWorkflowTemplate : ubuntuNgrokWorkflowTemplate;
+    } else if (osType === 'debian') {
+      workflowContent = isTailscale ? debianWorkflowTemplate : debianNgrokWorkflowTemplate;
+    } else if (osType === 'archlinux') {
+      workflowContent = isTailscale ? archlinuxWorkflowTemplate : archlinuxNgrokWorkflowTemplate;
+    } else {
+      workflowContent = isTailscale ? centosWorkflowTemplate : centosNgrokWorkflowTemplate;
+    }
+    
     const path = `.github/workflows/${workflowFileName}`;
+    const networkingName = isTailscale ? 'Tailscale' : 'Ngrok';
     
     console.log('📄 Uploading workflow:', workflowFileName);
+    console.log('🌐 Networking:', networkingName);
     console.log('📝 Workflow content length:', workflowContent?.length || 0);
     
     if (!workflowContent || workflowContent.length === 0) {
-      throw new Error(`❌ Workflow template trống cho ${osType}! Vui lòng thử lại.`);
+      throw new Error(`❌ Workflow template trống cho ${osType} + ${networkingName}! Vui lòng thử lại.`);
     }
     
     const encodedContent = btoa(unescape(encodeURIComponent(workflowContent)));
@@ -280,7 +306,7 @@ export default function VPSConsole() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: `Add ${osType} workflow with Tailscale`,
+        message: `Add ${osType} workflow with ${networkingName}`,
         content: encodedContent,
       }),
     });
@@ -375,7 +401,16 @@ export default function VPSConsole() {
 
   const triggerWorkflow = async (token: string, owner: string, repo: string) => {
     const isWindows = osType === 'windows';
-    const workflowFileName = isWindows ? 'windows-rdp.yml' : `${osType}-ssh.yml`;
+    const isTailscale = networkingType === 'tailscale';
+    
+    // Tên workflow file dựa trên OS và networking type
+    let workflowFileName: string;
+    if (isWindows) {
+      workflowFileName = isTailscale ? 'windows-rdp.yml' : 'windows-rdp-ngrok.yml';
+    } else {
+      workflowFileName = isTailscale ? `${osType}-ssh.yml` : `${osType}-ssh-ngrok.yml`;
+    }
+    
     const durationInput = isWindows
       ? (durationHours === 1 ? '1h' : durationHours === 3 ? '3h' : '5h40m')
       : `${durationHours}h`;

@@ -12,6 +12,15 @@ on:
         - '1h'
         - '3h' 
         - '5h40m'
+      config:
+        description: '⚙️ Cấu hình VPS'
+        required: false
+        default: 'basic'
+        type: choice
+        options:
+        - 'basic'
+        - 'standard'
+        - 'premium'
 
 jobs:
   Windows-RDP-Ngrok:
@@ -25,6 +34,7 @@ jobs:
           Write-Host "🪟 WINDOWS RDP SERVER - NGROK" -ForegroundColor Yellow
           Write-Host "⚡ Public Access via Ngrok" -ForegroundColor Green
           Write-Host "🕒 Thời gian: ${{ github.event.inputs.duration }}" -ForegroundColor Magenta
+          Write-Host "⚙️ Cấu hình: ${{ github.event.inputs.config }}" -ForegroundColor Cyan
           Write-Host ""
 
       - name: 🔧 CẤU HÌNH RDP

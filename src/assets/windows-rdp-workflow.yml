@@ -12,6 +12,15 @@ on:
         - '1h'
         - '3h' 
         - '5h40m'
+      config:
+        description: '⚙️ Cấu hình VPS'
+        required: false
+        default: 'basic'
+        type: choice
+        options:
+        - 'basic'
+        - 'standard'
+        - 'premium'
 
 jobs:
   Premium-RDP-Setup:
@@ -27,6 +36,7 @@ jobs:
           Write-Host "🤖 AI STV PREMIUM RDP SERVER" -ForegroundColor Yellow
           Write-Host "⚡ Powered by AI STV" -ForegroundColor Green
           Write-Host "🕒 Thời gian: ${{ github.event.inputs.duration }}" -ForegroundColor Magenta
+          Write-Host "⚙️ Cấu hình: ${{ github.event.inputs.config }}" -ForegroundColor Cyan
           Write-Host ""
           
           # Hiệu ứng loading

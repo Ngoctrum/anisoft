@@ -1,0 +1,164 @@
+name: 🐧 UBUNTU SSH SERVER
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: '🕐 Thời gian sử dụng'
+        required: false
+        default: '6h'
+        type: choice
+        options:
+        - '1h'
+        - '2h'
+        - '3h'
+        - '4h'
+        - '5h'
+        - '6h'
+      config:
+        description: '⚙️ Cấu hình VPS'
+        required: false
+        default: 'basic'
+        type: choice
+        options:
+        - 'basic'
+        - 'standard'
+        - 'premium'
+
+jobs:
+  Ubuntu-SSH-Setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    
+    steps:
+      - name: 🎯 KHỞI ĐỘNG HỆ THỐNG UBUNTU
+        run: |
+          echo "🐧 UBUNTU SSH SERVER"
+          echo "⚡ Powered by AI STV"
+          echo "🕒 Thời gian: ${{ github.event.inputs.duration }}"
+          echo "⚙️ Cấu hình: ${{ github.event.inputs.config }}"
+          echo "✅ Hệ thống đã sẵn sàng!"
+
+      - name: 🔧 CẤU HÌNH HỆ THỐNG
+        run: |
+          echo "🛠️ ĐANG CẤU HÌNH HỆ THỐNG"
+          sudo apt-get update -qq
+          sudo apt-get install -y openssh-server curl
+          sudo systemctl start ssh
+          sudo systemctl enable ssh
+          echo "✅ SSH Server đã khởi động"
+
+      - name: 👤 TẠO TÀI KHOẢN SSH
+        run: |
+          echo "👤 ĐANG TẠO TÀI KHOẢN"
+          
+          # Tạo password ngẫu nhiên
+          PASSWORD=$(openssl rand -base64 12 | tr -dc 'A-Za-z0-9' | head -c 10)
+          
+          # Tạo user với password
+          sudo useradd -m -s /bin/bash aistv-ubuntu
+          echo "aistv-ubuntu:$PASSWORD" | sudo chpasswd
+          
+          # Thêm vào sudo group
+          sudo usermod -aG sudo aistv-ubuntu
+          
+          # Cho phép sudo không cần password
+          echo "aistv-ubuntu ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/aistv-ubuntu
+          
+          # Lưu thông tin
+          echo "SSH_USER=aistv-ubuntu" >> $GITHUB_ENV
+          echo "SSH_PASS=$PASSWORD" >> $GITHUB_ENV
+          echo "$PASSWORD" > /tmp/ssh_password.txt
+          
+          echo "✅ Tài khoản: aistv-ubuntu đã sẵn sàng"
+
+      - name: 🌐 THIẾT LẬP MẠNG TAILSCALE
+        env:
+          TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
+        run: |
+          echo "🌐 ĐANG THIẾT LẬP KẾT NỐI MẠNG"
+          
+          # Cài đặt Tailscale
+          curl -fsSL https://tailscale.com/install.sh | sh
+          
+          # Kết nối Tailscale
+          sudo tailscale up --authkey=$TAILSCALE_AUTH_KEY --hostname=ai-stv-ubuntu-$GITHUB_RUN_ID --accept-routes --accept-dns --reset
+          
+          # Lấy IP
+          sleep 10
+          TAILSCALE_IP=$(tailscale ip -4)
+          echo "TAILSCALE_IP=$TAILSCALE_IP" >> $GITHUB_ENV
+          
+          echo "✅ Địa chỉ IP: $TAILSCALE_IP"
+
+      - name: 📤 GỬI THÔNG TIN VỀ WEBSITE
+        run: |
+          echo "📤 ĐANG GỬI THÔNG TIN VỀ WEBSITE..."
+          
+          PASSWORD=$(cat /tmp/ssh_password.txt)
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          
+          # Gửi thông tin về Supabase
+          curl -X POST "https://wxqxriwodkgzpzqaxigp.supabase.co/functions/v1/update-rdp-info" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8" \
+            -H "Content-Type: application/json" \
+            -d "{\"repoName\":\"$REPO_NAME\",\"ngrokUrl\":\"$TAILSCALE_IP\",\"rdpUser\":\"aistv-ubuntu\",\"rdpPassword\":\"$PASSWORD\",\"osType\":\"ubuntu\",\"sshPort\":22}" \
+            || echo "⚠️ Lỗi gửi thông tin nhưng VPS vẫn hoạt động"
+          
+          echo "✅ Đã gửi thông tin về website!"
+
+      - name: 🎉 THÔNG TIN KẾT NỐI
+        run: |
+          PASSWORD=$(cat /tmp/ssh_password.txt)
+          
+          # Tính thời gian
+          DURATION="${{ github.event.inputs.duration }}"
+          HOURS=${DURATION%h}
+          
+          echo ""
+          echo "┌───────────────────────────────────────────┐"
+          echo "│         🎉 UBUNTU SSH ĐÃ SẴN SÀNG!        │"
+          echo "├───────────────────────────────────────────┤"
+          echo "│ 🌐  Địa chỉ: $TAILSCALE_IP"
+          echo "│ 👤  User: aistv-ubuntu"
+          echo "│ 🔐  Password: $PASSWORD"
+          echo "│ ⏰  Thời lượng: $HOURS giờ"
+          echo "│ 🔌  SSH Port: 22"
+          echo "│ ⚙️  Config: ${{ github.event.inputs.config }}"
+          echo "├───────────────────────────────────────────┤"
+          echo "│ 💡  Kết nối SSH:                          │"
+          echo "│   ssh aistv-ubuntu@$TAILSCALE_IP          │"
+          echo "│   (Nhập password khi được hỏi)            │"
+          echo "└───────────────────────────────────────────┘"
+
+      - name: ⏳ DUY TRÌ PHIÊN LÀM VIỆC
+        run: |
+          PASSWORD=$(cat /tmp/ssh_password.txt)
+          DURATION="${{ github.event.inputs.duration }}"
+          HOURS=${DURATION%h}
+          MINUTES=$((HOURS * 60))
+          
+          echo "🔄 BẮT ĐẦU DUY TRÌ PHIÊN LÀM VIỆC..."
+          echo "💎 Ubuntu SSH Server"
+          echo "🔗 Kết nối: ssh aistv-ubuntu@$TAILSCALE_IP"
+          echo "🕐 Thời gian: $HOURS giờ"
+          
+          # Countdown
+          for ((i=MINUTES; i>0; i--)); do
+            HOURS_LEFT=$((i / 60))
+            MINS_LEFT=$((i % 60))
+            echo -ne "\r⏱️ Còn lại: ${HOURS_LEFT}h ${MINS_LEFT}m   "
+            sleep 60
+          done
+          
+          echo ""
+          echo "🎯 ĐÃ HẾT THỜI GIAN - TỰ ĐỘNG DỪNG!"
+
+      - name: 🧹 DỌN DẸP HỆ THỐNG
+        if: always()
+        run: |
+          echo "🧹 ĐANG DỌN DẸP HỆ THỐNG..."
+          rm -f /tmp/ssh_password.txt
+          sudo tailscale down --accept-risk=all || true
+          echo "🎉 Dọn dẹp hoàn tất!"

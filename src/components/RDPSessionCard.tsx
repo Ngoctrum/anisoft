@@ -9,12 +9,17 @@ interface RDPSession {
   id: string;
   github_repo: string;
   repo_url?: string;
-  tailscale_ip?: string; // Ngrok URL
+  tailscale_ip?: string;
   rdp_user?: string;
   rdp_password?: string;
   status: string;
   created_at: string;
   expires_at?: string;
+  os_type?: string;
+  vps_config?: string;
+  duration_hours?: number;
+  is_active?: boolean;
+  ssh_port?: number;
 }
 
 interface RDPSessionCardProps {
@@ -23,6 +28,8 @@ interface RDPSessionCardProps {
 
 export function RDPSessionCard({ session }: RDPSessionCardProps) {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
+  const [isKilling, setIsKilling] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
     if (!session.expires_at) return;
@@ -138,12 +145,14 @@ username:s:${username}`;
   };
 
   const getStatusColor = () => {
+    if (!session.is_active) return 'bg-gray-500';
     switch (session.status) {
       case 'connected':
         return 'bg-green-500';
       case 'pending':
         return 'bg-yellow-500';
       case 'failed':
+      case 'killed':
         return 'bg-red-500';
       default:
         return 'bg-gray-500';
@@ -151,6 +160,7 @@ username:s:${username}`;
   };
 
   const getStatusText = () => {
+    if (!session.is_active) return 'Đã tắt';
     switch (session.status) {
       case 'connected':
         return 'Đang chạy';
@@ -158,12 +168,19 @@ username:s:${username}`;
         return 'Đang tạo';
       case 'failed':
         return 'Thất bại';
+      case 'killed':
+        return 'Đã kill';
       default:
         return session.status;
     }
   };
 
   const hasFullInfo = session.tailscale_ip && session.rdp_user && session.rdp_password;
+  const osIcon = session.os_type === 'ubuntu' ? '🐧' : '🪟';
+  const osName = session.os_type === 'ubuntu' ? 'Ubuntu SSH' : 'Windows RDP';
+  const connectionCommand = session.os_type === 'ubuntu' 
+    ? `ssh ${session.rdp_user}@${session.tailscale_ip?.replace(/^tcp:\/\//, '')}` 
+    : 'RDP';
 
   return (
     <Card className="w-full">
@@ -171,9 +188,16 @@ username:s:${username}`;
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Server className="h-5 w-5" />
-            {session.github_repo}
+            {osIcon} {session.github_repo}
           </CardTitle>
-          <Badge className={getStatusColor()}>{getStatusText()}</Badge>
+          <div className="flex gap-2">
+            <Badge className={getStatusColor()}>{getStatusText()}</Badge>
+            {session.vps_config && (
+              <Badge variant="outline">
+                {session.vps_config === 'premium' ? '👑' : session.vps_config === 'standard' ? '💎' : '⚡'} {session.vps_config}
+              </Badge>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

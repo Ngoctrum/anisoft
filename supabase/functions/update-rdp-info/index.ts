@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { repoName, ngrokUrl, rdpUser, rdpPassword } = await req.json();
+    const { repoName, ngrokUrl, rdpUser, rdpPassword, osType, sshPort } = await req.json();
 
     console.log('Received update request:', { repoName, ngrokUrl, rdpUser });
 
@@ -44,12 +44,21 @@ Deno.serve(async (req) => {
       rdp_user: rdpUser,
       rdp_password: rdpPassword,
       status: 'connected',
+      is_active: true,
       updated_at: new Date().toISOString(),
     };
 
-    // Save Ngrok URL to tailscale_ip column (as per report)
+    // Save Tailscale IP
     if (ngrokUrl) {
       updateData.tailscale_ip = ngrokUrl;
+    }
+
+    // Save OS type and SSH port if provided
+    if (osType) {
+      updateData.os_type = osType;
+    }
+    if (sshPort) {
+      updateData.ssh_port = sshPort;
     }
 
     const { data: updatedSession, error: updateError } = await supabase

@@ -335,6 +335,14 @@ export default function VPSConsole() {
     const durationInput = isWindows
       ? (durationHours === 1 ? '1h' : durationHours === 3 ? '3h' : '5h40m')
       : `${durationHours}h`;
+
+    console.log('🚀 Triggering workflow', {
+      owner,
+      repo,
+      workflowFileName,
+      durationInput,
+      vpsConfig,
+    });
     
     const response = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/dispatches`,
@@ -343,6 +351,7 @@ export default function VPSConsole() {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          Accept: 'application/vnd.github.v3+json',
         },
         body: JSON.stringify({
           ref: 'main',
@@ -355,7 +364,21 @@ export default function VPSConsole() {
     );
 
     if (!response.ok) {
-      throw new Error('Failed to trigger workflow');
+      const errorText = await response.text().catch(() => '');
+      console.error('❌ Failed to trigger workflow', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+      });
+
+      let message = 'Failed to trigger workflow';
+      if (response.status === 404) {
+        message = 'Không tìm thấy workflow trong repo (404). Kiểm tra lại tên file workflow và nhánh main.';
+      } else if (response.status === 403) {
+        message = 'GitHub Token thiếu quyền workflow. Hãy tạo Classic token với repo + workflow.';
+      }
+
+      throw new Error(message);
     }
   };
 

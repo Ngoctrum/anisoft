@@ -418,6 +418,12 @@ export default function VPSConsole() {
       return;
     }
 
+    // Validate Tailscale token format
+    if (tailscaleToken.trim() && !tailscaleToken.trim().startsWith('tskey-auth-')) {
+      toast.error('Tailscale Token không đúng định dạng (phải bắt đầu bằng tskey-auth-)');
+      return;
+    }
+
     if (githubToken.trim()) {
       sessionStorage.setItem('github_token', githubToken);
       setSavedGithubToken(githubToken);
@@ -425,7 +431,7 @@ export default function VPSConsole() {
     if (tailscaleToken.trim()) {
       sessionStorage.setItem('tailscale_token', tailscaleToken);
     }
-    toast.success('✅ Đã lưu tokens!');
+    toast.success('✅ Tokens đã được lưu và sẽ tự động điền cho lần tạo VPS tiếp theo!');
     setShowSettings(false);
   };
 
@@ -529,9 +535,11 @@ export default function VPSConsole() {
       localStorage.setItem('github_token', githubToken);
       setSavedGithubToken(githubToken);
       
-      // Reset form
-      setGithubToken('');
-      setTailscaleToken('');
+      // Automatically save tokens to sessionStorage for next time
+      sessionStorage.setItem('github_token', githubToken);
+      sessionStorage.setItem('tailscale_token', tailscaleToken);
+      
+      // Note: NOT resetting form tokens so user can create another VPS quickly
       
       // Reload sessions
       await loadSessions();

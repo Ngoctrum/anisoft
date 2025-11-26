@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, Server, User, Key, Copy, ExternalLink, Download } from 'lucide-react';
+import { Clock, Server, User, Key, Copy, ExternalLink, Download, Power, PowerOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RDPSession {
   id: string;
@@ -20,6 +21,7 @@ interface RDPSession {
   duration_hours?: number;
   is_active?: boolean;
   ssh_port?: number;
+  workflow_run_id?: string;
 }
 
 interface RDPSessionCardProps {
@@ -181,6 +183,53 @@ username:s:${username}`;
   const connectionCommand = session.os_type === 'ubuntu' 
     ? `ssh ${session.rdp_user}@${session.tailscale_ip?.replace(/^tcp:\/\//, '')}` 
     : 'RDP';
+
+  const handleKillVPS = async () => {
+    if (!confirm('⚠️ Bạn có chắc muốn TẮT VPS này không?\n\nVPS sẽ dừng hoàn toàn.')) {
+      return;
+    }
+
+    setIsKilling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-vps', {
+        body: {
+          sessionId: session.id,
+          action: 'kill',
+          githubToken: localStorage.getItem('github_token'),
+          workflowRunId: session.workflow_run_id,
+        },
+      });
+
+      if (error) throw error;
+      toast.success('✅ Đã tắt VPS thành công!');
+    } catch (error: any) {
+      console.error('Error killing VPS:', error);
+      toast.error('❌ Không thể tắt VPS: ' + error.message);
+    } finally {
+      setIsKilling(false);
+    }
+  };
+
+  const handleStartVPS = async () => {
+    setIsStarting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-vps', {
+        body: {
+          sessionId: session.id,
+          action: 'start',
+          githubToken: localStorage.getItem('github_token'),
+        },
+      });
+
+      if (error) throw error;
+      toast.success('✅ Đang khởi động lại VPS! Vui lòng đợi vài phút...');
+    } catch (error: any) {
+      console.error('Error starting VPS:', error);
+      toast.error('❌ Không thể khởi động VPS: ' + error.message);
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   return (
     <Card className="w-full">
@@ -366,6 +415,49 @@ username:s:${username}`;
         <div className="text-xs text-muted-foreground text-center">
           Tạo lúc: {new Date(session.created_at).toLocaleString('vi-VN')}
         </div>
+
+        {/* Kill/Start VPS Buttons */}
+        {session.is_active ? (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleKillVPS}
+            disabled={isKilling}
+            className="w-full"
+          >
+            {isKilling ? (
+              <>
+                <Clock className="h-4 w-4 mr-2 animate-spin" />
+                Đang tắt...
+              </>
+            ) : (
+              <>
+                <PowerOff className="h-4 w-4 mr-2" />
+                Tắt VPS
+              </>
+            )}
+          </Button>
+        ) : (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleStartVPS}
+            disabled={isStarting}
+            className="w-full"
+          >
+            {isStarting ? (
+              <>
+                <Clock className="h-4 w-4 mr-2 animate-spin" />
+                Đang khởi động...
+              </>
+            ) : (
+              <>
+                <Power className="h-4 w-4 mr-2" />
+                Bật VPS
+              </>
+            )}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

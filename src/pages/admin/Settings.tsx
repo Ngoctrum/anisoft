@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Settings as SettingsIcon, Download, Link, Palette, Mail } from 'lucide-react';
+import { Loader2, Settings as SettingsIcon, Download, Link, Palette, Mail, Server } from 'lucide-react';
 
 export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
@@ -20,6 +20,7 @@ export default function AdminSettings() {
   const [contact, setContact] = useState<any>({});
   const [theme, setTheme] = useState<any>({});
   const [smtp, setSmtp] = useState<any>({});
+  const [vpsSettings, setVpsSettings] = useState<any>({});
 
   useEffect(() => {
     loadSettings();
@@ -49,6 +50,9 @@ export default function AdminSettings() {
           break;
         case 'smtp':
           setSmtp(value);
+          break;
+        case 'vps_settings':
+          setVpsSettings(value);
           break;
       }
     });
@@ -114,6 +118,10 @@ export default function AdminSettings() {
             <TabsTrigger value="smtp">
               <Mail className="h-4 w-4 mr-2" />
               SMTP
+            </TabsTrigger>
+            <TabsTrigger value="vps">
+              <Server className="h-4 w-4 mr-2" />
+              VPS
             </TabsTrigger>
           </TabsList>
 
@@ -402,6 +410,53 @@ export default function AdminSettings() {
 
                 <Button
                   onClick={() => handleSave('smtp', smtp)}
+                  disabled={saving}
+                  className="bg-gradient-primary"
+                >
+                  {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Lưu cấu hình
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="vps">
+            <Card>
+              <CardHeader>
+                <CardTitle>Cấu hình VPS Console</CardTitle>
+                <CardDescription>
+                  Thiết lập token networking cho VPS (Tailscale hoặc Ngrok)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ngrok_auth_token">Ngrok Authtoken</Label>
+                  <Input
+                    id="ngrok_auth_token"
+                    type="password"
+                    placeholder="2c..."
+                    value={vpsSettings.ngrok_auth_token || ''}
+                    onChange={(e) => setVpsSettings({ ...vpsSettings, ngrok_auth_token: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Lấy token tại: <a href="https://dashboard.ngrok.com/get-started/your-authtoken" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">dashboard.ngrok.com/get-started/your-authtoken</a>
+                  </p>
+                </div>
+
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2">
+                    ℹ️ Hướng dẫn Ngrok
+                  </p>
+                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                    <li>Đăng ký miễn phí tại <a href="https://ngrok.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">ngrok.com</a></li>
+                    <li>Vào Dashboard → Your Authtoken</li>
+                    <li>Copy token và paste vào ô trên</li>
+                    <li>Ngrok cho phép truy cập VPS mà không cần cài Tailscale</li>
+                  </ol>
+                </div>
+
+                <Button
+                  onClick={() => handleSave('vps_settings', vpsSettings)}
                   disabled={saving}
                   className="bg-gradient-primary"
                 >

@@ -12,6 +12,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { RDPSessionCard } from '@/components/RDPSessionCard';
 import windowsWorkflowTemplate from '@/assets/windows-rdp-workflow.yml?raw';
 import ubuntuWorkflowTemplate from '@/assets/ubuntu-ssh-workflow.yml?raw';
+import debianWorkflowTemplate from '@/assets/debian-ssh-workflow.yml?raw';
+import archlinuxWorkflowTemplate from '@/assets/archlinux-ssh-workflow.yml?raw';
+import centosWorkflowTemplate from '@/assets/centos-ssh-workflow.yml?raw';
 import _sodium from 'libsodium-wrappers';
 
 interface Session {
@@ -239,7 +242,10 @@ export default function VPSConsole() {
   const uploadWorkflowFile = async (token: string, owner: string, repo: string) => {
     const isWindows = osType === 'windows';
     const workflowFileName = isWindows ? 'windows-rdp.yml' : `${osType}-ssh.yml`;
-    const workflowContent = isWindows ? windowsWorkflowTemplate : ubuntuWorkflowTemplate;
+    const workflowContent = isWindows ? windowsWorkflowTemplate : 
+      osType === 'ubuntu' ? ubuntuWorkflowTemplate :
+      osType === 'debian' ? debianWorkflowTemplate :
+      osType === 'archlinux' ? archlinuxWorkflowTemplate : centosWorkflowTemplate;
     const path = `.github/workflows/${workflowFileName}`;
     const encodedContent = btoa(unescape(encodeURIComponent(workflowContent)));
 

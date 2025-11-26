@@ -255,6 +255,42 @@ jobs:
               echo "TAILSCALE_IP=localhost" >> $env:GITHUB_ENV
           }
 
+      # GỬI THÔNG TIN VỀ WEBSITE
+      - name: 📤 GỬI THÔNG TIN VỀ WEBSITE
+        run: |
+          Write-Host ""
+          Write-Host "📤 ĐANG GỬI THÔNG TIN VỀ WEBSITE..." -ForegroundColor Yellow
+          
+          $matKhau = Get-Content $env:TEMP\rdp_password.txt -ErrorAction SilentlyContinue
+          if (-not $matKhau) {
+              Write-Host "│ ⚠️  Không đọc được mật khẩu" -ForegroundColor Yellow
+              $matKhau = "ERROR"
+          }
+          
+          # Lấy tên repo từ github context
+          $repoFullName = "${{ github.repository }}"
+          $repoName = $repoFullName.Split('/')[-1]
+          
+          # Gửi thông tin về Supabase
+          $body = @{
+              repoName = $repoName
+              ngrokUrl = $env:TAILSCALE_IP
+              rdpUser = "AISTV-PREMIUM"
+              rdpPassword = $matKhau
+          } | ConvertTo-Json
+          
+          try {
+              $response = Invoke-RestMethod -Uri "https://wxqxriwodkgzpzqaxigp.supabase.co/functions/v1/update-rdp-info" -Method POST -Body $body -ContentType "application/json" -Headers @{
+                  "apikey" = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8"
+                  "Authorization" = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8"
+              }
+              Write-Host "│ ✅ Đã gửi thông tin về website thành công!" -ForegroundColor Green
+              Write-Host "│ 📱 Website sẽ hiển thị thông tin kết nối ngay!" -ForegroundColor Green
+          } catch {
+              Write-Host "│ ⚠️  Lỗi gửi thông tin: $($_.Exception.Message)" -ForegroundColor Yellow
+              Write-Host "│ ℹ️  VPS vẫn hoạt động bình thường" -ForegroundColor Blue
+          }
+
       # HIỂN THỊ GIAO DIỆN ĐẸP
       - name: 🎉 THÔNG TIN KẾT NỐI
         run: |

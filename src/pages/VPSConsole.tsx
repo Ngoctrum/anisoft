@@ -623,15 +623,12 @@ export default function VPSConsole() {
 
       toast.success('🎉 VPS đang được tạo! Xem logs bên dưới hoặc trên GitHub Actions', { duration: 5000 });
       
-      // Save GitHub token to localStorage for later deletion
-      localStorage.setItem('github_token', githubToken);
-      setSavedGithubToken(githubToken);
-      
-      // Automatically save tokens to sessionStorage for next time
-      sessionStorage.setItem('github_token', githubToken);
-      sessionStorage.setItem('tailscale_token', tailscaleToken);
-      
-      // Note: NOT resetting form tokens so user can create another VPS quickly
+      // Clear tokens from sessionStorage after successful creation
+      sessionStorage.removeItem('github_token');
+      sessionStorage.removeItem('tailscale_token');
+      setGithubToken('');
+      setTailscaleToken('');
+      setSavedGithubToken('');
       
       // Reload sessions
       await loadSessions();

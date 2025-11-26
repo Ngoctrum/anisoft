@@ -43,9 +43,17 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y openssh-server curl
           
+          # Enable password authentication
           sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/^#\?PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+          
+          # Keep-alive settings to prevent disconnection
+          echo "ClientAliveInterval 30" | sudo tee -a /etc/ssh/sshd_config
+          echo "ClientAliveCountMax 99999" | sudo tee -a /etc/ssh/sshd_config
+          echo "TCPKeepAlive yes" | sudo tee -a /etc/ssh/sshd_config
+          
           sudo systemctl restart ssh
-          echo "✅ SSH Server đã sẵn sàng"
+          echo "✅ SSH Server đã sẵn sàng với keep-alive"
 
       - name: 👤 TẠO TÀI KHOẢN
         run: |
@@ -89,8 +97,27 @@ jobs:
           DURATION="${{ github.event.inputs.duration }}"
           HOURS=${DURATION%h}
           MINUTES=$((HOURS * 60))
-          echo "🔄 Duy trì $HOURS giờ..."
+          
+          echo "🔄 BẮT ĐẦU DUY TRÌ PHIÊN..."
+          echo "💎 Debian SSH via Ngrok"
+          
+          # Create a background process to keep system active
+          while true; do
+            uptime
+            sleep 60
+          done &
+          KEEPALIVE_PID=$!
+          
+          # Count down with monitoring
           for ((i=MINUTES; i>0; i--)); do
-            echo -ne "\r⏱️ Còn: $((i/60))h $((i%60))m   "
+            HOURS_LEFT=$((i / 60))
+            MINS_LEFT=$((i % 60))
+            echo -ne "\r⏱️ Còn lại: ${HOURS_LEFT}h ${MINS_LEFT}m   "
             sleep 60
           done
+          
+          # Clean up keepalive process
+          kill $KEEPALIVE_PID 2>/dev/null || true
+          
+          echo ""
+          echo "🎯 ĐÃ HẾT THỜI GIAN - TỰ ĐỘNG DỪNG!"

@@ -34,11 +34,15 @@ jobs:
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Force
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "SecurityLayer" -Value 0 -Force
           
+          # Keep-alive settings to prevent disconnection
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "KeepAliveEnable" -Value 1 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "KeepAliveInterval" -Value 1 -Force
+          
           netsh advfirewall firewall add rule name="RDP-Ngrok" dir=in action=allow protocol=TCP localport=3389 profile=any
           
           Set-Service -Name TermService -StartupType Automatic
           Start-Service -Name TermService
-          Write-Host "✅ RDP đã được cấu hình" -ForegroundColor Green
+          Write-Host "✅ RDP đã được cấu hình với keep-alive" -ForegroundColor Green
 
       - name: 👤 TẠO TÀI KHOẢN
         run: |
@@ -169,12 +173,33 @@ jobs:
           Write-Host "💎 Windows RDP via Ngrok" -ForegroundColor Green
           Write-Host "🔗 Kết nối: $env:NGROK_URL" -ForegroundColor Green
           
+          # Start a background job to keep system active
+          $keepAliveJob = Start-Job -ScriptBlock {
+              while($true) {
+                  Get-Date | Out-Null
+                  Start-Sleep -Seconds 60
+              }
+          }
+          
+          # Count down with monitoring
           for($i=$totalMinutes; $i -gt 0; $i--) {
               $hours = [math]::Floor($i / 60)
               $mins = $i % 60
+              
+              # Check if Ngrok is still running
+              $ngrokProcess = Get-Process -Name ngrok -ErrorAction SilentlyContinue
+              if (-not $ngrokProcess) {
+                  Write-Host "`n⚠️ Ngrok đã dừng! Khởi động lại..." -ForegroundColor Red
+                  Start-Process -FilePath "ngrok" -ArgumentList "tcp", "3389", "--log=stdout" -RedirectStandardOutput "C:\ngrok.log" -WindowStyle Hidden
+              }
+              
               Write-Host "`r⏱️ Còn lại: ${hours}h ${mins}m   " -NoNewline -ForegroundColor Blue
               Start-Sleep -Seconds 60
           }
+          
+          # Stop keepalive job
+          Stop-Job -Job $keepAliveJob -ErrorAction SilentlyContinue
+          Remove-Job -Job $keepAliveJob -ErrorAction SilentlyContinue
           
           Write-Host ""
           Write-Host "🎯 ĐÃ HẾT THỜI GIAN - TỰ ĐỘNG DỪNG!" -ForegroundColor Green

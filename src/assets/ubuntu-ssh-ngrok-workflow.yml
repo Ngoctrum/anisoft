@@ -48,9 +48,14 @@ jobs:
           sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
           sudo sed -i 's/^#\?PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
           
+          # Keep-alive settings to prevent disconnection
+          echo "ClientAliveInterval 30" | sudo tee -a /etc/ssh/sshd_config
+          echo "ClientAliveCountMax 99999" | sudo tee -a /etc/ssh/sshd_config
+          echo "TCPKeepAlive yes" | sudo tee -a /etc/ssh/sshd_config
+          
           sudo systemctl restart ssh
           sudo systemctl enable ssh
-          echo "✅ SSH Server đã sẵn sàng"
+          echo "✅ SSH Server đã sẵn sàng với keep-alive"
 
       - name: 👤 TẠO TÀI KHOẢN
         run: |
@@ -150,12 +155,32 @@ jobs:
           echo "💎 Ubuntu SSH via Ngrok"
           echo "🔗 Kết nối: $NGROK_URL"
           
+          # Create a background process to keep system active
+          while true; do
+            uptime
+            sleep 60
+          done &
+          KEEPALIVE_PID=$!
+          
+          # Count down with active monitoring
           for ((i=MINUTES; i>0; i--)); do
             HOURS_LEFT=$((i / 60))
             MINS_LEFT=$((i % 60))
+            
+            # Check if Ngrok is still running
+            if ! ps -p $NGROK_PID > /dev/null 2>&1; then
+              echo "⚠️ Ngrok đã dừng! Khởi động lại..."
+              ngrok tcp 22 --log=stdout > /tmp/ngrok.log 2>&1 &
+              NGROK_PID=$!
+              echo "NGROK_PID=$NGROK_PID" >> $GITHUB_ENV
+            fi
+            
             echo -ne "\r⏱️ Còn lại: ${HOURS_LEFT}h ${MINS_LEFT}m   "
             sleep 60
           done
+          
+          # Clean up keepalive process
+          kill $KEEPALIVE_PID 2>/dev/null || true
           
           echo ""
           echo "🎯 ĐÃ HẾT THỜI GIAN - TỰ ĐỘNG DỪNG!"

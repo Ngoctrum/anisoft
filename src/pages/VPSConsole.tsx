@@ -43,8 +43,8 @@ interface Session {
 export default function VPSConsole() {
   const [githubToken, setGithubToken] = useState('');
   const [tailscaleToken, setTailscaleToken] = useState('');
+  const [ngrokToken, setNgrokToken] = useState('');
   const [networkingType, setNetworkingType] = useState<'tailscale' | 'ngrok'>('tailscale');
-  const [ngrokAuthToken, setNgrokAuthToken] = useState('');
   const [osType, setOsType] = useState<'windows' | 'ubuntu' | 'debian' | 'archlinux' | 'centos'>('windows');
   const [vpsConfig, setVpsConfig] = useState<'basic' | 'standard' | 'premium'>('basic');
   const [durationHours, setDurationHours] = useState(6);
@@ -81,6 +81,8 @@ export default function VPSConsole() {
   useEffect(() => {
     const savedGithub = sessionStorage.getItem('github_token');
     const savedTailscale = sessionStorage.getItem('tailscale_token');
+    const savedNgrok = sessionStorage.getItem('ngrok_token');
+    const savedNetworkingType = sessionStorage.getItem('networking_type') as 'tailscale' | 'ngrok';
     
     if (savedGithub) {
       setSavedGithubToken(savedGithub);
@@ -89,33 +91,13 @@ export default function VPSConsole() {
     if (savedTailscale) {
       setTailscaleToken(savedTailscale);
     }
-    
-    // Load Ngrok token from site settings
-    loadNgrokToken();
-  }, []);
-
-  const loadNgrokToken = async () => {
-    try {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'vps_settings')
-        .single();
-      
-      if (data?.value && typeof data.value === 'object') {
-        const vpsSettings = data.value as any;
-        if (vpsSettings.ngrok_auth_token) {
-          setNgrokAuthToken(vpsSettings.ngrok_auth_token);
-        }
-        // Load networking type from settings
-        if (vpsSettings.networking_type) {
-          setNetworkingType(vpsSettings.networking_type);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading VPS settings:', error);
+    if (savedNgrok) {
+      setNgrokToken(savedNgrok);
     }
-  };
+    if (savedNetworkingType) {
+      setNetworkingType(savedNetworkingType);
+    }
+  }, []);
 
   // Load existing sessions
   useEffect(() => {
@@ -578,8 +560,12 @@ export default function VPSConsole() {
       }
     } else {
       // Ngrok type
-      if (!ngrokAuthToken) {
-        toast.error('⚠️ Ngrok Token chưa được cấu hình!\n\nVui lòng vào Admin Settings → VPS để thêm Ngrok Authtoken.', { duration: 6000 });
+      if (!ngrokToken.trim()) {
+        toast.error('Vui lòng nhập Ngrok Authtoken');
+        return;
+      }
+      if (ngrokToken.trim().length < 10) {
+        toast.error('Ngrok Authtoken không hợp lệ');
         return;
       }
     }
@@ -645,7 +631,7 @@ export default function VPSConsole() {
 
       // Step 5: Add networking secret based on type
       const secretName = networkingType === 'tailscale' ? 'TAILSCALE_AUTH_KEY' : 'NGROK_AUTH_TOKEN';
-      const secretValue = networkingType === 'tailscale' ? tailscaleToken : ngrokAuthToken;
+      const secretValue = networkingType === 'tailscale' ? tailscaleToken : ngrokToken;
       setLogs((prev) => [...prev, `🔐 Đang thêm ${networkingName} token vào repository...`]);
       try {
         await addGithubSecret(githubToken, repo.owner.login, repo.name, secretName, secretValue);
@@ -679,14 +665,19 @@ export default function VPSConsole() {
       // Save tokens if checkbox is enabled
       if (saveTokensEnabled) {
         sessionStorage.setItem('github_token', githubToken);
+        sessionStorage.setItem('networking_type', networkingType);
         if (networkingType === 'tailscale') {
           sessionStorage.setItem('tailscale_token', tailscaleToken);
+        } else {
+          sessionStorage.setItem('ngrok_token', ngrokToken);
         }
         toast.success('✅ Tokens đã được lưu cho lần sau');
       } else {
         // Clear tokens after successful VPS creation
         sessionStorage.removeItem('github_token');
         sessionStorage.removeItem('tailscale_token');
+        sessionStorage.removeItem('ngrok_token');
+        sessionStorage.removeItem('networking_type');
       }
       
       // Note: NOT resetting form tokens so user can create another VPS quickly
@@ -773,21 +764,58 @@ export default function VPSConsole() {
               Tạo VPS Mới
             </CardTitle>
             <CardDescription>
-              Loại kết nối: <strong>{networkingType === 'tailscale' ? '🔒 Tailscale' : '🌐 Ngrok'}</strong> (thay đổi trong Admin Settings)
+              Chọn phương thức kết nối và nhập tokens
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Networking Type Info */}
-            <Alert className="bg-muted/50">
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                {networkingType === 'tailscale' ? (
-                  <span>Đang dùng <strong>Tailscale</strong> - Mạng riêng bảo mật, cần cài Tailscale trên máy</span>
-                ) : (
-                  <span>Đang dùng <strong>Ngrok</strong> - Internet công khai, truy cập từ bất kỳ đâu</span>
-                )}
-              </AlertDescription>
-            </Alert>
+            {/* Networking Type Selection */}
+            <div className="space-y-2 p-4 bg-muted/30 rounded-lg border">
+              <Label>Loại kết nối mạng</Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Chọn phương thức kết nối từ xa cho VPS
+              </p>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="networking_tailscale"
+                    name="networking_type"
+                    value="tailscale"
+                    checked={networkingType === 'tailscale'}
+                    onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok')}
+                    className="w-4 h-4"
+                    disabled={isProcessing}
+                  />
+                  <Label htmlFor="networking_tailscale" className="font-normal cursor-pointer">
+                    🔒 Tailscale (Mạng riêng)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="networking_ngrok"
+                    name="networking_type"
+                    value="ngrok"
+                    checked={networkingType === 'ngrok'}
+                    onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok')}
+                    className="w-4 h-4"
+                    disabled={isProcessing}
+                  />
+                  <Label htmlFor="networking_ngrok" className="font-normal cursor-pointer">
+                    🌐 Ngrok (Internet công khai)
+                  </Label>
+                </div>
+              </div>
+              <div className="mt-2 p-2 bg-blue-500/10 border border-blue-500/20 rounded">
+                <p className="text-xs text-muted-foreground">
+                  {networkingType === 'tailscale' ? (
+                    <>✅ <strong>Tailscale:</strong> Mạng riêng bảo mật, cần cài Tailscale trên máy</>
+                  ) : (
+                    <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm</>
+                  )}
+                </p>
+              </div>
+            </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -816,7 +844,7 @@ export default function VPSConsole() {
               </div>
 
               {/* Tailscale Token - Only show when Tailscale is selected */}
-              {networkingType === 'tailscale' && (
+              {networkingType === 'tailscale' ? (
                 <div className="space-y-2">
                   <Label htmlFor="tailscale-token">Tailscale Auth Key</Label>
                   <Input
@@ -841,33 +869,30 @@ export default function VPSConsole() {
                     </Button>
                   </div>
                 </div>
-              )}
-
-              {/* Ngrok Status - Only show when Ngrok is selected */}
-              {networkingType === 'ngrok' && (
+              ) : (
                 <div className="space-y-2">
-                  <Label>Ngrok Authtoken Status</Label>
-                  {ngrokAuthToken ? (
-                    <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-600 dark:text-green-400">✅</span>
-                        <span className="text-sm font-semibold text-green-600 dark:text-green-400">Token đã được cấu hình</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        VPS sẽ sử dụng Ngrok để tạo public URL
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="text-yellow-600 dark:text-yellow-400">⚠️</span>
-                        <span className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">Chưa cấu hình token</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Vào Admin Settings → VPS để thêm Ngrok Authtoken
-                      </p>
-                    </div>
-                  )}
+                  <Label htmlFor="ngrok-token">Ngrok Authtoken</Label>
+                  <Input
+                    id="ngrok-token"
+                    type="password"
+                    placeholder="2c..."
+                    value={ngrokToken}
+                    onChange={(e) => setNgrokToken(e.target.value)}
+                    disabled={isProcessing}
+                  />
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Authtoken:</strong> Lấy từ Ngrok dashboard
+                    </p>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs text-primary"
+                      onClick={() => window.open('https://dashboard.ngrok.com/get-started/your-authtoken', '_blank')}
+                    >
+                      🔑 Lấy Ngrok Authtoken (Click here)
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

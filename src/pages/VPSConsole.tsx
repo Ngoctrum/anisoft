@@ -71,10 +71,10 @@ export default function VPSConsole() {
     },
   };
 
-  // Load saved tokens from localStorage
+  // Load saved tokens from sessionStorage (cleared when browser closes)
   useEffect(() => {
-    const savedGithub = localStorage.getItem('github_token');
-    const savedTailscale = localStorage.getItem('tailscale_token');
+    const savedGithub = sessionStorage.getItem('github_token');
+    const savedTailscale = sessionStorage.getItem('tailscale_token');
     
     if (savedGithub) {
       setSavedGithubToken(savedGithub);
@@ -399,20 +399,33 @@ export default function VPSConsole() {
   };
 
   const handleSaveTokens = () => {
+    // Validate GitHub token format
+    const githubTokenPattern = /^gh[ps]_[a-zA-Z0-9]{36,}$/;
+    if (githubToken.trim() && !githubTokenPattern.test(githubToken.trim())) {
+      toast.error('GitHub Token không đúng định dạng (phải bắt đầu bằng ghp_ hoặc ghs_)');
+      return;
+    }
+
     if (githubToken.trim()) {
-      localStorage.setItem('github_token', githubToken);
+      sessionStorage.setItem('github_token', githubToken);
       setSavedGithubToken(githubToken);
     }
     if (tailscaleToken.trim()) {
-      localStorage.setItem('tailscale_token', tailscaleToken);
+      sessionStorage.setItem('tailscale_token', tailscaleToken);
     }
     toast.success('✅ Đã lưu tokens!');
     setShowSettings(false);
   };
 
   const handleCreateVPS = async () => {
+    // Validate GitHub token format
+    const githubTokenPattern = /^gh[ps]_[a-zA-Z0-9]{36,}$/;
     if (!githubToken.trim()) {
       toast.error('Vui lòng nhập GitHub Token');
+      return;
+    }
+    if (!githubTokenPattern.test(githubToken.trim())) {
+      toast.error('GitHub Token không đúng định dạng (phải bắt đầu bằng ghp_ hoặc ghs_)');
       return;
     }
 

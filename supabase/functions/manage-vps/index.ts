@@ -23,9 +23,28 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Verify JWT and get authenticated user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const { sessionId, action, githubToken, workflowRunId } = await req.json() as ManageVPSRequest;
 
-    console.log('Manage VPS request:', { sessionId, action });
+    console.log('Manage VPS request:', { sessionId, action, userId: user.id });
 
     // Get session
     const { data: session, error: sessionError } = await supabase
@@ -38,6 +57,14 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Session not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify session ownership
+    if (session.user_id !== user.id) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: You do not own this session' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

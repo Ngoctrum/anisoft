@@ -196,7 +196,7 @@ username:s:${username}`;
         body: {
           sessionId: session.id,
           action: 'kill',
-          githubToken: localStorage.getItem('github_token'),
+          githubToken: sessionStorage.getItem('github_token'),
           workflowRunId: session.workflow_run_id,
         },
       });
@@ -218,7 +218,7 @@ username:s:${username}`;
         body: {
           sessionId: session.id,
           action: 'start',
-          githubToken: localStorage.getItem('github_token'),
+          githubToken: sessionStorage.getItem('github_token'),
         },
       });
 

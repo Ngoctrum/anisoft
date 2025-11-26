@@ -24,6 +24,9 @@ on:
         - 'basic'
         - 'standard'
         - 'premium'
+  push:
+    branches:
+      - main
 
 jobs:
   ArchLinux-SSH-Setup:

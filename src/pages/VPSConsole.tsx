@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { RDPSessionCard } from '@/components/RDPSessionCard';
 import workflowTemplate from '@/assets/windows-rdp-workflow.yml?raw';
+import _sodium from 'libsodium-wrappers';
 
 interface Session {
   id: string;
@@ -208,23 +209,51 @@ export default function VPSConsole() {
     return await response.json();
   };
 
-  const getSecretInstructions = (repoUrl: string, tailscaleToken: string) => {
-    return `
-📋 CẦN THÊM 1 SECRET VÀO REPOSITORY:
+  const addGithubSecret = async (token: string, owner: string, repo: string, secretName: string, secretValue: string) => {
+    // Initialize libsodium
+    await _sodium.ready;
+    const sodium = _sodium;
 
-Bước 1: Mở Repository Settings → Secrets and variables → Actions
-Link: ${repoUrl}/settings/secrets/actions
+    // Get repository public key
+    const keyResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/secrets/public-key`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
 
-Bước 2: Nhấn "New repository secret" và thêm:
+    if (!keyResponse.ok) {
+      throw new Error('Failed to get repository public key');
+    }
 
-Secret:
-  Name: TAILSCALE_AUTH_KEY
-  Value: ${tailscaleToken}
+    const { key, key_id } = await keyResponse.json();
 
-Bước 3: Sau khi thêm secret, vào tab "Actions" của repo và chạy workflow "🚀 SEVER AI STV PREMIUM" thủ công.
+    // Encrypt secret using libsodium sealed box
+    const messageBytes = sodium.from_string(secretValue);
+    const keyBytes = sodium.from_base64(key, sodium.base64_variants.ORIGINAL);
+    
+    // Encrypt using sealed box (anonymous encryption)
+    const encryptedBytes = sodium.crypto_box_seal(messageBytes, keyBytes);
+    const encryptedValue = sodium.to_base64(encryptedBytes, sodium.base64_variants.ORIGINAL);
 
-⏰ Thời gian: VPS sẽ sẵn sàng sau 3-5 phút!
-    `.trim();
+    // Add secret to repository
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/secrets/${secretName}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/vnd.github.v3+json',
+      },
+      body: JSON.stringify({
+        encrypted_value: encryptedValue,
+        key_id: key_id,
+      }),
+    });
+
+    if (!response.ok && response.status !== 201 && response.status !== 204) {
+      const errorData = await response.json();
+      throw new Error(`Failed to add secret: ${errorData.message || response.statusText}`);
+    }
   };
 
   const triggerWorkflow = async (token: string, owner: string, repo: string) => {
@@ -247,6 +276,57 @@ Bước 3: Sau khi thêm secret, vào tab "Actions" của repo và chạy workfl
 
     if (!response.ok) {
       throw new Error('Failed to trigger workflow');
+    }
+  };
+
+  const fetchWorkflowLogs = async (token: string, owner: string, repo: string) => {
+    try {
+      // Get latest workflow run
+      const runsResponse = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/actions/runs?per_page=1`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/vnd.github.v3+json',
+          },
+        }
+      );
+
+      if (!runsResponse.ok) return;
+
+      const { workflow_runs } = await runsResponse.json();
+      if (!workflow_runs || workflow_runs.length === 0) return;
+
+      const latestRun = workflow_runs[0];
+      
+      setLogs((prev) => [
+        ...prev,
+        `🎬 Workflow đang chạy: ${latestRun.status}`,
+        `🔗 Xem chi tiết: ${latestRun.html_url}`,
+      ]);
+
+      // Get jobs for this run
+      const jobsResponse = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/actions/runs/${latestRun.id}/jobs`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/vnd.github.v3+json',
+          },
+        }
+      );
+
+      if (jobsResponse.ok) {
+        const { jobs } = await jobsResponse.json();
+        jobs.forEach((job: any) => {
+          setLogs((prev) => [
+            ...prev,
+            `📋 Job: ${job.name} - Status: ${job.status}`,
+          ]);
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching workflow logs:', error);
     }
   };
 
@@ -301,11 +381,31 @@ Bước 3: Sau khi thêm secret, vào tab "Actions" của repo và chạy workfl
       await uploadWorkflowFile(githubToken, repo.owner.login, repo.name);
       setLogs((prev) => [...prev, '✅ Workflow đã sẵn sàng']);
 
-      // Step 4: Show instructions to add secrets manually
-      const instructions = getSecretInstructions(repo.html_url, tailscaleToken);
-      setLogs((prev) => [...prev, '', '🔐 CẦN THÊM SECRET THỦ CÔNG:', '', ...instructions.split('\n')]);
+      // Step 4: Wait for workflow file to be committed
+      setLogs((prev) => [...prev, '⏳ Đợi 5 giây để workflow được xử lý...']);
+      await new Promise(resolve => setTimeout(resolve, 5000));
 
-      toast.info('📋 Vui lòng thêm Tailscale secret vào Repository theo hướng dẫn!', { duration: 10000 });
+      // Step 5: Add Tailscale secret automatically
+      setLogs((prev) => [...prev, '🔐 Đang thêm Tailscale Auth Key vào repository...']);
+      try {
+        await addGithubSecret(githubToken, repo.owner.login, repo.name, 'TAILSCALE_AUTH_KEY', tailscaleToken);
+        setLogs((prev) => [...prev, '✅ Secret đã được thêm tự động!']);
+      } catch (error: any) {
+        setLogs((prev) => [...prev, '⚠️ Không thể thêm secret tự động, thử phương án khác...']);
+        // Fallback: Continue anyway, user might add manually
+      }
+
+      // Step 6: Trigger workflow automatically
+      setLogs((prev) => [...prev, '🚀 Đang trigger workflow tự động...']);
+      await triggerWorkflow(githubToken, repo.owner.login, repo.name);
+      setLogs((prev) => [...prev, '✅ Workflow đã được trigger!']);
+
+      // Step 7: Start monitoring workflow logs
+      setLogs((prev) => [...prev, '👀 Đang theo dõi workflow...']);
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      await fetchWorkflowLogs(githubToken, repo.owner.login, repo.name);
+
+      toast.success('🎉 VPS đang được tạo! Xem logs bên dưới hoặc trên GitHub Actions', { duration: 5000 });
       
       // Save GitHub token to localStorage for later deletion
       localStorage.setItem('github_token', githubToken);

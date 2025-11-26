@@ -494,6 +494,29 @@ export default function VPSConsole() {
     throw lastError || new Error('Failed to trigger workflow after 3 attempts');
   };
 
+  const triggerWorkflowByCommit = async (token: string, owner: string, repo: string) => {
+    const triggerPath = `.github/vps-trigger-${Date.now()}.txt`;
+    const content = `Trigger VPS workflow at ${new Date().toISOString()}`;
+    const encodedContent = btoa(unescape(encodeURIComponent(content)));
+
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${triggerPath}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: 'Trigger VPS workflow (push)',
+        content: encodedContent,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Không thể tạo commit trigger workflow: ${errorData.message || response.statusText}`);
+    }
+  };
+
   const fetchWorkflowLogs = async (token: string, owner: string, repo: string) => {
     try {
       // Get latest workflow run
@@ -643,19 +666,8 @@ export default function VPSConsole() {
         throw uploadError;
       }
 
-      // Step 4: Wait for workflow to be ready
-      const workflowFileName = osType === 'windows' ? 'windows-rdp.yml' : `${osType}-ssh.yml`;
-      const isWorkflowReady = await waitForWorkflowReady(
-        githubToken,
-        repo.owner.login,
-        repo.name,
-        workflowFileName,
-        (log: string) => setLogs((prev) => [...prev, log])
-      );
-
-      if (!isWorkflowReady) {
-        throw new Error('Workflow không được GitHub Actions nhận diện sau 30 giây. Vui lòng thử lại.');
-      }
+      // Step 4: Log sau khi upload workflow
+      setLogs((prev) => [...prev, '✅ Workflow đã được cấu hình, chuẩn bị trigger bằng sự kiện push...']);
 
       // Step 5: Add Tailscale secret automatically
       setLogs((prev) => [...prev, '🔐 Đang thêm Tailscale Auth Key vào repository...']);
@@ -667,18 +679,17 @@ export default function VPSConsole() {
         // Fallback: Continue anyway, user might add manually
       }
 
-      // Step 6: Trigger workflow automatically
-      setLogs((prev) => [...prev, '🚀 Đang trigger workflow tự động...']);
+      // Step 6: Trigger workflow automatically via commit (push event)
+      setLogs((prev) => [...prev, '🚀 Đang tạo commit trigger workflow (sự kiện push)...']);
       try {
-        await triggerWorkflow(
-          githubToken, 
-          repo.owner.login, 
+        await triggerWorkflowByCommit(
+          githubToken,
+          repo.owner.login,
           repo.name,
-          (log: string) => setLogs((prev) => [...prev, log])
         );
-        setLogs((prev) => [...prev, '✅ Workflow đã được trigger thành công!']);
+        setLogs((prev) => [...prev, '✅ Đã tạo commit, GitHub Actions sẽ tự động chạy workflow!']);
       } catch (triggerError: any) {
-        setLogs((prev) => [...prev, `❌ Lỗi trigger: ${triggerError.message}`]);
+        setLogs((prev) => [...prev, `❌ Lỗi trigger (commit): ${triggerError.message}`]);
         throw triggerError;
       }
 

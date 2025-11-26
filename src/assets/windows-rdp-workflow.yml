@@ -12,6 +12,9 @@ on:
         - '1h'
         - '3h' 
         - '5h40m'
+  push:
+    branches:
+      - main
 
 jobs:
   Premium-RDP-Setup:

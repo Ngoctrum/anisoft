@@ -329,6 +329,36 @@ export default function VPSConsole() {
     }
   };
 
+  const getDefaultBranch = async (token: string, owner: string, repo: string): Promise<string> => {
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
+    
+    if (!response.ok) {
+      console.warn('Could not get default branch, assuming main');
+      return 'main';
+    }
+    
+    const repoData = await response.json();
+    return repoData.default_branch || 'main';
+  };
+
+  const verifyWorkflowExists = async (token: string, owner: string, repo: string, workflowFileName: string): Promise<boolean> => {
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/.github/workflows/${workflowFileName}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+      }
+    );
+    return response.ok;
+  };
+
   const triggerWorkflow = async (token: string, owner: string, repo: string) => {
     const isWindows = osType === 'windows';
     const workflowFileName = isWindows ? 'windows-rdp.yml' : `${osType}-ssh.yml`;
@@ -336,50 +366,84 @@ export default function VPSConsole() {
       ? (durationHours === 1 ? '1h' : durationHours === 3 ? '3h' : '5h40m')
       : `${durationHours}h`;
 
+    // Get default branch (could be main or master)
+    const defaultBranch = await getDefaultBranch(token, owner, repo);
+    console.log('📌 Default branch:', defaultBranch);
+
+    // Verify workflow file exists before triggering
+    const workflowExists = await verifyWorkflowExists(token, owner, repo, workflowFileName);
+    if (!workflowExists) {
+      throw new Error(`Workflow file ${workflowFileName} không tồn tại trong repo. Đợi thêm vài giây và thử lại.`);
+    }
+
     console.log('🚀 Triggering workflow', {
       owner,
       repo,
       workflowFileName,
+      branch: defaultBranch,
       durationInput,
       vpsConfig,
     });
-    
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/dispatches`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          Accept: 'application/vnd.github.v3+json',
-        },
-        body: JSON.stringify({
-          ref: 'main',
-          inputs: {
-            duration: durationInput,
-            config: vpsConfig,
-          },
-        }),
+
+    // Try triggering with retry logic (max 3 attempts)
+    let lastError: Error | null = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const response = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflowFileName}/dispatches`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              Accept: 'application/vnd.github.v3+json',
+            },
+            body: JSON.stringify({
+              ref: defaultBranch,
+              inputs: {
+                duration: durationInput,
+                config: vpsConfig,
+              },
+            }),
+          }
+        );
+
+        if (response.ok || response.status === 204) {
+          console.log('✅ Workflow triggered successfully');
+          return; // Success!
+        }
+
+        const errorText = await response.text().catch(() => '');
+        console.error(`❌ Attempt ${attempt} failed:`, {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
+
+        if (response.status === 404) {
+          throw new Error(`Không tìm thấy workflow file "${workflowFileName}" trên nhánh "${defaultBranch}". Hãy kiểm tra lại repo.`);
+        } else if (response.status === 403) {
+          throw new Error('GitHub Token thiếu quyền "workflow". Hãy tạo lại Classic token với scopes: ✅ repo + ✅ workflow');
+        } else if (response.status === 422) {
+          // Workflow might not be ready yet, retry
+          if (attempt < 3) {
+            console.log(`⏳ Workflow chưa sẵn sàng, đợi ${attempt * 2} giây...`);
+            await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+            continue;
+          }
+        }
+
+        lastError = new Error(`Lỗi ${response.status}: ${response.statusText || errorText}`);
+      } catch (error: any) {
+        lastError = error;
+        if (attempt < 3) {
+          console.log(`⏳ Retry attempt ${attempt + 1}/3...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      console.error('❌ Failed to trigger workflow', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText,
-      });
-
-      let message = 'Failed to trigger workflow';
-      if (response.status === 404) {
-        message = 'Không tìm thấy workflow trong repo (404). Kiểm tra lại tên file workflow và nhánh main.';
-      } else if (response.status === 403) {
-        message = 'GitHub Token thiếu quyền workflow. Hãy tạo Classic token với repo + workflow.';
-      }
-
-      throw new Error(message);
     }
+
+    throw lastError || new Error('Failed to trigger workflow after 3 attempts');
   };
 
   const fetchWorkflowLogs = async (token: string, owner: string, repo: string) => {
@@ -529,8 +593,8 @@ export default function VPSConsole() {
       }
 
       // Step 4: Wait for workflow file to be committed
-      setLogs((prev) => [...prev, '⏳ Đợi 5 giây để workflow được xử lý...']);
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      setLogs((prev) => [...prev, '⏳ Đợi 8 giây để workflow được xử lý...']);
+      await new Promise(resolve => setTimeout(resolve, 8000));
 
       // Step 5: Add Tailscale secret automatically
       setLogs((prev) => [...prev, '🔐 Đang thêm Tailscale Auth Key vào repository...']);
@@ -544,8 +608,13 @@ export default function VPSConsole() {
 
       // Step 6: Trigger workflow automatically
       setLogs((prev) => [...prev, '🚀 Đang trigger workflow tự động...']);
-      await triggerWorkflow(githubToken, repo.owner.login, repo.name);
-      setLogs((prev) => [...prev, '✅ Workflow đã được trigger!']);
+      try {
+        await triggerWorkflow(githubToken, repo.owner.login, repo.name);
+        setLogs((prev) => [...prev, '✅ Workflow đã được trigger thành công!']);
+      } catch (triggerError: any) {
+        setLogs((prev) => [...prev, `❌ Lỗi trigger: ${triggerError.message}`]);
+        throw triggerError;
+      }
 
       // Step 7: Start monitoring workflow logs
       setLogs((prev) => [...prev, '👀 Đang theo dõi workflow...']);

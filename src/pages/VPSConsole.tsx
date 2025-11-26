@@ -25,7 +25,7 @@ interface Session {
 
 export default function VPSConsole() {
   const [githubToken, setGithubToken] = useState('');
-  const [ngrokToken, setNgrokToken] = useState('');
+  const [tailscaleToken, setTailscaleToken] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
@@ -162,7 +162,7 @@ export default function VPSConsole() {
       },
       body: JSON.stringify({
         name: repoName,
-        description: 'Windows RDP Server via GitHub Actions & Ngrok',
+        description: 'Windows RDP Server via GitHub Actions & Tailscale',
         private: false,
         auto_init: true,
       }),
@@ -196,7 +196,7 @@ export default function VPSConsole() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: 'Add Windows RDP workflow with Ngrok',
+        message: 'Add Windows RDP workflow with Tailscale',
         content: encodedContent,
       }),
     });
@@ -208,33 +208,22 @@ export default function VPSConsole() {
     return await response.json();
   };
 
-  const getSecretInstructions = (repoUrl: string, ngrokToken: string) => {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
+  const getSecretInstructions = (repoUrl: string, tailscaleToken: string) => {
     return `
-📋 CẦN THÊM 3 SECRETS VÀO REPOSITORY:
+📋 CẦN THÊM 1 SECRET VÀO REPOSITORY:
 
 Bước 1: Mở Repository Settings → Secrets and variables → Actions
 Link: ${repoUrl}/settings/secrets/actions
 
-Bước 2: Nhấn "New repository secret" và thêm lần lượt 3 secrets sau:
+Bước 2: Nhấn "New repository secret" và thêm:
 
-Secret 1:
-  Name: NGROK_AUTH_TOKEN
-  Value: ${ngrokToken}
+Secret:
+  Name: TAILSCALE_AUTH_KEY
+  Value: ${tailscaleToken}
 
-Secret 2:
-  Name: SUPABASE_URL
-  Value: ${supabaseUrl}
+Bước 3: Sau khi thêm secret, vào tab "Actions" của repo và chạy workflow "🚀 SEVER AI STV PREMIUM" thủ công.
 
-Secret 3:
-  Name: SUPABASE_ANON_KEY
-  Value: ${supabaseKey}
-
-Bước 3: Sau khi thêm đủ 3 secrets, vào tab "Actions" của repo và chạy workflow "SEVER AI STV PREMIUM" thủ công.
-
-✅ Xong! VPS sẽ tự động gửi thông tin về website sau 5-10 phút.
+⏰ Thời gian: VPS sẽ sẵn sàng sau 3-5 phút!
     `.trim();
   };
 
@@ -267,8 +256,8 @@ Bước 3: Sau khi thêm đủ 3 secrets, vào tab "Actions" của repo và ch�
       return;
     }
 
-    if (!ngrokToken.trim()) {
-      toast.error('Vui lòng nhập Ngrok Auth Token');
+    if (!tailscaleToken.trim()) {
+      toast.error('Vui lòng nhập Tailscale Auth Token');
       return;
     }
 
@@ -313,10 +302,10 @@ Bước 3: Sau khi thêm đủ 3 secrets, vào tab "Actions" của repo và ch�
       setLogs((prev) => [...prev, '✅ Workflow đã sẵn sàng']);
 
       // Step 4: Show instructions to add secrets manually
-      const instructions = getSecretInstructions(repo.html_url, ngrokToken);
-      setLogs((prev) => [...prev, '', '🔐 CẦN THÊM SECRETS THỦ CÔNG:', '', ...instructions.split('\n')]);
+      const instructions = getSecretInstructions(repo.html_url, tailscaleToken);
+      setLogs((prev) => [...prev, '', '🔐 CẦN THÊM SECRET THỦ CÔNG:', '', ...instructions.split('\n')]);
 
-      toast.info('📋 Vui lòng thêm 3 secrets vào Repository theo hướng dẫn!', { duration: 10000 });
+      toast.info('📋 Vui lòng thêm Tailscale secret vào Repository theo hướng dẫn!', { duration: 10000 });
       
       // Save GitHub token to localStorage for later deletion
       localStorage.setItem('github_token', githubToken);
@@ -324,7 +313,7 @@ Bước 3: Sau khi thêm đủ 3 secrets, vào tab "Actions" của repo và ch�
       
       // Reset form
       setGithubToken('');
-      setNgrokToken('');
+      setTailscaleToken('');
       
       // Reload sessions
       await loadSessions();
@@ -347,7 +336,7 @@ Bước 3: Sau khi thêm đủ 3 secrets, vào tab "Actions" của repo và ch�
               VPS Console
             </h1>
             <p className="text-muted-foreground mt-2">
-              Tự động tạo Windows RDP Server qua GitHub Actions + Ngrok
+              Tự động tạo Windows RDP Server qua GitHub Actions + Tailscale
             </p>
           </div>
         </div>
@@ -359,7 +348,7 @@ Bước 3: Sau khi thêm đủ 3 secrets, vào tab "Actions" của repo và ch�
               <Key className="h-5 w-5 text-primary" />
               Tạo VPS Mới
             </CardTitle>
-            <CardDescription>Nhập GitHub Token và Ngrok Token để tạo VPS tự động</CardDescription>
+            <CardDescription>Nhập GitHub Token và Tailscale Token để tạo VPS tự động</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -389,18 +378,28 @@ Bước 3: Sau khi thêm đủ 3 secrets, vào tab "Actions" của repo và ch�
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="ngrok-token">Ngrok Auth Token</Label>
+                <Label htmlFor="tailscale-token">Tailscale Auth Key</Label>
                 <Input
-                  id="ngrok-token"
+                  id="tailscale-token"
                   type="password"
-                  placeholder="2xxx_xxx..."
-                  value={ngrokToken}
-                  onChange={(e) => setNgrokToken(e.target.value)}
+                  placeholder="tskey-auth-xxx..."
+                  value={tailscaleToken}
+                  onChange={(e) => setTailscaleToken(e.target.value)}
                   disabled={isProcessing}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Lấy token tại: <a href="https://dashboard.ngrok.com/get-started/your-authtoken" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Ngrok Dashboard</a>
-                </p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Auth Key:</strong> Reusable, không hết hạn
+                  </p>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-primary"
+                    onClick={() => window.open('https://login.tailscale.com/admin/settings/keys', '_blank')}
+                  >
+                    🔑 Tạo Tailscale Auth Key (Click here)
+                  </Button>
+                </div>
               </div>
             </div>
 

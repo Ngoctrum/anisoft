@@ -90,15 +90,21 @@ export default function VPSConsole() {
     },
   };
 
-  // Load saved tokens from sessionStorage (cleared when browser closes)
+  // Load saved tokens from localStorage (persists across sessions)
   useEffect(() => {
-    const savedGithub = sessionStorage.getItem('github_token');
-    const savedTailscale = sessionStorage.getItem('tailscale_token');
-    const savedNgrok = sessionStorage.getItem('ngrok_token');
-    const savedNetworkingType = sessionStorage.getItem('networking_type') as 'tailscale' | 'ngrok';
+    const savedGithub = localStorage.getItem('vps_github_token');
+    const savedTailscale = localStorage.getItem('vps_tailscale_token');
+    const savedNgrok = localStorage.getItem('vps_ngrok_token');
+    const savedNetworkingType = localStorage.getItem('vps_networking_type') as 'tailscale' | 'ngrok';
+    const savedTokensFlag = localStorage.getItem('vps_save_tokens_enabled');
+    
+    // Load GitHub token for form (vps_github_token) and for deletion (github_token)
+    const githubTokenForDeletion = localStorage.getItem('github_token');
+    if (githubTokenForDeletion) {
+      setSavedGithubToken(githubTokenForDeletion);
+    }
     
     if (savedGithub) {
-      setSavedGithubToken(savedGithub);
       setGithubToken(savedGithub);
     }
     if (savedTailscale) {
@@ -109,6 +115,9 @@ export default function VPSConsole() {
     }
     if (savedNetworkingType) {
       setNetworkingType(savedNetworkingType);
+    }
+    if (savedTokensFlag === 'true') {
+      setSaveTokensEnabled(true);
     }
   }, []);
 
@@ -575,19 +584,20 @@ export default function VPSConsole() {
       }
     }
 
-    // Save tokens
+    // Save tokens to localStorage (persists across sessions)
     if (githubToken.trim()) {
-      sessionStorage.setItem('github_token', githubToken);
+      localStorage.setItem('vps_github_token', githubToken);
+      localStorage.setItem('github_token', githubToken); // Also save for deletion purposes
       setSavedGithubToken(githubToken);
     }
-    sessionStorage.setItem('networking_type', networkingType);
+    localStorage.setItem('vps_networking_type', networkingType);
     if (networkingType === 'tailscale' && tailscaleToken.trim()) {
-      sessionStorage.setItem('tailscale_token', tailscaleToken);
+      localStorage.setItem('vps_tailscale_token', tailscaleToken);
     } else if (networkingType === 'ngrok' && ngrokToken.trim()) {
-      sessionStorage.setItem('ngrok_token', ngrokToken);
+      localStorage.setItem('vps_ngrok_token', ngrokToken);
     }
     
-    toast.success('✅ Settings đã được lưu!');
+    toast.success('✅ Settings đã được lưu! Tokens sẽ không bị mất khi chuyển trang.');
     setShowSettings(false);
   };
 
@@ -717,22 +727,16 @@ export default function VPSConsole() {
       localStorage.setItem('github_token', githubToken);
       setSavedGithubToken(githubToken);
       
-      // Save tokens if checkbox is enabled
-      if (saveTokensEnabled) {
-        sessionStorage.setItem('github_token', githubToken);
-        sessionStorage.setItem('networking_type', networkingType);
-        if (networkingType === 'tailscale') {
-          sessionStorage.setItem('tailscale_token', tailscaleToken);
-        } else {
-          sessionStorage.setItem('ngrok_token', ngrokToken);
-        }
-        toast.success('✅ Tokens đã được lưu cho lần sau');
-      } else {
-        // Clear tokens after successful VPS creation
-        sessionStorage.removeItem('github_token');
-        sessionStorage.removeItem('tailscale_token');
-        sessionStorage.removeItem('ngrok_token');
-        sessionStorage.removeItem('networking_type');
+      // Save tokens preference
+      localStorage.setItem('vps_save_tokens_enabled', saveTokensEnabled.toString());
+      
+      if (!saveTokensEnabled) {
+        // Clear tokens after successful VPS creation if user doesn't want to save
+        localStorage.removeItem('vps_github_token');
+        localStorage.removeItem('vps_tailscale_token');
+        localStorage.removeItem('vps_ngrok_token');
+        localStorage.removeItem('vps_networking_type');
+        toast.info('Tokens đã được xóa sau khi tạo VPS');
       }
       
       // Note: NOT resetting form tokens so user can create another VPS quickly
@@ -776,7 +780,10 @@ export default function VPSConsole() {
                 <Settings className="h-5 w-5 text-primary" />
                 Cài đặt Networking & Tokens
               </CardTitle>
-              <CardDescription>Chọn loại kết nối và lưu tokens để không cần nhập lại</CardDescription>
+              <CardDescription>
+                💾 Tokens được lưu vĩnh viễn (localStorage) - không mất khi đóng trình duyệt. 
+                Dùng checkbox bên dưới để kiểm soát xóa tokens sau khi tạo VPS.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Networking Type Selection */}
@@ -1049,15 +1056,22 @@ export default function VPSConsole() {
               </AlertDescription>
             </Alert>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="save-tokens"
-                checked={saveTokensEnabled}
-                onCheckedChange={setSaveTokensEnabled}
-              />
-              <Label htmlFor="save-tokens" className="cursor-pointer">
-                Lưu tokens cho lần sau
-              </Label>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="save-tokens"
+                  checked={saveTokensEnabled}
+                  onCheckedChange={setSaveTokensEnabled}
+                />
+                <Label htmlFor="save-tokens" className="cursor-pointer">
+                  💾 Lưu tokens sau khi tạo VPS
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground ml-7">
+                {saveTokensEnabled ? 
+                  '✅ Tokens sẽ được giữ lại sau khi tạo VPS - không cần nhập lại lần sau' : 
+                  '⚠️ Tokens sẽ tự động xóa sau khi tạo VPS - cần nhập lại lần sau'}
+              </p>
             </div>
 
             <Button

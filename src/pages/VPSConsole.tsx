@@ -53,6 +53,14 @@ export default function VPSConsole() {
   const [osType, setOsType] = useState<'windows' | 'ubuntu' | 'debian' | 'archlinux' | 'centos'>('windows');
   const [vpsConfig, setVpsConfig] = useState<'basic' | 'standard' | 'premium'>('basic');
   const [durationHours, setDurationHours] = useState(6);
+
+  // Auto-switch to Tailscale when Windows is selected (Ngrok requires credit card for RDP)
+  useEffect(() => {
+    if (osType === 'windows' && networkingType === 'ngrok') {
+      setNetworkingType('tailscale');
+      toast.warning('Windows RDP yêu cầu Tailscale (Ngrok free không hỗ trợ RDP port)');
+    }
+  }, [osType, networkingType]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
@@ -802,10 +810,11 @@ export default function VPSConsole() {
                       value="ngrok"
                       checked={networkingType === 'ngrok'}
                       onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok')}
-                      className="w-4 h-4"
+                      disabled={osType === 'windows'}
+                      className="w-4 h-4 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
-                    <Label htmlFor="settings_networking_ngrok" className="font-normal cursor-pointer">
-                      🌐 Ngrok (Internet công khai)
+                    <Label htmlFor="settings_networking_ngrok" className={`font-normal cursor-pointer ${osType === 'windows' ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                      🌐 Ngrok (Internet công khai) {osType === 'windows' && '❌ Không hỗ trợ Windows'}
                     </Label>
                   </div>
                 </div>
@@ -814,7 +823,7 @@ export default function VPSConsole() {
                     {networkingType === 'tailscale' ? (
                       <>✅ <strong>Tailscale:</strong> Mạng riêng bảo mật, cần cài Tailscale trên máy</>
                     ) : (
-                      <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm</>
+                      <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm. ⚠️ <strong>Chỉ hỗ trợ Linux</strong> (Ngrok free không cho phép Windows RDP)</>
                     )}
                   </p>
                 </div>

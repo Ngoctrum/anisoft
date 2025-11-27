@@ -86,45 +86,16 @@ jobs:
         run: |
           Write-Host "🌐 ĐANG THIẾT LẬP NGROK TUNNEL" -ForegroundColor Yellow
           
-          # Download Ngrok với retry logic
+          # Download Ngrok
           $ngrokZip = "$env:TEMP\ngrok.zip"
-          $downloadSuccess = $false
-          
-          for ($attempt = 1; $attempt -le 3; $attempt++) {
-              Write-Host "│ 🔄 Thử tải Ngrok (lần $attempt)..." -ForegroundColor Blue
-              try {
-                  if (Test-Path $ngrokZip) {
-                      Remove-Item $ngrokZip -Force
-                  }
-                  
-                  Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile $ngrokZip -TimeoutSec 30
-                  
-                  if ((Test-Path $ngrokZip) -and ((Get-Item $ngrokZip).Length -gt 1MB)) {
-                      Expand-Archive -Path $ngrokZip -DestinationPath "$env:TEMP\ngrok" -Force
-                      Remove-Item $ngrokZip -Force
-                      Write-Host "│ ✅ Đã tải Ngrok thành công" -ForegroundColor Green
-                      $downloadSuccess = $true
-                      break
-                  }
-              } catch {
-                  Write-Host "│ ⚠️ Lần $attempt thất bại: $($_.Exception.Message)" -ForegroundColor Yellow
-                  Start-Sleep -Seconds 3
-              }
-          }
-          
-          if (-not $downloadSuccess) {
-              Write-Host "│ ❌ Không thể tải Ngrok" -ForegroundColor Red
-              exit 1
-          }
+          Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile $ngrokZip
+          Expand-Archive -Path $ngrokZip -DestinationPath "$env:TEMP\ngrok" -Force
+          Remove-Item $ngrokZip -Force
+          Write-Host "│ ✅ Đã tải Ngrok" -ForegroundColor Green
           
           # Authenticate Ngrok
-          try {
-              & "$env:TEMP\ngrok\ngrok.exe" authtoken $env:NGROK_AUTH_TOKEN
-              Write-Host "│ ✅ Đã xác thực Ngrok" -ForegroundColor Green
-          } catch {
-              Write-Host "│ ❌ Lỗi xác thực Ngrok" -ForegroundColor Red
-              exit 1
-          }
+          & "$env:TEMP\ngrok\ngrok.exe" authtoken $env:NGROK_AUTH_TOKEN
+          Write-Host "│ ✅ Đã xác thực Ngrok" -ForegroundColor Green
           
           # Start Ngrok tunnel trong background
           Start-Process -FilePath "$env:TEMP\ngrok\ngrok.exe" -ArgumentList "tcp", "3389", "--log=stdout" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ngrok.log"
@@ -133,28 +104,26 @@ jobs:
           # Chờ Ngrok khởi động
           Start-Sleep -Seconds 10
           
-          # Lấy public URL từ Ngrok API với retry
-          Write-Host "│ 🔄 Đang lấy Ngrok URL..." -ForegroundColor Blue
+          # Lấy public URL từ Ngrok API
           $ngrokUrl = $null
-          for($i=0; $i -lt 30; $i++) {
+          for($i=0; $i -lt 20; $i++) {
               try {
-                  $response = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels" -TimeoutSec 5
+                  $response = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels"
                   $tunnel = $response.tunnels | Where-Object { $_.proto -eq "tcp" } | Select-Object -First 1
                   if ($tunnel -and $tunnel.public_url) {
                       $ngrokUrl = $tunnel.public_url -replace 'tcp://', ''
                       echo "NGROK_URL=$ngrokUrl" >> $env:GITHUB_ENV
-                      Write-Host "│ ✅ Ngrok URL: $ngrokUrl" -ForegroundColor Green
+                      Write-Host "✅ Ngrok URL: $ngrokUrl" -ForegroundColor Green
                       break
                   }
               } catch {
                   # Retry
               }
-              Write-Host "│ 🔄 Chờ Ngrok URL... (lần $($i + 1)/30)" -ForegroundColor Blue
-              Start-Sleep -Seconds 5
+              Start-Sleep -Seconds 3
           }
           
           if (-not $ngrokUrl) {
-              Write-Host "│ ❌ Không thể lấy Ngrok URL sau 30 lần thử" -ForegroundColor Red
+              Write-Host "❌ Không thể lấy Ngrok URL" -ForegroundColor Red
               exit 1
           }
 

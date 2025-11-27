@@ -212,7 +212,7 @@ jobs:
           
           Write-Host "🎯 Kiểm tra hoàn tất!" -ForegroundColor Green
 
-      # TAILSCALE PREMIUM - CẢI TIẾN VỚI RETRY LOGIC
+      # TAILSCALE PREMIUM
       - name: 🌐 THIẾT LẬP MẠNG PREMIUM
         env:
           TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
@@ -220,132 +220,49 @@ jobs:
           Write-Host ""
           Write-Host "🌐 ĐANG THIẾT LẬP KẾT NỐI MẠNG" -ForegroundColor Yellow
           
-          # Cài đặt Tailscale với retry logic
-          $msiPath = "$env:TEMP\tailscale-premium.msi"
-          $downloadUrls = @(
-              "https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi",
-              "https://pkgs.tailscale.com/stable/tailscale-setup-1.76.6-amd64.msi",
-              "https://pkgs.tailscale.com/stable/tailscale-setup-1.76.1-amd64.msi"
-          )
-          
-          $downloadSuccess = $false
-          foreach ($url in $downloadUrls) {
-              for ($attempt = 1; $attempt -le 3; $attempt++) {
-                  Write-Host "│ 🔄 Thử tải Tailscale (lần $attempt)..." -ForegroundColor Blue
-                  try {
-                      # Xóa file cũ nếu có
-                      if (Test-Path $msiPath) {
-                          Remove-Item $msiPath -Force -ErrorAction SilentlyContinue
-                      }
-                      
-                      # Tải file với timeout và retry
-                      $webClient = New-Object System.Net.WebClient
-                      $webClient.DownloadFile($url, $msiPath)
-                      
-                      # Kiểm tra file đã tải
-                      if ((Test-Path $msiPath) -and ((Get-Item $msiPath).Length -gt 1MB)) {
-                          Write-Host "│ ✅ Tải thành công từ: $($url.Split('/')[-1])" -ForegroundColor Green
-                          $downloadSuccess = $true
-                          break
-                      }
-                  } catch {
-                      Write-Host "│ ⚠️  Lần $attempt thất bại: $($_.Exception.Message)" -ForegroundColor Yellow
-                      Start-Sleep -Seconds 5
-                  }
-              }
-              
-              if ($downloadSuccess) { break }
-          }
-          
-          if (-not $downloadSuccess) {
-              Write-Host "│ ❌ Không thể tải Tailscale sau nhiều lần thử" -ForegroundColor Red
-              Write-Host "│ 💡 Có thể do vấn đề mạng GitHub Actions" -ForegroundColor Yellow
-              exit 1
-          }
-          
           # Cài đặt Tailscale
-          Write-Host "│ 📦 Đang cài đặt Tailscale..." -ForegroundColor Blue
           try {
-              $installProcess = Start-Process msiexec.exe -ArgumentList "/i", "`"$msiPath`"", "/quiet", "/norestart", "/log", "$env:TEMP\tailscale-install.log" -Wait -PassThru
-              
-              if ($installProcess.ExitCode -eq 0) {
-                  Write-Host "│ ✅ Cài đặt Tailscale thành công" -ForegroundColor Green
-              } else {
-                  Write-Host "│ ⚠️  Cài đặt hoàn tất với mã: $($installProcess.ExitCode)" -ForegroundColor Yellow
-              }
-              
+              $msiPath = "$env:TEMP\tailscale-premium.msi"
+              Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi" -OutFile $msiPath
+              Start-Process msiexec.exe -ArgumentList "/i", "`"$msiPath`"", "/quiet", "/norestart" -Wait
               Remove-Item $msiPath -Force -ErrorAction SilentlyContinue
+              Write-Host "│ ✅ Cài đặt Tailscale thành công" -ForegroundColor Green
           } catch {
-              Write-Host "│ ❌ Lỗi cài đặt: $($_.Exception.Message)" -ForegroundColor Red
-              exit 1
+              Write-Host "│ ❌ Lỗi cài đặt Tailscale" -ForegroundColor Red
           }
           
           # Chờ dịch vụ khởi động
-          Write-Host "│ ⏳ Chờ dịch vụ khởi động..." -ForegroundColor Blue
-          Start-Sleep -Seconds 15
+          Start-Sleep -Seconds 10
           
-          # Kiểm tra Tailscale đã cài
-          if (-not (Test-Path "$env:ProgramFiles\Tailscale\tailscale.exe")) {
-              Write-Host "│ ❌ Không tìm thấy Tailscale sau cài đặt" -ForegroundColor Red
-              exit 1
+          # Kết nối Tailscale
+          try {
+              & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=$env:TAILSCALE_AUTH_KEY --hostname=ai-stv-premium-$env:GITHUB_RUN_ID --accept-routes --accept-dns --reset
+              Write-Host "│ ✅ Kết nối Tailscale thành công" -ForegroundColor Green
+          } catch {
+              Write-Host "│ ❌ Lỗi kết nối Tailscale" -ForegroundColor Red
           }
           
-          # Kết nối Tailscale với retry
-          $connectSuccess = $false
-          for ($attempt = 1; $attempt -le 5; $attempt++) {
-              Write-Host "│ 🔄 Kết nối Tailscale (lần $attempt)..." -ForegroundColor Blue
-              try {
-                  & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=$env:TAILSCALE_AUTH_KEY --hostname=ai-stv-premium-$env:GITHUB_RUN_ID --accept-routes --accept-dns --reset
-                  Write-Host "│ ✅ Kết nối Tailscale thành công" -ForegroundColor Green
-                  $connectSuccess = $true
-                  break
-              } catch {
-                  Write-Host "│ ⚠️  Lần $attempt thất bại" -ForegroundColor Yellow
-                  Start-Sleep -Seconds 5
-              }
-          }
-          
-          if (-not $connectSuccess) {
-              Write-Host "│ ❌ Không thể kết nối Tailscale" -ForegroundColor Red
-              exit 1
-          }
-          
-          # Lấy IP với retry mechanism nâng cao
-          Write-Host "│ 🔄 Đang lấy địa chỉ Tailscale IP..." -ForegroundColor Blue
+          # Lấy IP với retry mechanism
+          Write-Host "🔄 Đang lấy địa chỉ IP..." -NoNewline -ForegroundColor Blue
           $ip = $null
-          for($i=0; $i -lt 30; $i++) {
+          for($i=0; $i -lt 20; $i++) {
               try {
-                  # Thử lấy IP
-                  $ipResult = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4 2>&1
-                  
-                  # Kiểm tra kết quả
-                  if ($ipResult -and $ipResult -match '^\d+\.\d+\.\d+\.\d+$') {
-                      $ip = $ipResult.Trim()
+                  $ip = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4 2>&1
+                  if ($ip -and $ip -match '^\d+\.\d+\.\d+\.\d+$') {
                       echo "TAILSCALE_IP=$ip" >> $env:GITHUB_ENV
-                      Write-Host "│ ✅ Địa chỉ Tailscale IP: $ip" -ForegroundColor Green
+                      Write-Host "`r✅ Địa chỉ IP: $ip" -ForegroundColor Green
                       break
-                  }
-                  
-                  # Thử kiểm tra trạng thái kết nối
-                  $status = & "$env:ProgramFiles\Tailscale\tailscale.exe" status 2>&1
-                  if ($status -match 'Tailscale is stopped') {
-                      Write-Host "│ ⚠️  Tailscale đã dừng, đang khởi động lại..." -ForegroundColor Yellow
-                      & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=$env:TAILSCALE_AUTH_KEY --hostname=ai-stv-premium-$env:GITHUB_RUN_ID --accept-routes --accept-dns --reset
-                      Start-Sleep -Seconds 10
                   }
               } catch {
                   # Bỏ qua lỗi và thử lại
               }
-              
-              $dots = "." * (($i % 3) + 1)
-              Write-Host "│ 🔄 Chờ IP Tailscale$dots (lần $($i + 1)/30)" -ForegroundColor Blue
-              Start-Sleep -Seconds 5
+              Write-Host "`r🔄 Đang lấy địa chỉ IP... $(@('.', '..', '...')[$i % 3])" -NoNewline -ForegroundColor Blue
+              Start-Sleep -Seconds 3
           }
           
           if (-not $ip -or $ip -notmatch '^\d+\.\d+\.\d+\.\d+$') {
-              Write-Host "│ ❌ Không thể lấy IP Tailscale sau 30 lần thử" -ForegroundColor Red
-              Write-Host "│ 💡 Vui lòng kiểm tra Tailscale Auth Key" -ForegroundColor Yellow
-              exit 1
+              Write-Host "`r⚠️  Không thể lấy IP, sử dụng localhost" -ForegroundColor Yellow
+              echo "TAILSCALE_IP=localhost" >> $env:GITHUB_ENV
           }
 
       # GỬI THÔNG TIN VỀ WEBSITE

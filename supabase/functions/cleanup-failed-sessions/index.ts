@@ -40,6 +40,54 @@ Deno.serve(async (req) => {
     
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     
+    // First, get sessions to delete (to access github_repo info)
+    const { data: sessionsToDelete, error: fetchError } = await supabase
+      .from('rdp_sessions')
+      .select('*')
+      .or(`status.eq.failed,expires_at.lt.${now},and(status.eq.pending,created_at.lt.${thirtyMinutesAgo})`);
+
+    if (fetchError) {
+      console.error('Error fetching sessions to delete:', fetchError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch sessions', details: fetchError }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Delete GitHub repositories for each session
+    const githubToken = Deno.env.get('GITHUB_TOKEN');
+    if (githubToken && sessionsToDelete) {
+      for (const session of sessionsToDelete) {
+        if (session.github_repo) {
+          try {
+            const [owner, repo] = session.github_repo.split('/');
+            const deleteRepoResponse = await fetch(
+              `https://api.github.com/repos/${owner}/${repo}`,
+              {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${githubToken}`,
+                  'Accept': 'application/vnd.github.v3+json',
+                }
+              }
+            );
+            
+            if (deleteRepoResponse.ok) {
+              console.log(`Deleted GitHub repo: ${session.github_repo}`);
+            } else {
+              console.error(`Failed to delete repo ${session.github_repo}:`, await deleteRepoResponse.text());
+            }
+          } catch (error) {
+            console.error(`Error deleting GitHub repo ${session.github_repo}:`, error);
+          }
+        }
+      }
+    }
+
+    // Now delete the sessions from database
     const { data: deletedSessions, error: deleteError } = await supabase
       .from('rdp_sessions')
       .delete()
@@ -58,7 +106,7 @@ Deno.serve(async (req) => {
     }
 
     const deletedCount = deletedSessions?.length || 0;
-    console.log(`Cleaned up ${deletedCount} sessions`);
+    console.log(`Cleaned up ${deletedCount} sessions with GitHub repos`);
 
     return new Response(
       JSON.stringify({ 

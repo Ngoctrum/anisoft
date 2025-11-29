@@ -771,33 +771,37 @@ export default function VPSConsole() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="console" className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
-              <Server className="h-10 w-10 text-primary" />
+          <TabsContent value="console" className="space-y-8 animate-fade-in">
+        {/* Hero Header */}
+        <div className="text-center space-y-6">
+          <div className="inline-flex items-center gap-4 px-8 py-4 bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 rounded-2xl border border-primary/20 shadow-lg shadow-primary/5 hover-scale transition-all duration-300">
+            <div className="p-3 bg-primary/10 rounded-xl">
+              <Server className="h-8 w-8 text-primary animate-pulse" />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
               VPS Console
             </h1>
-            <p className="text-muted-foreground mt-2">
-              Tự động tạo Windows/Ubuntu VPS qua GitHub Actions + Tailscale
-            </p>
           </div>
-          <Button variant="outline" size="icon" onClick={() => setShowSettings(!showSettings)} title="Settings">
-            <Settings className="h-5 w-5" />
-          </Button>
+          <p className="text-muted-foreground text-lg max-w-3xl mx-auto leading-relaxed">
+            🚀 Tạo và quản lý VPS miễn phí với GitHub Actions
+            <br />
+            <span className="text-sm">Hỗ trợ Windows RDP & Linux SSH • Tailscale & Ngrok networking</span>
+          </p>
         </div>
 
         {/* Settings Panel */}
         {showSettings && (
-          <Card className="border-2 shadow-lg bg-muted/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-primary" />
+          <Card className="border-2 border-primary/20 shadow-xl shadow-primary/5 bg-card/50 backdrop-blur-sm overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl -z-10" />
+            <CardHeader className="border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
+              <CardTitle className="flex items-center gap-3 text-xl">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Settings className="h-5 w-5 text-primary" />
+                </div>
                 Cài đặt Networking & Tokens
               </CardTitle>
-              <CardDescription>
-                💾 Tokens được lưu vĩnh viễn (localStorage) - không mất khi đóng trình duyệt. 
-                Dùng checkbox bên dưới để kiểm soát xóa tokens sau khi tạo VPS.
+              <CardDescription className="text-base">
+                💾 Tokens được lưu vĩnh viễn (localStorage) - không mất khi đóng trình duyệt
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -913,14 +917,17 @@ export default function VPSConsole() {
         )}
 
         {/* Create VPS Form */}
-        <Card className="border-2 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5 text-primary" />
+        <Card className="border-2 border-primary/20 shadow-xl shadow-primary/5 bg-card/50 backdrop-blur-sm overflow-hidden">
+          <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full blur-3xl -z-10" />
+          <CardHeader className="border-b border-border/50 bg-gradient-to-r from-purple-500/5 to-transparent">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Key className="h-5 w-5 text-primary" />
+              </div>
               Tạo VPS Mới
             </CardTitle>
-            <CardDescription>
-              Chọn phương thức kết nối và nhập tokens
+            <CardDescription className="text-base">
+              Chọn phương thức kết nối và nhập tokens để bắt đầu
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1141,18 +1148,11 @@ export default function VPSConsole() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {sessions.map((session) => (
-                <div key={session.id} className="relative">
-                  <RDPSessionCard session={session} />
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-8 w-8"
-                    onClick={() => deleteSession(session.id, session.repo_url)}
-                    title="Xóa session và GitHub repository"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                <RDPSessionCard 
+                  key={session.id}
+                  session={session}
+                  onDelete={() => deleteSession(session.id, session.repo_url)}
+                />
               ))}
             </div>
           )}

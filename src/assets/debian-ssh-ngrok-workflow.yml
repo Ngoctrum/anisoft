@@ -76,6 +76,8 @@ jobs:
           sudo apt-get update && sudo apt-get install -y ngrok
           ngrok authtoken $NGROK_AUTH_TOKEN
           ngrok tcp 22 --log=stdout > /tmp/ngrok.log 2>&1 &
+          NGROK_PID=$!
+          echo "NGROK_PID=$NGROK_PID" >> $GITHUB_ENV
           sleep 10
           NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | grep -oP '"public_url":"tcp://\K[^"]+' | head -1)
           echo "NGROK_URL=$NGROK_URL" >> $GITHUB_ENV
@@ -89,7 +91,7 @@ jobs:
             -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8" \
             -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8" \
             -H "Content-Type: application/json" \
-            -d "{\"repoName\":\"$REPO_NAME\",\"ngrokUrl\":\"$NGROK_URL\",\"rdpUser\":\"aistv-ngrok\",\"rdpPassword\":\"$PASSWORD\",\"osType\":\"debian\"}" \
+            -d "{\"repoName\":\"$REPO_NAME\",\"ngrokUrl\":\"$NGROK_URL\",\"rdpUser\":\"aistv-ngrok\",\"rdpPassword\":\"$PASSWORD\",\"osType\":\"debian\",\"sshPort\":22}" \
             || echo "⚠️ Warning"
 
       - name: ⏳ DUY TRÌ PHIÊN
@@ -108,10 +110,19 @@ jobs:
           done &
           KEEPALIVE_PID=$!
           
-          # Count down with monitoring
+          # Count down with Ngrok monitoring
           for ((i=MINUTES; i>0; i--)); do
             HOURS_LEFT=$((i / 60))
             MINS_LEFT=$((i % 60))
+            
+            # Check if Ngrok is still running
+            if ! ps -p $NGROK_PID > /dev/null 2>&1; then
+              echo "⚠️ Ngrok đã dừng! Khởi động lại..."
+              ngrok tcp 22 --log=stdout > /tmp/ngrok.log 2>&1 &
+              NGROK_PID=$!
+              echo "NGROK_PID=$NGROK_PID" >> $GITHUB_ENV
+            fi
+            
             echo -ne "\r⏱️ Còn lại: ${HOURS_LEFT}h ${MINS_LEFT}m   "
             sleep 60
           done
@@ -121,3 +132,11 @@ jobs:
           
           echo ""
           echo "🎯 ĐÃ HẾT THỜI GIAN - TỰ ĐỘNG DỪNG!"
+          
+      - name: 🧹 DỌN DẸP HỆ THỐNG
+        if: always()
+        run: |
+          echo "🧹 ĐANG DỌN DẸP..."
+          rm -f /tmp/ssh_password.txt
+          kill $NGROK_PID 2>/dev/null || true
+          echo "✅ Dọn dẹp hoàn tất!"

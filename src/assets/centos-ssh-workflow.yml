@@ -44,9 +44,17 @@ jobs:
           echo "🛠️ ĐANG CẤU HÌNH HỆ THỐNG"
           sudo apt-get update -qq
           sudo apt-get install -y openssh-server curl
-          sudo systemctl start ssh
+          
+          # Enable password authentication and keep-alive
+          sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          sudo sed -i 's/^#\?PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+          echo "ClientAliveInterval 30" | sudo tee -a /etc/ssh/sshd_config
+          echo "ClientAliveCountMax 99999" | sudo tee -a /etc/ssh/sshd_config
+          echo "TCPKeepAlive yes" | sudo tee -a /etc/ssh/sshd_config
+          
+          sudo systemctl restart ssh
           sudo systemctl enable ssh
-          echo "✅ SSH Server đã khởi động"
+          echo "✅ SSH Server đã khởi động với Password Authentication và Keep-Alive"
 
       - name: 👤 TẠO TÀI KHOẢN SSH
         run: |

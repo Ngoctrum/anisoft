@@ -1,7 +1,27 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Youtube, Mail } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export const Footer = () => {
+  const [contactSettings, setContactSettings] = useState<any>({});
+  
+  useEffect(() => {
+    const loadContactSettings = async () => {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'contact')
+        .single();
+      
+      if (data?.value) {
+        setContactSettings(data.value);
+      }
+    };
+    
+    loadContactSettings();
+  }, []);
+  
   return (
     <footer className="border-t border-border bg-card mt-auto">
       <div className="container py-12">
@@ -56,15 +76,34 @@ export const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4">Liên hệ</h3>
             <div className="flex gap-4">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <Youtube className="h-5 w-5" />
-              </a>
-              <a href="mailto:contact@anistudio.com" className="text-muted-foreground hover:text-primary transition-colors">
-                <Mail className="h-5 w-5" />
-              </a>
+              {contactSettings.facebook_url && (
+                <a 
+                  href={contactSettings.facebook_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Facebook className="h-5 w-5" />
+                </a>
+              )}
+              {contactSettings.youtube_url && (
+                <a 
+                  href={contactSettings.youtube_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Youtube className="h-5 w-5" />
+                </a>
+              )}
+              {contactSettings.contact_email && (
+                <a 
+                  href={`mailto:${contactSettings.contact_email}`}
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Mail className="h-5 w-5" />
+                </a>
+              )}
             </div>
           </div>
         </div>

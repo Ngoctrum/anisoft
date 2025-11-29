@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import { PageAccessControl } from '@/components/PageAccessControl';
 
 const reportSchema = z.object({
   title: z.string().min(5, 'Tiêu đề phải có ít nhất 5 ký tự').max(100, 'Tiêu đề không được quá 100 ký tự'),
@@ -103,8 +104,9 @@ export default function Report() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+    <PageAccessControl pageKey="support_enabled" pageName="Support/Report">
+      <div className="min-h-screen flex flex-col">
+        <Header />
       
       <main className="flex-1 container py-8">
         <div className="max-w-2xl mx-auto space-y-8">
@@ -237,6 +239,7 @@ export default function Report() {
       </main>
 
       <Footer />
-    </div>
+      </div>
+    </PageAccessControl>
   );
 }

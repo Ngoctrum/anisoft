@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { PageAccessControl } from '@/components/PageAccessControl';
 
 interface Tool {
   id: string;
@@ -50,8 +51,9 @@ export default function Apps() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-radial flex flex-col">
-      <Header />
+    <PageAccessControl pageKey="apps_enabled" pageName="Apps">
+      <div className="min-h-screen bg-gradient-radial flex flex-col">
+        <Header />
       
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto space-y-8">
@@ -141,6 +143,7 @@ export default function Apps() {
       </main>
 
       <Footer />
-    </div>
+      </div>
+    </PageAccessControl>
   );
 }

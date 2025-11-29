@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Facebook, Youtube, Mail } from 'lucide-react';
+import { Facebook, Youtube, Mail, MessageCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -82,6 +82,7 @@ export const Footer = () => {
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors"
+                  aria-label="Facebook"
                 >
                   <Facebook className="h-5 w-5" />
                 </a>
@@ -92,14 +93,27 @@ export const Footer = () => {
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-primary transition-colors"
+                  aria-label="YouTube"
                 >
                   <Youtube className="h-5 w-5" />
+                </a>
+              )}
+              {contactSettings.zalo_url && (
+                <a 
+                  href={contactSettings.zalo_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  aria-label="Zalo"
+                >
+                  <MessageCircle className="h-5 w-5" />
                 </a>
               )}
               {contactSettings.contact_email && (
                 <a 
                   href={`mailto:${contactSettings.contact_email}`}
                   className="text-muted-foreground hover:text-primary transition-colors"
+                  aria-label="Email"
                 >
                   <Mail className="h-5 w-5" />
                 </a>

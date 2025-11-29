@@ -21,6 +21,7 @@ export default function AdminSettings() {
   const [theme, setTheme] = useState<any>({});
   const [smtp, setSmtp] = useState<any>({});
   const [vpsSettings, setVpsSettings] = useState<any>({});
+  const [pageVisibility, setPageVisibility] = useState<any>({});
 
   useEffect(() => {
     loadSettings();
@@ -53,6 +54,15 @@ export default function AdminSettings() {
           break;
         case 'vps_settings':
           setVpsSettings(value || { networking_type: 'tailscale' });
+          break;
+        case 'page_visibility':
+          setPageVisibility(value || {
+            tools_enabled: true,
+            apps_enabled: true,
+            vps_console_enabled: true,
+            docs_enabled: true,
+            support_enabled: true
+          });
           break;
       }
     });
@@ -118,6 +128,10 @@ export default function AdminSettings() {
             <TabsTrigger value="smtp">
               <Mail className="h-4 w-4 mr-2" />
               SMTP
+            </TabsTrigger>
+            <TabsTrigger value="pages">
+              <SettingsIcon className="h-4 w-4 mr-2" />
+              Quản lý trang
             </TabsTrigger>
           </TabsList>
 
@@ -430,6 +444,118 @@ export default function AdminSettings() {
                 >
                   {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Lưu cấu hình
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="pages">
+            <Card>
+              <CardHeader>
+                <CardTitle>🎛️ Quản lý hiển thị trang</CardTitle>
+                <CardDescription>
+                  Bật/tắt từng trang riêng lẻ - Người dùng sẽ thấy thông báo khi truy cập trang bị tắt
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                
+                <div className="space-y-4 border border-border/50 rounded-lg p-4 bg-card/50">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    🛠️ Trang Tools
+                  </h3>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Hiển thị trang Tools</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {pageVisibility.tools_enabled ? '✅ Đang bật' : '❌ Đang tắt'}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={pageVisibility.tools_enabled !== false}
+                      onCheckedChange={(checked) => setPageVisibility({ ...pageVisibility, tools_enabled: checked })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 border border-border/50 rounded-lg p-4 bg-card/50">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    ⚡ Trang Apps
+                  </h3>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Hiển thị trang Apps</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {pageVisibility.apps_enabled ? '✅ Đang bật' : '❌ Đang tắt'}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={pageVisibility.apps_enabled !== false}
+                      onCheckedChange={(checked) => setPageVisibility({ ...pageVisibility, apps_enabled: checked })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 border border-border/50 rounded-lg p-4 bg-card/50">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    💻 Trang VPS Console
+                  </h3>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Hiển thị trang VPS Console</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {pageVisibility.vps_console_enabled ? '✅ Đang bật' : '❌ Đang tắt'}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={pageVisibility.vps_console_enabled !== false}
+                      onCheckedChange={(checked) => setPageVisibility({ ...pageVisibility, vps_console_enabled: checked })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 border border-border/50 rounded-lg p-4 bg-card/50">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    📚 Trang Docs
+                  </h3>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Hiển thị trang Docs</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {pageVisibility.docs_enabled ? '✅ Đang bật' : '❌ Đang tắt'}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={pageVisibility.docs_enabled !== false}
+                      onCheckedChange={(checked) => setPageVisibility({ ...pageVisibility, docs_enabled: checked })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 border border-border/50 rounded-lg p-4 bg-card/50">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    🆘 Trang Support/Report
+                  </h3>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Hiển thị trang Support</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {pageVisibility.support_enabled ? '✅ Đang bật' : '❌ Đang tắt'}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={pageVisibility.support_enabled !== false}
+                      onCheckedChange={(checked) => setPageVisibility({ ...pageVisibility, support_enabled: checked })}
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => handleSave('page_visibility', pageVisibility)}
+                  disabled={saving}
+                  className="bg-gradient-primary w-full"
+                >
+                  {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  💾 Lưu cài đặt hiển thị
                 </Button>
               </CardContent>
             </Card>

@@ -15,6 +15,7 @@ import { RDPSessionCard } from '@/components/RDPSessionCard';
 import { Header } from '@/components/Header';
 import { Switch } from '@/components/ui/switch';
 import { VPSAnalyticsDashboard } from '@/components/vps/VPSAnalyticsDashboard';
+import { PageAccessControl } from '@/components/PageAccessControl';
 import windowsWorkflowTemplate from '@/assets/windows-rdp-workflow.yml?raw';
 import windowsNgrokWorkflowTemplate from '@/assets/windows-rdp-ngrok-workflow.yml?raw';
 import ubuntuWorkflowTemplate from '@/assets/ubuntu-ssh-workflow.yml?raw';
@@ -755,8 +756,9 @@ export default function VPSConsole() {
   };
 
   return (
-    <>
-      <Header />
+    <PageAccessControl pageKey="vps_console_enabled" pageName="VPS Console">
+      <>
+        <Header />
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <Tabs defaultValue="console" className="w-full">
@@ -1165,6 +1167,7 @@ export default function VPSConsole() {
         </Tabs>
       </div>
       </div>
-    </>
+      </>
+    </PageAccessControl>
   );
 }

@@ -2,11 +2,13 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Download, Archive, Shield, HelpCircle } from 'lucide-react';
+import { PageAccessControl } from '@/components/PageAccessControl';
 
 export default function Docs() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
+    <PageAccessControl pageKey="docs_enabled" pageName="Docs">
+      <div className="min-h-screen flex flex-col">
+        <Header />
       
       <main className="flex-1 container py-8">
         <div className="max-w-4xl mx-auto space-y-8">
@@ -126,6 +128,7 @@ export default function Docs() {
       </main>
 
       <Footer />
-    </div>
+      </div>
+    </PageAccessControl>
   );
 }

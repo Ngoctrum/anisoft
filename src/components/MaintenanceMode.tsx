@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { AlertTriangle } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 export const MaintenanceMode = ({ children }: { children: React.ReactNode }) => {
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     checkMaintenanceMode();
@@ -48,8 +50,11 @@ export const MaintenanceMode = ({ children }: { children: React.ReactNode }) => 
     return null;
   }
 
-  // Admin có thể vào khi bảo trì
-  if (isMaintenanceMode && !isAdmin) {
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const shouldShowMaintenance = isMaintenanceMode && !(isAdmin && isAdminRoute);
+
+  // Hiển thị trang bảo trì cho tất cả mọi người, trừ admin khi đang ở trong khu vực /admin
+  if (shouldShowMaintenance) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-card to-background p-4 relative overflow-hidden">
         {/* Animated background elements */}

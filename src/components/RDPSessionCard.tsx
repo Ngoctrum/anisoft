@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Clock, Server, User, Key, Copy, ExternalLink, Download, Power, PowerOff, AlertTriangle } from 'lucide-react';
+import { Clock, Server, User, Key, Copy, ExternalLink, Download, Power, PowerOff, AlertTriangle, Trash2, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { VPSQuickActions } from './vps/VPSQuickActions';
@@ -32,9 +32,12 @@ interface RDPSession {
 
 interface RDPSessionCardProps {
   session: RDPSession;
+  onDelete: () => void;
+  onKill?: () => void;
+  onStart?: () => void;
 }
 
-export function RDPSessionCard({ session }: RDPSessionCardProps) {
+export function RDPSessionCard({ session, onDelete, onKill, onStart }: RDPSessionCardProps) {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [isKilling, setIsKilling] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
@@ -268,45 +271,72 @@ username:s:${username}`;
 
   return (
     <>
-      <Card className="w-full animate-fade-in hover-scale transition-all hover:shadow-lg border-2 hover:border-primary/50">
-        <CardHeader className="pb-3">
+      <Card className={`relative transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] border-2 overflow-hidden group ${
+        session.is_active && session.status === 'connected' 
+          ? 'border-green-500/50 shadow-green-500/10 bg-gradient-to-br from-green-500/5 to-transparent' 
+          : 'border-border/50 bg-card/50 backdrop-blur-sm'
+      }`}>
+        {/* Decorative Background */}
+        <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl -z-10 group-hover:scale-150 transition-transform duration-700" />
+        
+        <CardHeader className="border-b border-border/50">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Server className="h-5 w-5 text-primary" />
-              {osIcon} {session.github_repo}
-            </CardTitle>
-            <div className="flex gap-2 items-center">
-              <Badge className={`${getStatusColor()} ${session.status === 'connected' && session.is_active ? 'pulse-glow' : ''}`}>
-                {getStatusText()}
-              </Badge>
-              <Badge variant="outline" className="gap-1">
-                {networkingIcon} {networkingName}
-              </Badge>
-              {session.vps_config && (
-                <Badge variant="outline">
-                  {session.vps_config === 'premium' ? '👑' : session.vps_config === 'standard' ? '💎' : '⚡'} {session.vps_config}
-                </Badge>
-              )}
-              <VPSQuickActions
-                sessionId={session.id}
-                sessionName={session.github_repo}
-                isActive={session.is_active || false}
-                onDelete={() => {/* Handled by parent */}}
-                onKill={handleKillVPS}
-                onStart={handleStartVPS}
-                onViewLogs={() => setShowLogsDialog(true)}
-              />
+            <div className="flex items-center gap-4 flex-1">
+              <div className={`p-3 rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${
+                session.is_active && session.status === 'connected' 
+                  ? 'bg-gradient-to-br from-green-500/20 to-green-500/10' 
+                  : 'bg-muted/50'
+              }`}>
+                <Server className={`h-6 w-6 ${
+                  session.is_active && session.status === 'connected' 
+                    ? 'text-green-500 animate-pulse' 
+                    : 'text-primary'
+                }`} />
+              </div>
+              <div className="flex-1 min-w-0 space-y-2">
+                <CardTitle className="text-lg flex items-center gap-2 flex-wrap">
+                  <span className="truncate font-bold">{osIcon} {session.github_repo}</span>
+                  <Badge 
+                    className={`${getStatusColor()} ${
+                      session.is_active && session.status === 'connected' 
+                        ? 'pulse-glow shadow-lg shadow-green-500/50' 
+                        : ''
+                    } transition-all duration-300`}
+                  >
+                    {getStatusText()}
+                  </Badge>
+                </CardTitle>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className="font-mono text-xs gap-1">
+                    {networkingIcon} {networkingName}
+                  </Badge>
+                  {session.vps_config && (
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {session.vps_config === 'premium' ? '👑' : session.vps_config === 'standard' ? '💎' : '⚡'} {session.vps_config}
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </div>
+            <VPSQuickActions
+              sessionId={session.id}
+              sessionName={session.github_repo}
+              isActive={session.is_active || false}
+              onDelete={() => {/* Handled by parent */}}
+              onKill={handleKillVPS}
+              onStart={handleStartVPS}
+              onViewLogs={() => setShowLogsDialog(true)}
+            />
           </div>
         </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6 pt-6">
         {/* Failed Status Alert */}
         {session.status === 'failed' && (
-          <Alert className="bg-destructive/10 border-destructive/50">
-            <AlertTriangle className="h-4 w-4 text-destructive" />
+          <Alert className="bg-gradient-to-r from-destructive/10 to-destructive/5 border-2 border-destructive/50 shadow-lg">
+            <AlertTriangle className="h-5 w-5 text-destructive animate-pulse" />
             <AlertDescription className="ml-2">
-              <p className="font-semibold text-destructive">VPS tạo thất bại!</p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="font-bold text-destructive text-base">⚠️ VPS tạo thất bại!</p>
+              <p className="text-sm text-muted-foreground mt-2">
                 Không thể khởi động VPS. VPS này sẽ tự động bị xóa trong vòng 1 giờ tới.
               </p>
             </AlertDescription>
@@ -315,84 +345,101 @@ username:s:${username}`;
         
         {/* Repo Link */}
         {session.repo_url && (
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <span className="text-sm text-muted-foreground">Repository:</span>
+          <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 hover-scale transition-all duration-300">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <ExternalLink className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-sm text-muted-foreground font-medium">Repository</span>
+            </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => window.open(session.repo_url, '_blank')}
-              className="gap-2"
+              className="gap-2 hover:bg-primary/10"
             >
-              GitHub <ExternalLink className="h-4 w-4" />
+              <span className="font-semibold">GitHub</span>
+              <ExternalLink className="h-4 w-4" />
             </Button>
           </div>
         )}
 
         {/* Connection Info */}
         {(session.tailscale_ip || session.ngrok_url) && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <div className="flex items-center gap-2">
-                <Server className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Server:</span>
+          <div className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10">
+            <h4 className="font-semibold flex items-center gap-2 text-foreground">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Server className="h-4 w-4 text-primary" />
               </div>
-              <div className="flex items-center gap-2">
-                <code className="text-sm bg-background px-2 py-1 rounded">
-                  {serverAddress}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(serverAddress, 'Server')}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
+              Thông tin kết nối
+            </h4>
+            <div className="grid gap-3">
+              <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border/30">
+                <div className="flex items-center gap-2">
+                  <Server className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground font-medium">Server:</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm bg-muted/50 px-3 py-1 rounded font-mono font-semibold">
+                    {serverAddress}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(serverAddress, 'Server')}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
-        )}
 
-        {session.rdp_user && (
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Username:</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <code className="text-sm bg-background px-2 py-1 rounded">{session.rdp_user}</code>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => copyToClipboard(session.rdp_user!, 'Username')}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
+              {session.rdp_user && (
+                <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border/30">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground font-medium">Username:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <code className="text-sm bg-muted/50 px-3 py-1 rounded font-mono font-semibold">{session.rdp_user}</code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(session.rdp_user!, 'Username')}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
 
-        {session.rdp_password && (
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <div className="flex items-center gap-2">
-              <Key className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Password:</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <code className="text-sm bg-background px-2 py-1 rounded">{session.rdp_password}</code>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => copyToClipboard(session.rdp_password!, 'Password')}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
+              {session.rdp_password && (
+                <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border/30">
+                  <div className="flex items-center gap-2">
+                    <Key className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground font-medium">Password:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <code className="text-sm bg-muted/50 px-3 py-1 rounded font-mono font-semibold">{session.rdp_password}</code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard(session.rdp_password!, 'Password')}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* Full Info Box - Only show when all 3 values are present */}
         {hasFullInfo && (
-          <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg space-y-3">
+          <div className="p-6 bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent border-2 border-green-500/30 rounded-xl shadow-lg shadow-green-500/10 space-y-4 hover-scale transition-all duration-300">
             <div className="flex items-center justify-between">
               <h4 className="font-semibold text-green-600 dark:text-green-400">
                 ✅ VPS Đã Sẵn Sàng
@@ -503,64 +550,90 @@ username:s:${username}`;
           </div>
         )}
 
-        {/* Time Remaining */}
-        {timeRemaining && (
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Thời gian còn lại:</span>
+        {/* Session Details */}
+        <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-muted/30 border border-border/30">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-primary/5 rounded-lg">
+              <Clock className="h-4 w-4 text-primary" />
             </div>
-            <span className="text-sm font-semibold">{timeRemaining}</span>
+            <span className="text-sm text-muted-foreground font-medium">Thời hạn:</span>
           </div>
-        )}
+          <span className="font-mono font-semibold text-foreground">{session.duration_hours}h</span>
 
-        {/* Created At */}
-        <div className="text-xs text-muted-foreground text-center">
-          Tạo lúc: {new Date(session.created_at).toLocaleString('vi-VN')}
+          {timeRemaining && (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-green-500/10 rounded-lg">
+                  <Clock className="h-4 w-4 text-green-500 animate-pulse" />
+                </div>
+                <span className="text-sm text-muted-foreground font-medium">Còn lại:</span>
+              </div>
+              <span className="font-mono font-semibold text-green-500">{timeRemaining}</span>
+            </>
+          )}
+
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-primary/5 rounded-lg">
+              <Calendar className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-sm text-muted-foreground font-medium">Tạo lúc:</span>
+          </div>
+          <span className="font-mono text-sm text-foreground">{new Date(session.created_at).toLocaleString('vi-VN')}</span>
         </div>
 
-        {/* Kill/Start VPS Buttons */}
-        {session.is_active ? (
+        {/* Actions */}
+        <div className="flex gap-3 pt-4 border-t-2 border-border/30">
+          {session.is_active ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleKillVPS}
+              disabled={isKilling}
+              className="flex-1 shadow-lg shadow-destructive/20 hover:shadow-xl hover:shadow-destructive/30 transition-all duration-300 font-semibold"
+            >
+              {isKilling ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                  Đang tắt...
+                </>
+              ) : (
+                <>
+                  <PowerOff className="h-4 w-4 mr-2" />
+                  Tắt VPS
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleStartVPS}
+              disabled={isStarting}
+              className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 font-semibold"
+            >
+              {isStarting ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                  Đang khởi động...
+                </>
+              ) : (
+                <>
+                  <Power className="h-4 w-4 mr-2" />
+                  Khởi động lại
+                </>
+              )}
+            </Button>
+          )}
+          
           <Button
-            variant="destructive"
+            variant="outline"
             size="sm"
-            onClick={handleKillVPS}
-            disabled={isKilling}
-            className="w-full"
+            onClick={onDelete}
+            className="border-2 hover:bg-destructive/10 hover:border-destructive/50 hover:text-destructive transition-all duration-300 font-semibold"
           >
-            {isKilling ? (
-              <>
-                <Clock className="h-4 w-4 mr-2 animate-spin" />
-                Đang tắt...
-              </>
-            ) : (
-              <>
-                <PowerOff className="h-4 w-4 mr-2" />
-                Tắt VPS
-              </>
-            )}
+            <Trash2 className="h-4 w-4" />
           </Button>
-        ) : (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleStartVPS}
-            disabled={isStarting}
-            className="w-full"
-          >
-            {isStarting ? (
-              <>
-                <Clock className="h-4 w-4 mr-2 animate-spin" />
-                Đang khởi động...
-              </>
-            ) : (
-              <>
-                <Power className="h-4 w-4 mr-2" />
-                Bật VPS
-              </>
-            )}
-          </Button>
-        )}
+        </div>
       </CardContent>
     </Card>
 

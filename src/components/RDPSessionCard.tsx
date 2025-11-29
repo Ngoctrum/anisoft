@@ -6,6 +6,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Clock, Server, User, Key, Copy, ExternalLink, Download, Power, PowerOff, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { VPSQuickActions } from './vps/VPSQuickActions';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { VPSSessionMonitor } from './vps/VPSSessionMonitor';
 
 interface RDPSession {
   id: string;
@@ -35,6 +38,7 @@ export function RDPSessionCard({ session }: RDPSessionCardProps) {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [isKilling, setIsKilling] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [showLogsDialog, setShowLogsDialog] = useState(false);
 
   useEffect(() => {
     if (!session.expires_at) return;
@@ -263,26 +267,38 @@ username:s:${username}`;
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Server className="h-5 w-5" />
-            {osIcon} {session.github_repo}
-          </CardTitle>
-          <div className="flex gap-2">
-            <Badge className={getStatusColor()}>{getStatusText()}</Badge>
-            <Badge variant="outline" className="gap-1">
-              {networkingIcon} {networkingName}
-            </Badge>
-            {session.vps_config && (
-              <Badge variant="outline">
-                {session.vps_config === 'premium' ? '👑' : session.vps_config === 'standard' ? '💎' : '⚡'} {session.vps_config}
+    <>
+      <Card className="w-full animate-fade-in hover-scale transition-all hover:shadow-lg border-2 hover:border-primary/50">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Server className="h-5 w-5 text-primary" />
+              {osIcon} {session.github_repo}
+            </CardTitle>
+            <div className="flex gap-2 items-center">
+              <Badge className={`${getStatusColor()} ${session.status === 'connected' && session.is_active ? 'pulse-glow' : ''}`}>
+                {getStatusText()}
               </Badge>
-            )}
+              <Badge variant="outline" className="gap-1">
+                {networkingIcon} {networkingName}
+              </Badge>
+              {session.vps_config && (
+                <Badge variant="outline">
+                  {session.vps_config === 'premium' ? '👑' : session.vps_config === 'standard' ? '💎' : '⚡'} {session.vps_config}
+                </Badge>
+              )}
+              <VPSQuickActions
+                sessionId={session.id}
+                sessionName={session.github_repo}
+                isActive={session.is_active || false}
+                onDelete={() => {/* Handled by parent */}}
+                onKill={handleKillVPS}
+                onStart={handleStartVPS}
+                onViewLogs={() => setShowLogsDialog(true)}
+              />
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
       <CardContent className="space-y-4">
         {/* Failed Status Alert */}
         {session.status === 'failed' && (
@@ -547,5 +563,16 @@ username:s:${username}`;
         )}
       </CardContent>
     </Card>
+
+    {/* Logs Dialog */}
+    <Dialog open={showLogsDialog} onOpenChange={setShowLogsDialog}>
+      <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle>VPS Monitoring Logs</DialogTitle>
+        </DialogHeader>
+        <VPSSessionMonitor sessionId={session.id} sessionName={session.github_repo} />
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

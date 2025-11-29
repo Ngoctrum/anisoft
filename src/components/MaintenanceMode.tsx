@@ -84,14 +84,16 @@ export const MaintenanceMode = ({ children }: { children: React.ReactNode }) => 
 
           {/* Description */}
           <div className="space-y-4 animate-slide-up delay-100">
-            <p className="text-muted-foreground text-lg leading-relaxed">
-              Website đang trong quá trình bảo trì và nâng cấp.
+            <p className="text-foreground text-xl font-semibold leading-relaxed">
+              Website đang được nâng cấp bởi đội ngũ Team Ani Studio
             </p>
-            <p className="text-sm text-muted-foreground">
-              Chúng tôi đang cải thiện trải nghiệm của bạn.
-              <br />
-              Vui lòng quay lại sau ít phút.
+            <p className="text-muted-foreground text-base">
+              Chúng tôi đang cải thiện và tối ưu hóa trải nghiệm của bạn với các tính năng mới và hiệu suất tốt hơn.
             </p>
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-2">
+              <span className="inline-block w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+              <span>Hệ thống sẽ sớm hoạt động trở lại</span>
+            </div>
           </div>
 
           {/* Progress bar with glow effect */}
@@ -106,9 +108,12 @@ export const MaintenanceMode = ({ children }: { children: React.ReactNode }) => 
           </div>
 
           {/* Contact info */}
-          <div className="pt-6 space-y-2 text-sm text-muted-foreground animate-fade-in delay-300">
-            <p>Cần hỗ trợ khẩn cấp?</p>
-            <p className="font-medium text-foreground">📧 support@anistudio.com</p>
+          <div className="pt-6 space-y-3 text-sm animate-fade-in delay-300">
+            <p className="text-muted-foreground">Cần hỗ trợ khẩn cấp?</p>
+            <div className="flex flex-col gap-2">
+              <p className="font-semibold text-foreground">📧 Email: support@anistudio.com</p>
+              <p className="text-muted-foreground text-xs">Đội ngũ Team Ani Studio luôn sẵn sàng hỗ trợ bạn</p>
+            </div>
           </div>
         </div>
       </div>

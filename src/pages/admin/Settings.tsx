@@ -169,16 +169,35 @@ export default function AdminSettings() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Chế độ bảo trì</Label>
-                    <p className="text-sm text-muted-foreground">Tạm khóa website để bảo trì</p>
-                  </div>
-                  <Switch
-                    checked={general.is_site_maintenance}
-                    onCheckedChange={(checked) => setGeneral({ ...general, is_site_maintenance: checked })}
-                  />
-                </div>
+                <Card className="border-2 border-destructive/50 bg-destructive/5">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-lg font-semibold">🚧 Chế độ bảo trì</Label>
+                          {general.is_site_maintenance && (
+                            <span className="px-2 py-1 text-xs font-medium bg-destructive text-destructive-foreground rounded-full animate-pulse">
+                              ĐANG BẬT
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Khi bật, chỉ Admin mới có thể truy cập website. Tất cả người dùng khác sẽ thấy trang bảo trì.
+                        </p>
+                        {general.is_site_maintenance && (
+                          <p className="text-sm font-medium text-destructive mt-2">
+                            ⚠️ Website đang ở chế độ bảo trì - Người dùng không thể truy cập!
+                          </p>
+                        )}
+                      </div>
+                      <Switch
+                        checked={general.is_site_maintenance}
+                        onCheckedChange={(checked) => setGeneral({ ...general, is_site_maintenance: checked })}
+                        className="scale-125"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
 
                 <Button
                   onClick={() => handleSave('general', general)}

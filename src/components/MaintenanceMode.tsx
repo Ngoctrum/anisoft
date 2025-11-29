@@ -51,25 +51,59 @@ export const MaintenanceMode = ({ children }: { children: React.ReactNode }) => 
   // Admin có thể vào khi bảo trì
   if (isMaintenanceMode && !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-card to-background p-4">
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="rounded-full bg-gradient-primary p-6">
-              <AlertTriangle className="h-16 w-16 text-primary-foreground" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-card to-background p-4 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse delay-1000" />
+        </div>
+
+        <div className="max-w-md w-full text-center space-y-8 relative z-10">
+          {/* Icon with enhanced animation */}
+          <div className="flex justify-center animate-fade-in">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-primary blur-xl opacity-50 animate-pulse" />
+              <div className="relative rounded-full bg-gradient-primary p-8 shadow-elevated">
+                <AlertTriangle className="h-20 w-20 text-primary-foreground animate-bounce" style={{ animationDuration: '2s' }} />
+              </div>
             </div>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Đang bảo trì
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Website đang trong quá trình bảo trì và nâng cấp.
-            <br />
-            Vui lòng quay lại sau.
-          </p>
-          <div className="pt-4">
-            <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-primary animate-pulse w-2/3" />
+
+          {/* Title with gradient */}
+          <div className="space-y-3 animate-slide-up">
+            <h1 className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              🚧 Đang bảo trì
+            </h1>
+            <div className="h-1 w-32 mx-auto bg-gradient-primary rounded-full" />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-4 animate-slide-up delay-100">
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              Website đang trong quá trình bảo trì và nâng cấp.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Chúng tôi đang cải thiện trải nghiệm của bạn.
+              <br />
+              Vui lòng quay lại sau ít phút.
+            </p>
+          </div>
+
+          {/* Progress bar with glow effect */}
+          <div className="pt-6 animate-slide-up delay-200">
+            <div className="relative h-2 w-full bg-muted/50 rounded-full overflow-hidden backdrop-blur-sm">
+              <div className="absolute inset-0 bg-gradient-primary animate-pulse shadow-glow" style={{ width: '70%' }} />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
             </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              Đang xử lý...
+            </p>
+          </div>
+
+          {/* Contact info */}
+          <div className="pt-6 space-y-2 text-sm text-muted-foreground animate-fade-in delay-300">
+            <p>Cần hỗ trợ khẩn cấp?</p>
+            <p className="font-medium text-foreground">📧 support@anistudio.com</p>
           </div>
         </div>
       </div>

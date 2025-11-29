@@ -180,5 +180,34 @@ All colors MUST be HSL.
       box-shadow: 0 0 25px hsl(var(--primary) / 0.6);
     }
   }
+  
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+  
+  .delay-100 {
+    animation-delay: 0.1s;
+  }
+  
+  .delay-200 {
+    animation-delay: 0.2s;
+  }
+  
+  .delay-300 {
+    animation-delay: 0.3s;
+  }
+  
+  .delay-1000 {
+    animation-delay: 1s;
+  }
 }
 

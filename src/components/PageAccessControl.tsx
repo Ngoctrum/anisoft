@@ -88,14 +88,18 @@ export const PageAccessControl = ({ children, pageKey, pageName }: PageAccessCon
 
           {/* Description */}
           <div className="space-y-4 animate-slide-up delay-100">
-            <p className="text-foreground text-xl font-semibold">
-              Trang <span className="text-primary">{pageName}</span> hiện đang bị tắt
+            <p className="text-foreground text-xl font-semibold leading-relaxed">
+              Trang <span className="text-primary font-bold">{pageName}</span> hiện đang được tắt bởi đội ngũ Team Ani Studio
             </p>
             <p className="text-muted-foreground text-base leading-relaxed">
-              Trang này đã bị tắt bởi quản trị viên.
+              Trang này tạm thời không khả dụng do đang được bảo trì hoặc nâng cấp.
               <br />
-              Vui lòng quay lại sau hoặc liên hệ admin để biết thêm chi tiết.
+              Chúng tôi đang cải thiện tính năng này để mang đến trải nghiệm tốt hơn cho bạn.
             </p>
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground pt-2">
+              <span className="inline-block w-2 h-2 bg-destructive rounded-full animate-pulse"></span>
+              <span>Trang sẽ sớm hoạt động trở lại</span>
+            </div>
           </div>
 
           {/* Action button */}
@@ -110,9 +114,12 @@ export const PageAccessControl = ({ children, pageKey, pageName }: PageAccessCon
           </div>
 
           {/* Contact info */}
-          <div className="pt-6 space-y-2 text-sm text-muted-foreground animate-fade-in delay-300">
-            <p>Cần hỗ trợ?</p>
-            <p className="font-medium text-foreground">📧 support@anistudio.com</p>
+          <div className="pt-6 space-y-3 text-sm animate-fade-in delay-300">
+            <p className="text-muted-foreground">Cần hỗ trợ khẩn cấp?</p>
+            <div className="flex flex-col gap-2">
+              <p className="font-semibold text-foreground">📧 Email: support@anistudio.com</p>
+              <p className="text-muted-foreground text-xs">Đội ngũ Team Ani Studio luôn sẵn sàng hỗ trợ bạn</p>
+            </div>
           </div>
         </div>
       </div>

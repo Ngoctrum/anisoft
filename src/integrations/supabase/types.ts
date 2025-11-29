@@ -148,12 +148,14 @@ export type Database = {
       }
       rdp_sessions: {
         Row: {
+          connection_count: number | null
           created_at: string | null
           duration_hours: number | null
           expires_at: string | null
           github_repo: string
           id: string
           is_active: boolean | null
+          last_monitored_at: string | null
           networking_type: string | null
           ngrok_url: string | null
           os_type: string | null
@@ -161,20 +163,25 @@ export type Database = {
           rdp_user: string | null
           repo_url: string | null
           ssh_port: number | null
+          started_at: string | null
           status: string | null
+          stopped_at: string | null
           tailscale_ip: string | null
+          total_uptime_minutes: number | null
           updated_at: string | null
           user_id: string | null
           vps_config: string | null
           workflow_run_id: string | null
         }
         Insert: {
+          connection_count?: number | null
           created_at?: string | null
           duration_hours?: number | null
           expires_at?: string | null
           github_repo: string
           id?: string
           is_active?: boolean | null
+          last_monitored_at?: string | null
           networking_type?: string | null
           ngrok_url?: string | null
           os_type?: string | null
@@ -182,20 +189,25 @@ export type Database = {
           rdp_user?: string | null
           repo_url?: string | null
           ssh_port?: number | null
+          started_at?: string | null
           status?: string | null
+          stopped_at?: string | null
           tailscale_ip?: string | null
+          total_uptime_minutes?: number | null
           updated_at?: string | null
           user_id?: string | null
           vps_config?: string | null
           workflow_run_id?: string | null
         }
         Update: {
+          connection_count?: number | null
           created_at?: string | null
           duration_hours?: number | null
           expires_at?: string | null
           github_repo?: string
           id?: string
           is_active?: boolean | null
+          last_monitored_at?: string | null
           networking_type?: string | null
           ngrok_url?: string | null
           os_type?: string | null
@@ -203,14 +215,52 @@ export type Database = {
           rdp_user?: string | null
           repo_url?: string | null
           ssh_port?: number | null
+          started_at?: string | null
           status?: string | null
+          stopped_at?: string | null
           tailscale_ip?: string | null
+          total_uptime_minutes?: number | null
           updated_at?: string | null
           user_id?: string | null
           vps_config?: string | null
           workflow_run_id?: string | null
         }
         Relationships: []
+      }
+      session_logs: {
+        Row: {
+          created_at: string
+          id: string
+          log_type: string
+          message: string
+          metadata: Json | null
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          log_type: string
+          message: string
+          metadata?: Json | null
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          log_type?: string
+          message?: string
+          metadata?: Json | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_logs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "rdp_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_settings: {
         Row: {

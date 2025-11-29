@@ -7,12 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Loader2, Server, Play, Terminal, ExternalLink, Key, Trash2, Settings, Info } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Server, Play, Terminal, ExternalLink, Key, Trash2, Settings, Info, BarChart, Activity } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { RDPSessionCard } from '@/components/RDPSessionCard';
 import { Header } from '@/components/Header';
 import { Switch } from '@/components/ui/switch';
+import { VPSAnalyticsDashboard } from '@/components/vps/VPSAnalyticsDashboard';
 import windowsWorkflowTemplate from '@/assets/windows-rdp-workflow.yml?raw';
 import windowsNgrokWorkflowTemplate from '@/assets/windows-rdp-ngrok-workflow.yml?raw';
 import ubuntuWorkflowTemplate from '@/assets/ubuntu-ssh-workflow.yml?raw';
@@ -757,6 +759,19 @@ export default function VPSConsole() {
       <Header />
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <Tabs defaultValue="console" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="console" className="flex items-center gap-2">
+              <Server className="h-4 w-4" />
+              VPS Console
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="console" className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent flex items-center gap-3">
@@ -1142,8 +1157,14 @@ export default function VPSConsole() {
             </div>
           )}
         </div>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="animate-fade-in">
+            <VPSAnalyticsDashboard />
+          </TabsContent>
+        </Tabs>
       </div>
-    </div>
+      </div>
     </>
   );
 }

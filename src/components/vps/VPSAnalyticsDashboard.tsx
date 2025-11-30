@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart, Activity, TrendingUp, Server, Clock, CheckCircle, XCircle, Wifi, Radio } from 'lucide-react';
 import { calculateSessionAnalytics, SessionAnalytics } from '@/utils/vpsAnalytics';
 import { supabase } from '@/integrations/supabase/client';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface ActiveSession {
   id: string;
@@ -91,6 +92,15 @@ export function VPSAnalyticsDashboard() {
       return `${hours}h ${mins}m`;
     }
     return `${mins}m`;
+  };
+
+  const getConfigSpecs = (config: string) => {
+    const specs = {
+      basic: { cpu: '2 vCPU', ram: '2 GB', disk: '20 GB' },
+      standard: { cpu: '4 vCPU', ram: '4 GB', disk: '40 GB' },
+      premium: { cpu: '16 vCPU', ram: '16 GB', disk: '160 GB' },
+    };
+    return specs[config as keyof typeof specs] || specs.basic;
   };
 
   const getTimeRemaining = (expiresAt?: string) => {
@@ -395,9 +405,35 @@ export function VPSAnalyticsDashboard() {
                         <span className="font-mono font-semibold text-sm">{session.github_repo}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {configIcons[session.vps_config]} {session.vps_config}
-                        </Badge>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Badge variant="outline" className="text-xs cursor-pointer hover:bg-primary/10 transition-colors">
+                              {configIcons[session.vps_config]} {session.vps_config}
+                            </Badge>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-72 p-4 bg-gradient-to-br from-background to-muted/30 border-2 border-green-500/20 shadow-xl">
+                            <div className="space-y-3">
+                              <h4 className="font-bold text-sm flex items-center gap-2">
+                                <Server className="h-4 w-4 text-green-500" />
+                                Chi tiết cấu hình: {session.vps_config.toUpperCase()}
+                              </h4>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between p-2 bg-background/50 rounded-lg">
+                                  <span className="text-muted-foreground">CPU:</span>
+                                  <span className="font-semibold">{getConfigSpecs(session.vps_config).cpu}</span>
+                                </div>
+                                <div className="flex justify-between p-2 bg-background/50 rounded-lg">
+                                  <span className="text-muted-foreground">RAM:</span>
+                                  <span className="font-semibold">{getConfigSpecs(session.vps_config).ram}</span>
+                                </div>
+                                <div className="flex justify-between p-2 bg-background/50 rounded-lg">
+                                  <span className="text-muted-foreground">Disk:</span>
+                                  <span className="font-semibold">{getConfigSpecs(session.vps_config).disk}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                         <Badge variant="outline" className="text-xs">
                           {networkIcons[session.networking_type || 'tailscale']} {session.networking_type}
                         </Badge>

@@ -789,6 +789,15 @@ export default function VPSConsole() {
             <br />
             <span className="text-sm">Hỗ trợ Windows RDP & Linux SSH • Tailscale & Ngrok networking</span>
           </p>
+          <Button
+            onClick={() => setShowSettings(!showSettings)}
+            variant={showSettings ? "default" : "outline"}
+            className="gap-2"
+            size="lg"
+          >
+            <Settings className="h-5 w-5" />
+            {showSettings ? 'Đóng Cài đặt' : 'Mở Cài đặt Networking & Tokens'}
+          </Button>
         </div>
 
         {/* Settings Panel */}

@@ -12,7 +12,7 @@ import { Search, Filter, Loader2 } from 'lucide-react';
 interface ToolsListPageProps {
   title: string;
   description: string;
-  category?: 'tool' | 'code' | 'website' | 'all';
+  category?: 'tool' | 'code' | 'website' | 'courses' | 'all';
   icon?: React.ReactNode;
 }
 

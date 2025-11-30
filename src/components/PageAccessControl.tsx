@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface PageAccessControlProps {
   children: React.ReactNode;
-  pageKey: 'tools_enabled' | 'apps_enabled' | 'vps_console_enabled' | 'docs_enabled' | 'support_enabled';
+  pageKey: 'tools_enabled' | 'apps_enabled' | 'vps_console_enabled' | 'docs_enabled' | 'support_enabled' | 'courses_enabled';
   pageName: string;
 }
 

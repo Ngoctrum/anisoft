@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import Tools from "./pages/Tools";
 import Website from "./pages/Website";
 import Apps from "./pages/Apps";
+import Courses from "./pages/Courses";
 import AppDetail from "./pages/AppDetail";
 import ToolDetail from "./pages/ToolDetail";
 import Download from "./pages/Download";
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/tools" element={<Tools />} />
             <Route path="/website" element={<Website />} />
             <Route path="/apps" element={<Apps />} />
+            <Route path="/courses" element={<Courses />} />
             <Route path="/apps/:slug" element={<AppDetail />} />
             <Route path="/tools/:slug" element={<ToolDetail />} />
             <Route path="/download/:id" element={<Download />} />

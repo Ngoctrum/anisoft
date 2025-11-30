@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { VPSQuickActions } from './vps/VPSQuickActions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { VPSSessionMonitor } from './vps/VPSSessionMonitor';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface RDPSession {
   id: string;
@@ -222,6 +223,17 @@ username:s:${username}`;
     ? `ssh ${session.rdp_user}@${serverAddress}` 
     : 'RDP';
 
+  // Config specs
+  const getConfigSpecs = () => {
+    const config = session.vps_config || 'basic';
+    const specs = {
+      basic: { cpu: '2 vCPU', ram: '2 GB RAM', disk: '20 GB SSD' },
+      standard: { cpu: '4 vCPU', ram: '4 GB RAM', disk: '40 GB SSD' },
+      premium: { cpu: '16 vCPU', ram: '16 GB RAM', disk: '160 GB SSD' },
+    };
+    return specs[config as keyof typeof specs] || specs.basic;
+  };
+
   const handleKillVPS = async () => {
     if (!confirm('⚠️ Bạn có chắc muốn TẮT VPS này không?\n\nVPS sẽ dừng hoàn toàn.')) {
       return;
@@ -311,9 +323,35 @@ username:s:${username}`;
                     {networkingIcon} {networkingName}
                   </Badge>
                   {session.vps_config && (
-                    <Badge variant="outline" className="font-mono text-xs">
-                      {session.vps_config === 'premium' ? '👑' : session.vps_config === 'standard' ? '💎' : '⚡'} {session.vps_config}
-                    </Badge>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Badge variant="outline" className="font-mono text-xs cursor-pointer hover:bg-primary/10 transition-colors">
+                          {session.vps_config === 'premium' ? '👑' : session.vps_config === 'standard' ? '💎' : '⚡'} {session.vps_config}
+                        </Badge>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 p-4 bg-gradient-to-br from-background to-muted/30 border-2 border-primary/20 shadow-xl">
+                        <div className="space-y-3">
+                          <h4 className="font-bold text-sm flex items-center gap-2">
+                            <Server className="h-4 w-4 text-primary" />
+                            Chi tiết cấu hình: {session.vps_config.toUpperCase()}
+                          </h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between p-2 bg-background/50 rounded-lg">
+                              <span className="text-muted-foreground">CPU:</span>
+                              <span className="font-semibold">{getConfigSpecs().cpu}</span>
+                            </div>
+                            <div className="flex justify-between p-2 bg-background/50 rounded-lg">
+                              <span className="text-muted-foreground">RAM:</span>
+                              <span className="font-semibold">{getConfigSpecs().ram}</span>
+                            </div>
+                            <div className="flex justify-between p-2 bg-background/50 rounded-lg">
+                              <span className="text-muted-foreground">Disk:</span>
+                              <span className="font-semibold">{getConfigSpecs().disk}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   )}
                 </div>
               </div>

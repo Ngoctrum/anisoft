@@ -1,16 +1,53 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Activity, TrendingUp, Server, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { BarChart, Activity, TrendingUp, Server, Clock, CheckCircle, XCircle, Wifi, Radio } from 'lucide-react';
 import { calculateSessionAnalytics, SessionAnalytics } from '@/utils/vpsAnalytics';
 import { supabase } from '@/integrations/supabase/client';
 
+interface ActiveSession {
+  id: string;
+  github_repo: string;
+  os_type: string;
+  vps_config: string;
+  started_at?: string;
+  created_at: string;
+  expires_at?: string;
+  total_uptime_minutes: number;
+  connection_count: number;
+  networking_type?: string;
+}
+
 export function VPSAnalyticsDashboard() {
   const [analytics, setAnalytics] = useState<SessionAnalytics | null>(null);
+  const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadAnalytics();
+    loadActiveSessions();
+
+    // Real-time updates
+    const channel = supabase
+      .channel('analytics-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rdp_sessions',
+        },
+        () => {
+          console.log('📊 Analytics: Detected VPS change, reloading...');
+          loadAnalytics();
+          loadActiveSessions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadAnalytics = async () => {
@@ -25,6 +62,49 @@ export function VPSAnalyticsDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadActiveSessions = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const { data, error } = await supabase
+        .from('rdp_sessions')
+        .select('id, github_repo, os_type, vps_config, started_at, created_at, expires_at, total_uptime_minutes, connection_count, networking_type')
+        .eq('user_id', userData.user.id)
+        .eq('is_active', true)
+        .eq('status', 'connected')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setActiveSessions(data || []);
+    } catch (error) {
+      console.error('Failed to load active sessions:', error);
+    }
+  };
+
+  const formatUptime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+      return `${hours}h ${mins}m`;
+    }
+    return `${mins}m`;
+  };
+
+  const getTimeRemaining = (expiresAt?: string) => {
+    if (!expiresAt) return 'N/A';
+    const now = new Date().getTime();
+    const expiry = new Date(expiresAt).getTime();
+    const diff = expiry - now;
+    
+    if (diff <= 0) return 'Hết hạn';
+    
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${hours}h ${minutes}m`;
   };
 
   if (loading || !analytics) {
@@ -267,6 +347,134 @@ export function VPSAnalyticsDashboard() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Real-time Active Sessions */}
+      {activeSessions.length > 0 && (
+        <Card className="border-2 border-green-500/30">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Radio className="h-4 w-4 text-green-500 animate-pulse" />
+                VPS Đang Chạy (Real-time)
+              </CardTitle>
+              <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/30">
+                <Wifi className="h-3 w-3 mr-1 animate-pulse" />
+                Live
+              </Badge>
+            </div>
+            <CardDescription>Thông tin thời gian sử dụng chi tiết</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {activeSessions.map((session) => {
+                const osIcons: Record<string, string> = {
+                  windows: '🪟',
+                  ubuntu: '🐧',
+                  debian: '🌀',
+                  archlinux: '⚡',
+                  centos: '🔷',
+                };
+                const configIcons: Record<string, string> = {
+                  basic: '⚡',
+                  standard: '💎',
+                  premium: '👑',
+                };
+                const networkIcons: Record<string, string> = {
+                  tailscale: '🔒',
+                  ngrok: '🌐',
+                };
+
+                return (
+                  <div 
+                    key={session.id} 
+                    className="p-4 rounded-xl bg-gradient-to-br from-green-500/5 to-transparent border border-green-500/20 hover:border-green-500/40 transition-all space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{osIcons[session.os_type] || '💻'}</span>
+                        <span className="font-mono font-semibold text-sm">{session.github_repo}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          {configIcons[session.vps_config]} {session.vps_config}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {networkIcons[session.networking_type || 'tailscale']} {session.networking_type}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground text-xs">⏱️ Uptime</p>
+                        <p className="font-mono font-bold text-green-500">
+                          {formatUptime(session.total_uptime_minutes)}
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground text-xs">🔌 Kết nối</p>
+                        <p className="font-mono font-bold">
+                          {session.connection_count || 0} lần
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground text-xs">⏰ Còn lại</p>
+                        <p className="font-mono font-bold text-blue-500">
+                          {getTimeRemaining(session.expires_at)}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-muted-foreground text-xs">🕐 Tạo lúc</p>
+                        <p className="font-mono text-xs">
+                          {new Date(session.created_at).toLocaleTimeString('vi-VN', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Progress bar for time remaining */}
+                    {session.expires_at && (
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Tiến độ thời gian</span>
+                          <span>
+                            {(() => {
+                              const now = new Date().getTime();
+                              const created = new Date(session.created_at).getTime();
+                              const expires = new Date(session.expires_at).getTime();
+                              const progress = ((now - created) / (expires - created)) * 100;
+                              return Math.min(100, Math.max(0, progress)).toFixed(0);
+                            })()}%
+                          </span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-1000"
+                            style={{
+                              width: `${(() => {
+                                const now = new Date().getTime();
+                                const created = new Date(session.created_at).getTime();
+                                const expires = new Date(session.expires_at).getTime();
+                                const progress = ((now - created) / (expires - created)) * 100;
+                                return Math.min(100, Math.max(0, progress));
+                              })()}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

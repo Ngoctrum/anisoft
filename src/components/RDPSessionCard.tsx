@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Clock, Server, User, Key, Copy, ExternalLink, Download, Power, PowerOff, AlertTriangle, Trash2, Calendar } from 'lucide-react';
+import { Clock, Server, User, Key, Copy, ExternalLink, Download, Power, PowerOff, AlertTriangle, Trash2, Calendar, Terminal } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { VPSQuickActions } from './vps/VPSQuickActions';
@@ -475,6 +475,121 @@ username:s:${username}`;
           </div>
         )}
 
+        {/* Config Verification Commands */}
+        {hasFullInfo && (
+          <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/20 space-y-3">
+            <h4 className="font-semibold flex items-center gap-2 text-blue-600 dark:text-blue-400">
+              <Terminal className="h-4 w-4" />
+              🔍 Kiểm tra cấu hình VPS
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              Copy và chạy lệnh sau trên VPS để verify cấu hình:
+            </p>
+            
+            {session.os_type === 'windows' ? (
+              <div className="space-y-2">
+                <div className="p-3 bg-background/50 rounded-lg border border-border/30">
+                  <p className="text-xs text-muted-foreground mb-2">💻 PowerShell - Kiểm tra CPU:</p>
+                  <code className="text-xs bg-muted/50 px-2 py-1 rounded font-mono block">
+                    Get-WmiObject Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard('Get-WmiObject Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors', 'lệnh check CPU')}
+                    className="mt-2 h-7 text-xs"
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </Button>
+                </div>
+                
+                <div className="p-3 bg-background/50 rounded-lg border border-border/30">
+                  <p className="text-xs text-muted-foreground mb-2">💾 PowerShell - Kiểm tra RAM:</p>
+                  <code className="text-xs bg-muted/50 px-2 py-1 rounded font-mono block">
+                    {'Get-WmiObject Win32_ComputerSystem | Select-Object @{Name="RAM (GB)";Expression={[math]::Round($_.TotalPhysicalMemory/1GB,2)}}'}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard('Get-WmiObject Win32_ComputerSystem | Select-Object @{Name="RAM (GB)";Expression={[math]::Round($_.TotalPhysicalMemory/1GB,2)}}', 'lệnh check RAM')}
+                    className="mt-2 h-7 text-xs"
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </Button>
+                </div>
+
+                <div className="p-3 bg-background/50 rounded-lg border border-border/30">
+                  <p className="text-xs text-muted-foreground mb-2">💿 PowerShell - Kiểm tra Disk:</p>
+                  <code className="text-xs bg-muted/50 px-2 py-1 rounded font-mono block">
+                    {'Get-PSDrive C | Select-Object @{Name="Size (GB)";Expression={[math]::Round($_.Used/1GB + $_.Free/1GB,2)}}'}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard('Get-PSDrive C | Select-Object @{Name="Size (GB)";Expression={[math]::Round($_.Used/1GB + $_.Free/1GB,2)}}', 'lệnh check Disk')}
+                    className="mt-2 h-7 text-xs"
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="p-3 bg-background/50 rounded-lg border border-border/30">
+                  <p className="text-xs text-muted-foreground mb-2">💻 Linux - Kiểm tra CPU:</p>
+                  <code className="text-xs bg-muted/50 px-2 py-1 rounded font-mono block">
+                    lscpu | grep -E "Model name|CPU\(s\):|Thread|Core"
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard('lscpu | grep -E "Model name|CPU\\(s\\):|Thread|Core"', 'lệnh check CPU')}
+                    className="mt-2 h-7 text-xs"
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </Button>
+                </div>
+                
+                <div className="p-3 bg-background/50 rounded-lg border border-border/30">
+                  <p className="text-xs text-muted-foreground mb-2">💾 Linux - Kiểm tra RAM:</p>
+                  <code className="text-xs bg-muted/50 px-2 py-1 rounded font-mono block">
+                    free -h
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard('free -h', 'lệnh check RAM')}
+                    className="mt-2 h-7 text-xs"
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </Button>
+                </div>
+
+                <div className="p-3 bg-background/50 rounded-lg border border-border/30">
+                  <p className="text-xs text-muted-foreground mb-2">💿 Linux - Kiểm tra Disk:</p>
+                  <code className="text-xs bg-muted/50 px-2 py-1 rounded font-mono block">
+                    df -h /
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard('df -h /', 'lệnh check Disk')}
+                    className="mt-2 h-7 text-xs"
+                  >
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Full Info Box - Only show when all 3 values are present */}
         {hasFullInfo && (
           <div className="p-6 bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent border-2 border-green-500/30 rounded-xl shadow-lg shadow-green-500/10 space-y-4 hover-scale transition-all duration-300">
@@ -492,7 +607,7 @@ username:s:${username}`;
                   <Copy className="h-4 w-4" />
                   Copy All
                 </Button>
-                {session.os_type === 'ubuntu' ? (
+                {session.os_type === 'ubuntu' || session.os_type === 'debian' || session.os_type === 'archlinux' || session.os_type === 'centos' ? (
                   <Button
                     variant="default"
                     size="sm"

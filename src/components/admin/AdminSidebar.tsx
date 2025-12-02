@@ -8,6 +8,7 @@ import {
   Settings,
   Home,
   Sparkles,
+  BookOpen,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -26,6 +27,7 @@ const menuItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard, end: true },
   { title: 'Quản lý Tools', url: '/admin/tools', icon: Package },
   { title: 'Quản lý Apps', url: '/admin/apps', icon: Sparkles },
+  { title: 'Quản lý Khóa học', url: '/admin/courses', icon: BookOpen },
   { title: 'Quản lý Users', url: '/admin/users', icon: Users },
   { title: 'Báo lỗi', url: '/admin/reports', icon: AlertCircle },
   { title: 'Cài đặt', url: '/admin/settings', icon: Settings },

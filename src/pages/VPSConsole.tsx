@@ -300,28 +300,25 @@ export default function VPSConsole() {
     const isTailscale = networkingType === 'tailscale';
     const isNgrok = networkingType === 'ngrok';
     const isCloudflare = networkingType === 'cloudflare';
+    const isNovnc = networkingType === 'novnc';
     
     // Tên workflow file dựa trên OS và networking type
     let workflowFileName: string;
     if (isWindows) {
-      workflowFileName = isTailscale ? 'windows-rdp.yml' : isNgrok ? 'windows-rdp-ngrok.yml' : 'windows-rdp-cloudflare.yml';
+      workflowFileName = isTailscale ? 'windows-rdp.yml' : isNgrok ? 'windows-rdp-ngrok.yml' : isCloudflare ? 'windows-rdp-cloudflare.yml' : 'windows-rdp-novnc.yml';
     } else {
-      workflowFileName = isTailscale ? `${osType}-ssh.yml` : isNgrok ? `${osType}-ssh-ngrok.yml` : `${osType}-ssh-cloudflare.yml`;
+      workflowFileName = isTailscale ? `${osType}-ssh.yml` : isNgrok ? `${osType}-ssh-ngrok.yml` : isCloudflare ? `${osType}-ssh-cloudflare.yml` : `${osType}-ssh-novnc.yml`;
     }
     
     // Chọn workflow content dựa trên OS và networking type
-    let workflowContent: string;
-    if (isWindows) {
-      workflowContent = isTailscale ? windowsWorkflowTemplate : isNgrok ? windowsNgrokWorkflowTemplate : windowsCloudflareWorkflowTemplate;
-    } else if (osType === 'ubuntu') {
-      workflowContent = isTailscale ? ubuntuWorkflowTemplate : isNgrok ? ubuntuNgrokWorkflowTemplate : ubuntuCloudflareWorkflowTemplate;
-    } else if (osType === 'debian') {
-      workflowContent = isTailscale ? debianWorkflowTemplate : isNgrok ? debianNgrokWorkflowTemplate : debianCloudflareWorkflowTemplate;
-    } else if (osType === 'archlinux') {
-      workflowContent = isTailscale ? archlinuxWorkflowTemplate : isNgrok ? archlinuxNgrokWorkflowTemplate : archlinuxCloudflareWorkflowTemplate;
-    } else {
-      workflowContent = isTailscale ? centosWorkflowTemplate : isNgrok ? centosNgrokWorkflowTemplate : centosCloudflareWorkflowTemplate;
-    }
+    const workflowMap: Record<string, Record<string, string>> = {
+      windows: { tailscale: windowsWorkflowTemplate, ngrok: windowsNgrokWorkflowTemplate, cloudflare: windowsCloudflareWorkflowTemplate, novnc: windowsNovncWorkflowTemplate },
+      ubuntu: { tailscale: ubuntuWorkflowTemplate, ngrok: ubuntuNgrokWorkflowTemplate, cloudflare: ubuntuCloudflareWorkflowTemplate, novnc: ubuntuNovncWorkflowTemplate },
+      debian: { tailscale: debianWorkflowTemplate, ngrok: debianNgrokWorkflowTemplate, cloudflare: debianCloudflareWorkflowTemplate, novnc: debianNovncWorkflowTemplate },
+      archlinux: { tailscale: archlinuxWorkflowTemplate, ngrok: archlinuxNgrokWorkflowTemplate, cloudflare: archlinuxCloudflareWorkflowTemplate, novnc: archlinuxNovncWorkflowTemplate },
+      centos: { tailscale: centosWorkflowTemplate, ngrok: centosNgrokWorkflowTemplate, cloudflare: centosCloudflareWorkflowTemplate, novnc: centosNovncWorkflowTemplate },
+    };
+    let workflowContent: string = workflowMap[osType]?.[networkingType] || '';
     
     const path = `.github/workflows/${workflowFileName}`;
     const networkingName = isTailscale ? 'Tailscale' : isNgrok ? 'Ngrok' : 'Cloudflare';

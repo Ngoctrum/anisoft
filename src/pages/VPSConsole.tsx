@@ -19,18 +19,23 @@ import { PageAccessControl } from '@/components/PageAccessControl';
 import windowsWorkflowTemplate from '@/assets/windows-rdp-workflow.yml?raw';
 import windowsNgrokWorkflowTemplate from '@/assets/windows-rdp-ngrok-workflow.yml?raw';
 import windowsCloudflareWorkflowTemplate from '@/assets/windows-rdp-cloudflare-workflow.yml?raw';
+import windowsNovncWorkflowTemplate from '@/assets/windows-rdp-novnc-workflow.yml?raw';
 import ubuntuWorkflowTemplate from '@/assets/ubuntu-ssh-workflow.yml?raw';
 import ubuntuNgrokWorkflowTemplate from '@/assets/ubuntu-ssh-ngrok-workflow.yml?raw';
 import ubuntuCloudflareWorkflowTemplate from '@/assets/ubuntu-ssh-cloudflare-workflow.yml?raw';
+import ubuntuNovncWorkflowTemplate from '@/assets/ubuntu-ssh-novnc-workflow.yml?raw';
 import debianWorkflowTemplate from '@/assets/debian-ssh-workflow.yml?raw';
 import debianNgrokWorkflowTemplate from '@/assets/debian-ssh-ngrok-workflow.yml?raw';
 import debianCloudflareWorkflowTemplate from '@/assets/debian-ssh-cloudflare-workflow.yml?raw';
+import debianNovncWorkflowTemplate from '@/assets/debian-ssh-novnc-workflow.yml?raw';
 import archlinuxWorkflowTemplate from '@/assets/archlinux-ssh-workflow.yml?raw';
 import archlinuxNgrokWorkflowTemplate from '@/assets/archlinux-ssh-ngrok-workflow.yml?raw';
 import archlinuxCloudflareWorkflowTemplate from '@/assets/archlinux-ssh-cloudflare-workflow.yml?raw';
+import archlinuxNovncWorkflowTemplate from '@/assets/archlinux-ssh-novnc-workflow.yml?raw';
 import centosWorkflowTemplate from '@/assets/centos-ssh-workflow.yml?raw';
 import centosNgrokWorkflowTemplate from '@/assets/centos-ssh-ngrok-workflow.yml?raw';
 import centosCloudflareWorkflowTemplate from '@/assets/centos-ssh-cloudflare-workflow.yml?raw';
+import centosNovncWorkflowTemplate from '@/assets/centos-ssh-novnc-workflow.yml?raw';
 import _sodium from 'libsodium-wrappers';
 
 interface Session {
@@ -58,7 +63,7 @@ export default function VPSConsole() {
   const [tailscaleToken, setTailscaleToken] = useState('');
   const [ngrokToken, setNgrokToken] = useState('');
   const [cloudflareToken, setCloudflareToken] = useState('');
-  const [networkingType, setNetworkingType] = useState<'tailscale' | 'ngrok' | 'cloudflare'>('tailscale');
+  const [networkingType, setNetworkingType] = useState<'tailscale' | 'ngrok' | 'cloudflare' | 'novnc'>('tailscale');
   const [osType, setOsType] = useState<'windows' | 'ubuntu' | 'debian' | 'archlinux' | 'centos'>('windows');
   const [vpsConfig, setVpsConfig] = useState<'basic' | 'standard' | 'premium'>('basic');
   const [durationHours, setDurationHours] = useState(6);
@@ -66,8 +71,8 @@ export default function VPSConsole() {
   // Auto-switch away from Ngrok when Windows is selected (Ngrok requires credit card for RDP)
   useEffect(() => {
     if (osType === 'windows' && networkingType === 'ngrok') {
-      setNetworkingType('cloudflare');
-      toast.warning('Windows RDP không hỗ trợ Ngrok free. Đã chuyển sang Cloudflare Tunnel.');
+      setNetworkingType('novnc');
+      toast.warning('Windows RDP không hỗ trợ Ngrok free. Đã chuyển sang noVNC (Web Browser).');
     }
   }, [osType, networkingType]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -105,7 +110,7 @@ export default function VPSConsole() {
     const savedTailscale = localStorage.getItem('vps_tailscale_token');
     const savedNgrok = localStorage.getItem('vps_ngrok_token');
     const savedCloudflare = localStorage.getItem('vps_cloudflare_token');
-    const savedNetworkingType = localStorage.getItem('vps_networking_type') as 'tailscale' | 'ngrok' | 'cloudflare';
+    const savedNetworkingType = localStorage.getItem('vps_networking_type') as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc';
     const savedTokensFlag = localStorage.getItem('vps_save_tokens_enabled');
     
     // Load GitHub token for form (vps_github_token) and for deletion (github_token)
@@ -295,31 +300,28 @@ export default function VPSConsole() {
     const isTailscale = networkingType === 'tailscale';
     const isNgrok = networkingType === 'ngrok';
     const isCloudflare = networkingType === 'cloudflare';
+    const isNovnc = networkingType === 'novnc';
     
     // Tên workflow file dựa trên OS và networking type
     let workflowFileName: string;
     if (isWindows) {
-      workflowFileName = isTailscale ? 'windows-rdp.yml' : isNgrok ? 'windows-rdp-ngrok.yml' : 'windows-rdp-cloudflare.yml';
+      workflowFileName = isTailscale ? 'windows-rdp.yml' : isNgrok ? 'windows-rdp-ngrok.yml' : isCloudflare ? 'windows-rdp-cloudflare.yml' : 'windows-rdp-novnc.yml';
     } else {
-      workflowFileName = isTailscale ? `${osType}-ssh.yml` : isNgrok ? `${osType}-ssh-ngrok.yml` : `${osType}-ssh-cloudflare.yml`;
+      workflowFileName = isTailscale ? `${osType}-ssh.yml` : isNgrok ? `${osType}-ssh-ngrok.yml` : isCloudflare ? `${osType}-ssh-cloudflare.yml` : `${osType}-ssh-novnc.yml`;
     }
     
     // Chọn workflow content dựa trên OS và networking type
-    let workflowContent: string;
-    if (isWindows) {
-      workflowContent = isTailscale ? windowsWorkflowTemplate : isNgrok ? windowsNgrokWorkflowTemplate : windowsCloudflareWorkflowTemplate;
-    } else if (osType === 'ubuntu') {
-      workflowContent = isTailscale ? ubuntuWorkflowTemplate : isNgrok ? ubuntuNgrokWorkflowTemplate : ubuntuCloudflareWorkflowTemplate;
-    } else if (osType === 'debian') {
-      workflowContent = isTailscale ? debianWorkflowTemplate : isNgrok ? debianNgrokWorkflowTemplate : debianCloudflareWorkflowTemplate;
-    } else if (osType === 'archlinux') {
-      workflowContent = isTailscale ? archlinuxWorkflowTemplate : isNgrok ? archlinuxNgrokWorkflowTemplate : archlinuxCloudflareWorkflowTemplate;
-    } else {
-      workflowContent = isTailscale ? centosWorkflowTemplate : isNgrok ? centosNgrokWorkflowTemplate : centosCloudflareWorkflowTemplate;
-    }
+    const workflowMap: Record<string, Record<string, string>> = {
+      windows: { tailscale: windowsWorkflowTemplate, ngrok: windowsNgrokWorkflowTemplate, cloudflare: windowsCloudflareWorkflowTemplate, novnc: windowsNovncWorkflowTemplate },
+      ubuntu: { tailscale: ubuntuWorkflowTemplate, ngrok: ubuntuNgrokWorkflowTemplate, cloudflare: ubuntuCloudflareWorkflowTemplate, novnc: ubuntuNovncWorkflowTemplate },
+      debian: { tailscale: debianWorkflowTemplate, ngrok: debianNgrokWorkflowTemplate, cloudflare: debianCloudflareWorkflowTemplate, novnc: debianNovncWorkflowTemplate },
+      archlinux: { tailscale: archlinuxWorkflowTemplate, ngrok: archlinuxNgrokWorkflowTemplate, cloudflare: archlinuxCloudflareWorkflowTemplate, novnc: archlinuxNovncWorkflowTemplate },
+      centos: { tailscale: centosWorkflowTemplate, ngrok: centosNgrokWorkflowTemplate, cloudflare: centosCloudflareWorkflowTemplate, novnc: centosNovncWorkflowTemplate },
+    };
+    let workflowContent: string = workflowMap[osType]?.[networkingType] || '';
     
     const path = `.github/workflows/${workflowFileName}`;
-    const networkingName = isTailscale ? 'Tailscale' : isNgrok ? 'Ngrok' : 'Cloudflare';
+    const networkingName = isTailscale ? 'Tailscale' : isNgrok ? 'Ngrok' : isCloudflare ? 'Cloudflare' : 'noVNC';
     
     console.log('📄 Uploading workflow:', workflowFileName);
     console.log('🌐 Networking:', networkingName);
@@ -433,14 +435,13 @@ export default function VPSConsole() {
 
   const triggerWorkflow = async (token: string, owner: string, repo: string) => {
     const isWindows = osType === 'windows';
-    const isTailscale = networkingType === 'tailscale';
     
     // Tên workflow file dựa trên OS và networking type
     let workflowFileName: string;
     if (isWindows) {
-      workflowFileName = isTailscale ? 'windows-rdp.yml' : 'windows-rdp-ngrok.yml';
+      workflowFileName = networkingType === 'tailscale' ? 'windows-rdp.yml' : networkingType === 'ngrok' ? 'windows-rdp-ngrok.yml' : networkingType === 'cloudflare' ? 'windows-rdp-cloudflare.yml' : 'windows-rdp-novnc.yml';
     } else {
-      workflowFileName = isTailscale ? `${osType}-ssh.yml` : `${osType}-ssh-ngrok.yml`;
+      workflowFileName = networkingType === 'tailscale' ? `${osType}-ssh.yml` : networkingType === 'ngrok' ? `${osType}-ssh-ngrok.yml` : networkingType === 'cloudflare' ? `${osType}-ssh-cloudflare.yml` : `${osType}-ssh-novnc.yml`;
     }
     
     const durationInput = isWindows
@@ -652,13 +653,14 @@ export default function VPSConsole() {
       }
     }
     // Cloudflare: token is optional (quick tunnel works without it)
+    // noVNC: uses Ngrok HTTP tunnel (free, needs ngrok token)
 
     setIsProcessing(true);
     const osDisplayName = osType === 'windows' ? 'Windows RDP' : 
                          osType === 'ubuntu' ? 'Ubuntu SSH' : 
                          osType === 'debian' ? 'Debian SSH' : 
                          osType === 'archlinux' ? 'Arch Linux SSH' : 'CentOS SSH';
-    const networkingName = networkingType === 'tailscale' ? 'Tailscale' : networkingType === 'ngrok' ? 'Ngrok' : 'Cloudflare';
+    const networkingName = networkingType === 'tailscale' ? 'Tailscale' : networkingType === 'ngrok' ? 'Ngrok' : networkingType === 'cloudflare' ? 'Cloudflare' : 'noVNC (Web)';
     setLogs([`🚀 Bắt đầu tạo ${osDisplayName} Server (${networkingName})...`]);
 
     try {
@@ -713,8 +715,8 @@ export default function VPSConsole() {
       await new Promise(resolve => setTimeout(resolve, 8000));
 
       // Step 5: Add networking secret based on type
-      const secretName = networkingType === 'tailscale' ? 'TAILSCALE_AUTH_KEY' : networkingType === 'ngrok' ? 'NGROK_AUTH_TOKEN' : 'CLOUDFLARE_TUNNEL_TOKEN';
-      const secretValue = networkingType === 'tailscale' ? tailscaleToken : networkingType === 'ngrok' ? ngrokToken : cloudflareToken;
+      const secretName = networkingType === 'tailscale' ? 'TAILSCALE_AUTH_KEY' : networkingType === 'ngrok' ? 'NGROK_AUTH_TOKEN' : networkingType === 'cloudflare' ? 'CLOUDFLARE_TUNNEL_TOKEN' : 'NGROK_AUTH_TOKEN';
+      const secretValue = networkingType === 'tailscale' ? tailscaleToken : networkingType === 'ngrok' ? ngrokToken : networkingType === 'cloudflare' ? cloudflareToken : ngrokToken;
       
       if (secretValue && secretValue.trim()) {
         setLogs((prev) => [...prev, `🔐 Đang thêm ${networkingName} token vào repository...`]);
@@ -726,6 +728,8 @@ export default function VPSConsole() {
         }
       } else if (networkingType === 'cloudflare') {
         setLogs((prev) => [...prev, '☁️ Sử dụng Cloudflare Quick Tunnel (không cần token)']);
+      } else if (networkingType === 'novnc' && !ngrokToken.trim()) {
+        setLogs((prev) => [...prev, '🌐 noVNC sẽ dùng Ngrok HTTP tunnel (có thể cần token cho session dài)']);
       }
 
       // Step 6: Trigger workflow automatically
@@ -807,7 +811,7 @@ export default function VPSConsole() {
           <p className="text-muted-foreground text-lg max-w-3xl mx-auto leading-relaxed">
             🚀 Tạo và quản lý VPS miễn phí với GitHub Actions
             <br />
-            <span className="text-sm">Hỗ trợ Windows RDP & Linux SSH • Tailscale, Ngrok & Cloudflare networking</span>
+            <span className="text-sm">Hỗ trợ Windows RDP & Linux SSH • Tailscale, Ngrok, Cloudflare & noVNC networking</span>
           </p>
           <Button
             onClick={() => setShowSettings(!showSettings)}
@@ -852,7 +856,7 @@ export default function VPSConsole() {
                       name="settings_networking_type"
                       value="tailscale"
                       checked={networkingType === 'tailscale'}
-                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare')}
+                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
                       className="w-4 h-4"
                     />
                     <Label htmlFor="settings_networking_tailscale" className="font-normal cursor-pointer">
@@ -866,7 +870,7 @@ export default function VPSConsole() {
                       name="settings_networking_type"
                       value="ngrok"
                       checked={networkingType === 'ngrok'}
-                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare')}
+                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
                       disabled={osType === 'windows'}
                       className="w-4 h-4 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
@@ -881,11 +885,25 @@ export default function VPSConsole() {
                       name="settings_networking_type"
                       value="cloudflare"
                       checked={networkingType === 'cloudflare'}
-                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare')}
+                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
                       className="w-4 h-4"
                     />
                     <Label htmlFor="settings_networking_cloudflare" className="font-normal cursor-pointer">
-                      ☁️ Cloudflare Tunnel (Miễn phí, không cần tài khoản)
+                      ☁️ Cloudflare Tunnel (Cần cài cloudflared)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="settings_networking_novnc"
+                      name="settings_networking_type"
+                      value="novnc"
+                      checked={networkingType === 'novnc'}
+                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="settings_networking_novnc" className="font-normal cursor-pointer">
+                      🖥️ noVNC (Web Browser - Không cần cài app!)
                     </Label>
                   </div>
                 </div>
@@ -895,8 +913,10 @@ export default function VPSConsole() {
                       <>✅ <strong>Tailscale:</strong> Mạng riêng bảo mật, cần cài Tailscale trên máy</>
                     ) : networkingType === 'ngrok' ? (
                       <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm. ⚠️ <strong>Chỉ hỗ trợ Linux</strong> (Ngrok free không cho phép Windows RDP)</>
+                    ) : networkingType === 'cloudflare' ? (
+                      <>✅ <strong>Cloudflare Tunnel:</strong> Miễn phí, hỗ trợ tất cả OS. Cần cài <code className="bg-muted px-1 rounded">cloudflared</code> trên máy client.</>
                     ) : (
-                      <>✅ <strong>Cloudflare Tunnel:</strong> Miễn phí, hỗ trợ tất cả OS. Không cần tài khoản (Quick Tunnel). Cần cài <code className="bg-muted px-1 rounded">cloudflared</code> trên máy client để kết nối.</>
+                      <>✅ <strong>noVNC (Web Browser):</strong> 🎉 <strong>Không cần cài bất kỳ app nào!</strong> Truy cập desktop VPS trực tiếp qua trình duyệt web. Dùng Ngrok HTTP tunnel (free).</>
                     )}
                   </p>
                 </div>
@@ -964,7 +984,7 @@ export default function VPSConsole() {
                         </a>
                       </p>
                     </div>
-                  ) : (
+                  ) : networkingType === 'cloudflare' ? (
                     <div className="space-y-2">
                       <Label htmlFor="saved-cloudflare-token">Cloudflare Tunnel Token <Badge variant="outline" className="ml-1 text-[10px]">Tùy chọn</Badge></Label>
                       <Input
@@ -986,6 +1006,33 @@ export default function VPSConsole() {
                           <li>Chạy: <code className="bg-muted px-1 rounded">cloudflared access tcp --hostname URL --url localhost:PORT</code></li>
                           <li>Sau đó SSH vào <code className="bg-muted px-1 rounded">localhost:PORT</code></li>
                         </ol>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="saved-novnc-ngrok-token">Ngrok Authtoken <Badge variant="outline" className="ml-1 text-[10px]">Tùy chọn</Badge></Label>
+                      <Input
+                        id="saved-novnc-ngrok-token"
+                        type="password"
+                        placeholder="2c... (tùy chọn, giúp session ổn định hơn)"
+                        value={ngrokToken}
+                        onChange={(e) => setNgrokToken(e.target.value)}
+                      />
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">
+                          🎉 <strong>noVNC dùng Ngrok HTTP tunnel (FREE!)</strong> — Không cần cài app, mở URL trên trình duyệt là dùng.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          💡 Thêm Ngrok token để session ổn định hơn (không bắt buộc).
+                        </p>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-primary"
+                          onClick={() => window.open('https://dashboard.ngrok.com/get-started/your-authtoken', '_blank')}
+                        >
+                          🔑 Lấy Ngrok Authtoken (miễn phí)
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -1021,7 +1068,7 @@ export default function VPSConsole() {
             <Alert className="bg-muted/50">
               <Info className="h-4 w-4" />
               <AlertDescription>
-                <span>Đang dùng: <strong>{networkingType === 'tailscale' ? '🔒 Tailscale' : networkingType === 'ngrok' ? '🌐 Ngrok' : '☁️ Cloudflare Tunnel'}</strong></span>
+                <span>Đang dùng: <strong>{networkingType === 'tailscale' ? '🔒 Tailscale' : networkingType === 'ngrok' ? '🌐 Ngrok' : networkingType === 'cloudflare' ? '☁️ Cloudflare Tunnel' : '🖥️ noVNC (Web Browser)'}</strong></span>
                 <span className="text-xs ml-2 text-muted-foreground">(Thay đổi trong Settings)</span>
               </AlertDescription>
             </Alert>

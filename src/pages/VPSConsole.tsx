@@ -611,6 +611,8 @@ export default function VPSConsole() {
       localStorage.setItem('vps_tailscale_token', tailscaleToken);
     } else if (networkingType === 'ngrok' && ngrokToken.trim()) {
       localStorage.setItem('vps_ngrok_token', ngrokToken);
+    } else if (networkingType === 'cloudflare' && cloudflareToken.trim()) {
+      localStorage.setItem('vps_cloudflare_token', cloudflareToken);
     }
     
     toast.success('✅ Settings đã được lưu! Tokens sẽ không bị mất khi chuyển trang.');

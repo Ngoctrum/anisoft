@@ -658,7 +658,7 @@ export default function VPSConsole() {
                          osType === 'ubuntu' ? 'Ubuntu SSH' : 
                          osType === 'debian' ? 'Debian SSH' : 
                          osType === 'archlinux' ? 'Arch Linux SSH' : 'CentOS SSH';
-    const networkingName = networkingType === 'tailscale' ? 'Tailscale' : 'Ngrok';
+    const networkingName = networkingType === 'tailscale' ? 'Tailscale' : networkingType === 'ngrok' ? 'Ngrok' : 'Cloudflare';
     setLogs([`🚀 Bắt đầu tạo ${osDisplayName} Server (${networkingName})...`]);
 
     try {

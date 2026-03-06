@@ -715,8 +715,8 @@ export default function VPSConsole() {
       await new Promise(resolve => setTimeout(resolve, 8000));
 
       // Step 5: Add networking secret based on type
-      const secretName = networkingType === 'tailscale' ? 'TAILSCALE_AUTH_KEY' : networkingType === 'ngrok' ? 'NGROK_AUTH_TOKEN' : 'CLOUDFLARE_TUNNEL_TOKEN';
-      const secretValue = networkingType === 'tailscale' ? tailscaleToken : networkingType === 'ngrok' ? ngrokToken : cloudflareToken;
+      const secretName = networkingType === 'tailscale' ? 'TAILSCALE_AUTH_KEY' : networkingType === 'ngrok' ? 'NGROK_AUTH_TOKEN' : networkingType === 'cloudflare' ? 'CLOUDFLARE_TUNNEL_TOKEN' : 'NGROK_AUTH_TOKEN';
+      const secretValue = networkingType === 'tailscale' ? tailscaleToken : networkingType === 'ngrok' ? ngrokToken : networkingType === 'cloudflare' ? cloudflareToken : ngrokToken;
       
       if (secretValue && secretValue.trim()) {
         setLogs((prev) => [...prev, `🔐 Đang thêm ${networkingName} token vào repository...`]);
@@ -728,6 +728,8 @@ export default function VPSConsole() {
         }
       } else if (networkingType === 'cloudflare') {
         setLogs((prev) => [...prev, '☁️ Sử dụng Cloudflare Quick Tunnel (không cần token)']);
+      } else if (networkingType === 'novnc' && !ngrokToken.trim()) {
+        setLogs((prev) => [...prev, '🌐 noVNC sẽ dùng Ngrok HTTP tunnel (có thể cần token cho session dài)']);
       }
 
       // Step 6: Trigger workflow automatically

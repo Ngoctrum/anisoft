@@ -653,6 +653,7 @@ export default function VPSConsole() {
       }
     }
     // Cloudflare: token is optional (quick tunnel works without it)
+    // noVNC: uses Ngrok HTTP tunnel (free, needs ngrok token)
 
     setIsProcessing(true);
     const osDisplayName = osType === 'windows' ? 'Windows RDP' : 

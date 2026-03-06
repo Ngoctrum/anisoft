@@ -1,0 +1,128 @@
+name: 🐧 DEBIAN SSH - CLOUDFLARE TUNNEL
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: '🕐 Thời gian sử dụng'
+        required: false
+        default: '6h'
+        type: choice
+        options:
+        - '1h'
+        - '2h'
+        - '3h'
+        - '4h'
+        - '5h'
+        - '6h'
+      config:
+        description: '⚙️ Cấu hình VPS'
+        required: false
+        default: 'basic'
+        type: choice
+        options:
+        - 'basic'
+        - 'standard'
+        - 'premium'
+
+jobs:
+  Debian-SSH-Cloudflare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    
+    steps:
+      - name: 🎯 KHỞI ĐỘNG HỆ THỐNG
+        run: |
+          echo "🐧 DEBIAN SSH SERVER - CLOUDFLARE TUNNEL"
+          echo "⚡ Public Access via Cloudflare"
+          echo "🕒 Thời gian: ${{ github.event.inputs.duration }}"
+          echo "⚙️ Cấu hình: ${{ github.event.inputs.config }}"
+
+      - name: 🔧 CẤU HÌNH SSH
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y openssh-server curl
+          sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+          echo "ClientAliveInterval 30" | sudo tee -a /etc/ssh/sshd_config
+          echo "ClientAliveCountMax 99999" | sudo tee -a /etc/ssh/sshd_config
+          echo "TCPKeepAlive yes" | sudo tee -a /etc/ssh/sshd_config
+          sudo systemctl restart ssh && sudo systemctl enable ssh
+          echo "✅ SSH Server đã sẵn sàng"
+
+      - name: 👤 TẠO TÀI KHOẢN
+        run: |
+          PASSWORD=$(openssl rand -base64 12 | tr -dc 'A-Za-z0-9' | head -c 10)
+          sudo useradd -m -s /bin/bash aistv-cf
+          echo "aistv-cf:$PASSWORD" | sudo chpasswd
+          sudo usermod -aG sudo aistv-cf
+          echo "aistv-cf ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/aistv-cf
+          echo "SSH_USER=aistv-cf" >> $GITHUB_ENV
+          echo "SSH_PASS=$PASSWORD" >> $GITHUB_ENV
+          echo "$PASSWORD" > /tmp/ssh_password.txt
+          echo "✅ Tài khoản: aistv-cf đã sẵn sàng"
+
+      - name: 🌐 THIẾT LẬP CLOUDFLARE TUNNEL
+        env:
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+        run: |
+          curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o /tmp/cloudflared.deb
+          sudo dpkg -i /tmp/cloudflared.deb && rm /tmp/cloudflared.deb
+          
+          if [ -n "$CLOUDFLARE_TUNNEL_TOKEN" ]; then
+            cloudflared tunnel run --token "$CLOUDFLARE_TUNNEL_TOKEN" &
+            CF_PID=$!
+            echo "CF_PID=$CF_PID" >> $GITHUB_ENV
+            sleep 10
+          else
+            cloudflared tunnel --url tcp://localhost:22 --no-tls-verify 2>&1 | tee /tmp/cloudflare.log &
+            CF_PID=$!
+            echo "CF_PID=$CF_PID" >> $GITHUB_ENV
+            sleep 15
+            CF_URL=$(grep -oP 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/cloudflare.log | head -1)
+            if [ -z "$CF_URL" ]; then exit 1; fi
+            echo "CLOUDFLARE_URL=$CF_URL" >> $GITHUB_ENV
+            echo "✅ Cloudflare URL: $CF_URL"
+          fi
+
+      - name: 📤 GỬI THÔNG TIN VỀ WEBSITE
+        run: |
+          PASSWORD=$(cat /tmp/ssh_password.txt)
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          TUNNEL_URL="${CLOUDFLARE_URL:-cloudflare-configured}"
+          curl -X POST "https://wxqxriwodkgzpzqaxigp.supabase.co/functions/v1/update-rdp-info" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8" \
+            -H "Content-Type: application/json" \
+            -d "{\"repoName\":\"$REPO_NAME\",\"ngrokUrl\":\"$TUNNEL_URL\",\"rdpUser\":\"aistv-cf\",\"rdpPassword\":\"$PASSWORD\",\"osType\":\"debian\",\"sshPort\":22}" \
+            || echo "⚠️ Lỗi gửi thông tin"
+
+      - name: 🎉 THÔNG TIN KẾT NỐI
+        run: |
+          PASSWORD=$(cat /tmp/ssh_password.txt)
+          TUNNEL_URL="${CLOUDFLARE_URL:-cloudflare-configured}"
+          echo "🌐 URL: $TUNNEL_URL | 👤 User: aistv-cf | 🔐 Pass: $PASSWORD"
+
+      - name: ⏳ DUY TRÌ PHIÊN LÀM VIỆC
+        run: |
+          DURATION="${{ github.event.inputs.duration }}"
+          HOURS=${DURATION%h}
+          MINUTES=$((HOURS * 60))
+          while true; do uptime; sleep 60; done &
+          KEEPALIVE_PID=$!
+          for ((i=MINUTES; i>0; i--)); do
+            HOURS_LEFT=$((i / 60)); MINS_LEFT=$((i % 60))
+            if ! ps -p $CF_PID > /dev/null 2>&1; then
+              cloudflared tunnel --url tcp://localhost:22 --no-tls-verify 2>&1 | tee /tmp/cloudflare.log &
+              CF_PID=$!
+            fi
+            echo -ne "\r⏱️ Còn lại: ${HOURS_LEFT}h ${MINS_LEFT}m   "
+            sleep 60
+          done
+          kill $KEEPALIVE_PID 2>/dev/null || true
+          echo "🎯 ĐÃ HẾT THỜI GIAN!"
+
+      - name: 🧹 DỌN DẸP
+        if: always()
+        run: |
+          rm -f /tmp/ssh_password.txt
+          kill $CF_PID 2>/dev/null || true

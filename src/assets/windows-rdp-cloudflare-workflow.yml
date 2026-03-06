@@ -1,0 +1,157 @@
+name: 🚀 WINDOWS RDP - CLOUDFLARE TUNNEL
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: '🕐 Thời gian sử dụng'
+        required: false
+        default: '5h40m'
+        type: choice
+        options:
+        - '1h'
+        - '3h'
+        - '5h40m'
+      config:
+        description: '⚙️ Cấu hình VPS'
+        required: false
+        default: 'basic'
+        type: choice
+        options:
+        - 'basic'
+        - 'standard'
+        - 'premium'
+
+jobs:
+  Windows-RDP-Cloudflare:
+    runs-on: windows-latest
+    timeout-minutes: 340
+    
+    steps:
+      - name: 🎯 KHỞI ĐỘNG HỆ THỐNG
+        run: |
+          Write-Host "🪟 WINDOWS RDP - CLOUDFLARE TUNNEL" -ForegroundColor Yellow
+          Write-Host "🕒 Thời gian: ${{ github.event.inputs.duration }}" -ForegroundColor Magenta
+
+      - name: 🔧 CẤU HÌNH RDP
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "SecurityLayer" -Value 0 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "KeepAliveEnable" -Value 1 -Force
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "KeepAliveInterval" -Value 1 -Force
+          netsh advfirewall firewall add rule name="RDP-CF" dir=in action=allow protocol=TCP localport=3389 profile=any
+          Set-Service -Name TermService -StartupType Automatic
+          Start-Service -Name TermService
+          Write-Host "✅ RDP đã được cấu hình" -ForegroundColor Green
+
+      - name: 👤 TẠO TÀI KHOẢN
+        run: |
+          function New-Password {
+              $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+              -join ((1..10) | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
+          }
+          $password = New-Password
+          $securePass = ConvertTo-SecureString $password -AsPlainText -Force
+          Remove-LocalUser -Name "AISTV-CF" -ErrorAction SilentlyContinue
+          New-LocalUser -Name "AISTV-CF" -Password $securePass -AccountNeverExpires -Description "AI STV Cloudflare Account"
+          Set-LocalUser -Name "AISTV-CF" -PasswordNeverExpires $true
+          Add-LocalGroupMember -Group "Administrators" -Member "AISTV-CF"
+          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "AISTV-CF"
+          Enable-LocalUser -Name "AISTV-CF"
+          echo "RDP_USER=AISTV-CF" >> $env:GITHUB_ENV
+          echo "RDP_PASS=$password" >> $env:GITHUB_ENV
+          echo "$password" > $env:TEMP\rdp_password.txt
+          Write-Host "✅ Tài khoản: AISTV-CF đã sẵn sàng" -ForegroundColor Green
+
+      - name: 🌐 THIẾT LẬP CLOUDFLARE TUNNEL
+        env:
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+        run: |
+          Write-Host "🌐 ĐANG THIẾT LẬP CLOUDFLARE TUNNEL" -ForegroundColor Yellow
+          
+          # Download cloudflared
+          $cfPath = "$env:TEMP\cloudflared.exe"
+          Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile $cfPath
+          Write-Host "✅ Đã tải cloudflared" -ForegroundColor Green
+          
+          if ($env:CLOUDFLARE_TUNNEL_TOKEN) {
+            Start-Process -FilePath $cfPath -ArgumentList "tunnel", "run", "--token", $env:CLOUDFLARE_TUNNEL_TOKEN -NoNewWindow -RedirectStandardOutput "$env:TEMP\cf.log"
+            Start-Sleep -Seconds 10
+            Write-Host "✅ Cloudflare Tunnel đã kết nối (configured)" -ForegroundColor Green
+          } else {
+            # Quick tunnel - free, no account needed
+            Start-Process -FilePath $cfPath -ArgumentList "tunnel", "--url", "tcp://localhost:3389", "--no-tls-verify" -NoNewWindow -RedirectStandardOutput "$env:TEMP\cf.log" -RedirectStandardError "$env:TEMP\cf_err.log"
+            Start-Sleep -Seconds 15
+            
+            # Extract URL from logs
+            $cfUrl = $null
+            $logContent = Get-Content "$env:TEMP\cf_err.log" -ErrorAction SilentlyContinue
+            foreach ($line in $logContent) {
+              if ($line -match 'https://[a-z0-9-]+\.trycloudflare\.com') {
+                $cfUrl = $Matches[0]
+                break
+              }
+            }
+            
+            if (-not $cfUrl) {
+              Write-Host "❌ Không thể lấy Cloudflare URL" -ForegroundColor Red
+              Get-Content "$env:TEMP\cf_err.log" -ErrorAction SilentlyContinue
+              exit 1
+            }
+            
+            echo "CLOUDFLARE_URL=$cfUrl" >> $env:GITHUB_ENV
+            Write-Host "✅ Cloudflare URL: $cfUrl" -ForegroundColor Green
+          }
+
+      - name: 📤 GỬI THÔNG TIN VỀ WEBSITE
+        run: |
+          $password = Get-Content $env:TEMP\rdp_password.txt
+          $repoName = "${{ github.repository }}".Split('/')[-1]
+          $tunnelUrl = if ($env:CLOUDFLARE_URL) { $env:CLOUDFLARE_URL } else { "cloudflare-configured" }
+          
+          $body = @{
+              repoName = $repoName
+              ngrokUrl = $tunnelUrl
+              rdpUser = "AISTV-CF"
+              rdpPassword = $password
+          } | ConvertTo-Json
+          
+          try {
+              Invoke-RestMethod -Uri "https://wxqxriwodkgzpzqaxigp.supabase.co/functions/v1/update-rdp-info" -Method POST -Body $body -ContentType "application/json" -Headers @{
+                  "apikey" = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8"
+                  "Authorization" = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8"
+              }
+              Write-Host "✅ Đã gửi thông tin!" -ForegroundColor Green
+          } catch {
+              Write-Host "⚠️ Lỗi gửi thông tin" -ForegroundColor Yellow
+          }
+
+      - name: 🎉 THÔNG TIN KẾT NỐI
+        run: |
+          $password = Get-Content $env:TEMP\rdp_password.txt
+          $tunnelUrl = if ($env:CLOUDFLARE_URL) { $env:CLOUDFLARE_URL } else { "cloudflare-configured" }
+          Write-Host "🌐 URL: $tunnelUrl | 👤 AISTV-CF | 🔐 $password"
+          Write-Host "💡 Cần cài cloudflared trên máy để kết nối RDP qua tunnel"
+
+      - name: ⏳ DUY TRÌ PHIÊN LÀM VIỆC
+        run: |
+          $durationInput = "${{ github.event.inputs.duration }}"
+          switch ($durationInput) {
+              "1h" { $totalMinutes = 60 }
+              "3h" { $totalMinutes = 180 }
+              "5h40m" { $totalMinutes = 340 }
+          }
+          
+          $keepAliveJob = Start-Job -ScriptBlock { while($true) { Get-Date | Out-Null; Start-Sleep -Seconds 60 } }
+          
+          for($i=$totalMinutes; $i -gt 0; $i--) {
+              $hours = [math]::Floor($i / 60)
+              $mins = $i % 60
+              Write-Host "`r⏱️ Còn lại: ${hours}h ${mins}m   " -NoNewline -ForegroundColor Blue
+              Start-Sleep -Seconds 60
+          }
+          
+          Stop-Job -Job $keepAliveJob -ErrorAction SilentlyContinue
+          Remove-Job -Job $keepAliveJob -ErrorAction SilentlyContinue
+          Write-Host "🎯 ĐÃ HẾT THỜI GIAN!"

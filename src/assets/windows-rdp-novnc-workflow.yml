@@ -44,48 +44,68 @@ jobs:
 
       - name: 👤 TẠO TÀI KHOẢN
         run: |
-          $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
-          $password = -join ((1..10) | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
-          $securePass = ConvertTo-SecureString $password -AsPlainText -Force
-          Remove-LocalUser -Name "AISTV-WEB" -ErrorAction SilentlyContinue
-          New-LocalUser -Name "AISTV-WEB" -Password $securePass -AccountNeverExpires
-          Set-LocalUser -Name "AISTV-WEB" -PasswordNeverExpires $true
-          Add-LocalGroupMember -Group "Administrators" -Member "AISTV-WEB"
-          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "AISTV-WEB"
-          echo "RDP_PASS=$password" >> $env:GITHUB_ENV
-          echo "$password" > $env:TEMP\rdp_password.txt
+          # Generate password using function to avoid GitHub masking
+          function New-RdpPassword {
+              param()
+              $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+              $lower = 'abcdefghijkmnpqrstuvwxyz'
+              $numbers = '23456789'
+              $all = $upper + $lower + $numbers
+              $pw = ''
+              $pw += $upper[(Get-Random -Minimum 0 -Maximum $upper.Length)]
+              $pw += $lower[(Get-Random -Minimum 0 -Maximum $lower.Length)]
+              $pw += $numbers[(Get-Random -Minimum 0 -Maximum $numbers.Length)]
+              for ($i = 1; $i -le 5; $i++) {
+                  $pw += $all[(Get-Random -Minimum 0 -Maximum $all.Length)]
+              }
+              return -join ($pw.ToCharArray() | Sort-Object { Get-Random })
+          }
 
-      - name: 🌐 CÀI ĐẶT noVNC & VNC SERVER
+          $matKhau = New-RdpPassword
+
+          # Save password to file BEFORE creating secure string
+          $matKhau | Out-File -FilePath "$env:TEMP\rdp_password.txt" -NoNewline
+
+          # Now create user
+          try {
+              Remove-LocalUser -Name "AISTV-WEB" -ErrorAction SilentlyContinue
+          } catch {}
+
+          try {
+              $securePass = ConvertTo-SecureString $matKhau -AsPlainText -Force
+              New-LocalUser -Name "AISTV-WEB" -Password $securePass -AccountNeverExpires -Description "AI STV noVNC Account"
+              Set-LocalUser -Name "AISTV-WEB" -PasswordNeverExpires $true -ErrorAction SilentlyContinue
+              Add-LocalGroupMember -Group "Administrators" -Member "AISTV-WEB" -ErrorAction SilentlyContinue
+              Add-LocalGroupMember -Group "Remote Desktop Users" -Member "AISTV-WEB" -ErrorAction SilentlyContinue
+              Enable-LocalUser -Name "AISTV-WEB"
+              Write-Host "✅ Tài khoản AISTV-WEB đã sẵn sàng" -ForegroundColor Green
+          } catch {
+              Write-Host "❌ Lỗi tạo tài khoản: $_" -ForegroundColor Red
+              exit 1
+          }
+
+      - name: 🌐 CÀI ĐẶT noVNC & WEBSOCKIFY
         run: |
-          # Install Chocolatey packages
-          choco install -y tigervnc ultravnc --no-progress 2>$null
+          # Install Python & websockify
+          choco install -y python3 --no-progress 2>$null
+          refreshenv
+          $env:PATH = "C:\Python312;C:\Python312\Scripts;C:\Python311;C:\Python311\Scripts;C:\Python310;C:\Python310\Scripts;" + $env:PATH
+          pip install websockify numpy 2>$null
           
           # Download noVNC
           Invoke-WebRequest -Uri "https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.zip" -OutFile "$env:TEMP\novnc.zip"
           Expand-Archive -Path "$env:TEMP\novnc.zip" -DestinationPath "$env:TEMP\novnc" -Force
           
-          # Download websockify (Python-based, but we'll use the JS one bundled with noVNC)
-          # Install Python for websockify
-          choco install -y python3 --no-progress
-          refreshenv
-          pip install websockify numpy 2>$null
-          
-          Write-Host "✅ noVNC & VNC Server đã cài đặt" -ForegroundColor Green
+          Write-Host "✅ noVNC & websockify đã cài đặt" -ForegroundColor Green
 
-      - name: 🚀 KHỞI ĐỘNG VNC & noVNC
+      - name: 🚀 KHỞI ĐỘNG WEBSOCKIFY + noVNC
         run: |
-          $password = Get-Content $env:TEMP\rdp_password.txt
-          
-          # Configure and start VNC server on port 5900
-          # Use built-in Windows RDP via websockify pointing to RDP port
-          # websockify bridges WebSocket (noVNC) to TCP (RDP/VNC)
-          
           $novncPath = Get-ChildItem "$env:TEMP\novnc" -Directory | Select-Object -First 1
           
-          # Start websockify to bridge WebSocket to RDP (port 3389)
-          $wsProcess = Start-Process -FilePath "python" -ArgumentList "-m websockify --web `"$($novncPath.FullName)`" 6080 localhost:3389" -NoNewWindow -PassThru -RedirectStandardOutput "$env:TEMP\ws.log" -RedirectStandardError "$env:TEMP\ws_err.log"
+          # Start websockify bridging WebSocket to RDP port
+          $env:PATH = "C:\Python312;C:\Python312\Scripts;C:\Python311;C:\Python311\Scripts;C:\Python310;C:\Python310\Scripts;" + $env:PATH
+          Start-Process -FilePath "python" -ArgumentList "-m websockify --web `"$($novncPath.FullName)`" 6080 localhost:3389" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ws.log" -RedirectStandardError "$env:TEMP\ws_err.log"
           
-          echo "WS_PID=$($wsProcess.Id)" >> $env:GITHUB_ENV
           Start-Sleep -Seconds 5
           Write-Host "✅ noVNC đang chạy trên port 6080" -ForegroundColor Green
 
@@ -93,31 +113,32 @@ jobs:
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
-          # Download ngrok
           Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile "$env:TEMP\ngrok.zip"
           Expand-Archive -Path "$env:TEMP\ngrok.zip" -DestinationPath "$env:TEMP\ngrok" -Force
           $ngrokPath = "$env:TEMP\ngrok\ngrok.exe"
           
-          # Auth ngrok
           if ($env:NGROK_AUTH_TOKEN) {
             & $ngrokPath config add-authtoken $env:NGROK_AUTH_TOKEN
           }
           
-          # Start ngrok HTTP tunnel (FREE tier supports HTTP!)
           Start-Process -FilePath $ngrokPath -ArgumentList "http 6080 --log=stdout" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ngrok.log"
-          Start-Sleep -Seconds 8
+          Start-Sleep -Seconds 10
           
-          # Get public URL from ngrok API
-          try {
-            $tunnels = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels" -ErrorAction Stop
-            $publicUrl = $tunnels.tunnels | Where-Object { $_.proto -eq "https" } | Select-Object -First 1 -ExpandProperty public_url
-            if (-not $publicUrl) {
-              $publicUrl = $tunnels.tunnels[0].public_url
-            }
-          } catch {
-            Start-Sleep -Seconds 5
-            $tunnels = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels"
-            $publicUrl = $tunnels.tunnels[0].public_url
+          $maxRetries = 5
+          $publicUrl = $null
+          for ($i = 1; $i -le $maxRetries; $i++) {
+            try {
+              $tunnels = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels" -ErrorAction Stop
+              $publicUrl = ($tunnels.tunnels | Where-Object { $_.proto -eq "https" } | Select-Object -First 1).public_url
+              if (-not $publicUrl) { $publicUrl = $tunnels.tunnels[0].public_url }
+              if ($publicUrl) { break }
+            } catch {}
+            Start-Sleep -Seconds 3
+          }
+          
+          if (-not $publicUrl) {
+            Write-Host "❌ Không thể lấy Ngrok URL" -ForegroundColor Red
+            exit 1
           }
           
           echo "NOVNC_URL=$publicUrl" >> $env:GITHUB_ENV
@@ -142,8 +163,9 @@ jobs:
                   "apikey" = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8"
                   "Authorization" = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8"
               }
+              Write-Host "✅ Đã gửi thông tin!" -ForegroundColor Green
           } catch {
-              Write-Host "⚠️ Lỗi gửi thông tin" -ForegroundColor Yellow
+              Write-Host "⚠️ Lỗi gửi thông tin: $_" -ForegroundColor Yellow
           }
 
       - name: 🎉 THÔNG TIN KẾT NỐI
@@ -177,5 +199,20 @@ jobs:
       - name: 🧹 DỌN DẸP
         if: always()
         run: |
-          Stop-Process -Id $env:WS_PID -ErrorAction SilentlyContinue
           Remove-Item "$env:TEMP\rdp_password.txt" -ErrorAction SilentlyContinue
+
+      - name: ❌ BÁO LỖI VỀ WEBSITE
+        if: failure()
+        run: |
+          $repoName = "${{ github.repository }}".Split('/')[-1]
+          $body = @{
+              repoName = $repoName
+              status = "failed"
+          } | ConvertTo-Json
+          
+          try {
+              Invoke-RestMethod -Uri "https://wxqxriwodkgzpzqaxigp.supabase.co/functions/v1/update-rdp-info" -Method POST -Body $body -ContentType "application/json" -Headers @{
+                  "apikey" = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8"
+                  "Authorization" = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8"
+              }
+          } catch {}

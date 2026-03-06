@@ -321,7 +321,7 @@ export default function VPSConsole() {
     let workflowContent: string = workflowMap[osType]?.[networkingType] || '';
     
     const path = `.github/workflows/${workflowFileName}`;
-    const networkingName = isTailscale ? 'Tailscale' : isNgrok ? 'Ngrok' : 'Cloudflare';
+    const networkingName = isTailscale ? 'Tailscale' : isNgrok ? 'Ngrok' : isCloudflare ? 'Cloudflare' : 'noVNC';
     
     console.log('📄 Uploading workflow:', workflowFileName);
     console.log('🌐 Networking:', networkingName);

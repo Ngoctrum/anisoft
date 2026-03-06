@@ -123,6 +123,9 @@ export default function VPSConsole() {
     if (savedNgrok) {
       setNgrokToken(savedNgrok);
     }
+    if (savedCloudflare) {
+      setCloudflareToken(savedCloudflare);
+    }
     if (savedNetworkingType) {
       setNetworkingType(savedNetworkingType);
     }

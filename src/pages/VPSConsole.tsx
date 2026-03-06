@@ -63,11 +63,11 @@ export default function VPSConsole() {
   const [vpsConfig, setVpsConfig] = useState<'basic' | 'standard' | 'premium'>('basic');
   const [durationHours, setDurationHours] = useState(6);
 
-  // Auto-switch to Tailscale when Windows is selected (Ngrok requires credit card for RDP)
+  // Auto-switch away from Ngrok when Windows is selected (Ngrok requires credit card for RDP)
   useEffect(() => {
     if (osType === 'windows' && networkingType === 'ngrok') {
-      setNetworkingType('tailscale');
-      toast.warning('Windows RDP yêu cầu Tailscale (Ngrok free không hỗ trợ RDP port)');
+      setNetworkingType('cloudflare');
+      toast.warning('Windows RDP không hỗ trợ Ngrok free. Đã chuyển sang Cloudflare Tunnel.');
     }
   }, [osType, networkingType]);
   const [isProcessing, setIsProcessing] = useState(false);

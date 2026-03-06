@@ -1068,7 +1068,7 @@ export default function VPSConsole() {
             <Alert className="bg-muted/50">
               <Info className="h-4 w-4" />
               <AlertDescription>
-                <span>Đang dùng: <strong>{networkingType === 'tailscale' ? '🔒 Tailscale' : networkingType === 'ngrok' ? '🌐 Ngrok' : '☁️ Cloudflare Tunnel'}</strong></span>
+                <span>Đang dùng: <strong>{networkingType === 'tailscale' ? '🔒 Tailscale' : networkingType === 'ngrok' ? '🌐 Ngrok' : networkingType === 'cloudflare' ? '☁️ Cloudflare Tunnel' : '🖥️ noVNC (Web Browser)'}</strong></span>
                 <span className="text-xs ml-2 text-muted-foreground">(Thay đổi trong Settings)</span>
               </AlertDescription>
             </Alert>

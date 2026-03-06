@@ -63,7 +63,7 @@ export default function VPSConsole() {
   const [tailscaleToken, setTailscaleToken] = useState('');
   const [ngrokToken, setNgrokToken] = useState('');
   const [cloudflareToken, setCloudflareToken] = useState('');
-  const [networkingType, setNetworkingType] = useState<'tailscale' | 'ngrok' | 'cloudflare'>('tailscale');
+  const [networkingType, setNetworkingType] = useState<'tailscale' | 'ngrok' | 'cloudflare' | 'novnc'>('tailscale');
   const [osType, setOsType] = useState<'windows' | 'ubuntu' | 'debian' | 'archlinux' | 'centos'>('windows');
   const [vpsConfig, setVpsConfig] = useState<'basic' | 'standard' | 'premium'>('basic');
   const [durationHours, setDurationHours] = useState(6);

@@ -803,7 +803,7 @@ export default function VPSConsole() {
           <p className="text-muted-foreground text-lg max-w-3xl mx-auto leading-relaxed">
             🚀 Tạo và quản lý VPS miễn phí với GitHub Actions
             <br />
-            <span className="text-sm">Hỗ trợ Windows RDP & Linux SSH • Tailscale & Ngrok networking</span>
+            <span className="text-sm">Hỗ trợ Windows RDP & Linux SSH • Tailscale, Ngrok & Cloudflare networking</span>
           </p>
           <Button
             onClick={() => setShowSettings(!showSettings)}

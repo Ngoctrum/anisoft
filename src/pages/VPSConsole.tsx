@@ -889,8 +889,10 @@ export default function VPSConsole() {
                   <p className="text-xs text-muted-foreground">
                     {networkingType === 'tailscale' ? (
                       <>✅ <strong>Tailscale:</strong> Mạng riêng bảo mật, cần cài Tailscale trên máy</>
-                    ) : (
+                    ) : networkingType === 'ngrok' ? (
                       <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm. ⚠️ <strong>Chỉ hỗ trợ Linux</strong> (Ngrok free không cho phép Windows RDP)</>
+                    ) : (
+                      <>✅ <strong>Cloudflare Tunnel:</strong> Miễn phí, hỗ trợ tất cả OS. Không cần tài khoản (Quick Tunnel). Cần cài <code className="bg-muted px-1 rounded">cloudflared</code> trên máy client để kết nối.</>
                     )}
                   </p>
                 </div>

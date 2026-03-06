@@ -293,31 +293,33 @@ export default function VPSConsole() {
   const uploadWorkflowFile = async (token: string, owner: string, repo: string) => {
     const isWindows = osType === 'windows';
     const isTailscale = networkingType === 'tailscale';
+    const isNgrok = networkingType === 'ngrok';
+    const isCloudflare = networkingType === 'cloudflare';
     
     // Tên workflow file dựa trên OS và networking type
     let workflowFileName: string;
     if (isWindows) {
-      workflowFileName = isTailscale ? 'windows-rdp.yml' : 'windows-rdp-ngrok.yml';
+      workflowFileName = isTailscale ? 'windows-rdp.yml' : isNgrok ? 'windows-rdp-ngrok.yml' : 'windows-rdp-cloudflare.yml';
     } else {
-      workflowFileName = isTailscale ? `${osType}-ssh.yml` : `${osType}-ssh-ngrok.yml`;
+      workflowFileName = isTailscale ? `${osType}-ssh.yml` : isNgrok ? `${osType}-ssh-ngrok.yml` : `${osType}-ssh-cloudflare.yml`;
     }
     
     // Chọn workflow content dựa trên OS và networking type
     let workflowContent: string;
     if (isWindows) {
-      workflowContent = isTailscale ? windowsWorkflowTemplate : windowsNgrokWorkflowTemplate;
+      workflowContent = isTailscale ? windowsWorkflowTemplate : isNgrok ? windowsNgrokWorkflowTemplate : windowsCloudflareWorkflowTemplate;
     } else if (osType === 'ubuntu') {
-      workflowContent = isTailscale ? ubuntuWorkflowTemplate : ubuntuNgrokWorkflowTemplate;
+      workflowContent = isTailscale ? ubuntuWorkflowTemplate : isNgrok ? ubuntuNgrokWorkflowTemplate : ubuntuCloudflareWorkflowTemplate;
     } else if (osType === 'debian') {
-      workflowContent = isTailscale ? debianWorkflowTemplate : debianNgrokWorkflowTemplate;
+      workflowContent = isTailscale ? debianWorkflowTemplate : isNgrok ? debianNgrokWorkflowTemplate : debianCloudflareWorkflowTemplate;
     } else if (osType === 'archlinux') {
-      workflowContent = isTailscale ? archlinuxWorkflowTemplate : archlinuxNgrokWorkflowTemplate;
+      workflowContent = isTailscale ? archlinuxWorkflowTemplate : isNgrok ? archlinuxNgrokWorkflowTemplate : archlinuxCloudflareWorkflowTemplate;
     } else {
-      workflowContent = isTailscale ? centosWorkflowTemplate : centosNgrokWorkflowTemplate;
+      workflowContent = isTailscale ? centosWorkflowTemplate : isNgrok ? centosNgrokWorkflowTemplate : centosCloudflareWorkflowTemplate;
     }
     
     const path = `.github/workflows/${workflowFileName}`;
-    const networkingName = isTailscale ? 'Tailscale' : 'Ngrok';
+    const networkingName = isTailscale ? 'Tailscale' : isNgrok ? 'Ngrok' : 'Cloudflare';
     
     console.log('📄 Uploading workflow:', workflowFileName);
     console.log('🌐 Networking:', networkingName);

@@ -19,18 +19,23 @@ import { PageAccessControl } from '@/components/PageAccessControl';
 import windowsWorkflowTemplate from '@/assets/windows-rdp-workflow.yml?raw';
 import windowsNgrokWorkflowTemplate from '@/assets/windows-rdp-ngrok-workflow.yml?raw';
 import windowsCloudflareWorkflowTemplate from '@/assets/windows-rdp-cloudflare-workflow.yml?raw';
+import windowsNovncWorkflowTemplate from '@/assets/windows-rdp-novnc-workflow.yml?raw';
 import ubuntuWorkflowTemplate from '@/assets/ubuntu-ssh-workflow.yml?raw';
 import ubuntuNgrokWorkflowTemplate from '@/assets/ubuntu-ssh-ngrok-workflow.yml?raw';
 import ubuntuCloudflareWorkflowTemplate from '@/assets/ubuntu-ssh-cloudflare-workflow.yml?raw';
+import ubuntuNovncWorkflowTemplate from '@/assets/ubuntu-ssh-novnc-workflow.yml?raw';
 import debianWorkflowTemplate from '@/assets/debian-ssh-workflow.yml?raw';
 import debianNgrokWorkflowTemplate from '@/assets/debian-ssh-ngrok-workflow.yml?raw';
 import debianCloudflareWorkflowTemplate from '@/assets/debian-ssh-cloudflare-workflow.yml?raw';
+import debianNovncWorkflowTemplate from '@/assets/debian-ssh-novnc-workflow.yml?raw';
 import archlinuxWorkflowTemplate from '@/assets/archlinux-ssh-workflow.yml?raw';
 import archlinuxNgrokWorkflowTemplate from '@/assets/archlinux-ssh-ngrok-workflow.yml?raw';
 import archlinuxCloudflareWorkflowTemplate from '@/assets/archlinux-ssh-cloudflare-workflow.yml?raw';
+import archlinuxNovncWorkflowTemplate from '@/assets/archlinux-ssh-novnc-workflow.yml?raw';
 import centosWorkflowTemplate from '@/assets/centos-ssh-workflow.yml?raw';
 import centosNgrokWorkflowTemplate from '@/assets/centos-ssh-ngrok-workflow.yml?raw';
 import centosCloudflareWorkflowTemplate from '@/assets/centos-ssh-cloudflare-workflow.yml?raw';
+import centosNovncWorkflowTemplate from '@/assets/centos-ssh-novnc-workflow.yml?raw';
 import _sodium from 'libsodium-wrappers';
 
 interface Session {

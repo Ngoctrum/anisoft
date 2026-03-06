@@ -984,7 +984,7 @@ export default function VPSConsole() {
                         </a>
                       </p>
                     </div>
-                  ) : (
+                  ) : networkingType === 'cloudflare' ? (
                     <div className="space-y-2">
                       <Label htmlFor="saved-cloudflare-token">Cloudflare Tunnel Token <Badge variant="outline" className="ml-1 text-[10px]">Tùy chọn</Badge></Label>
                       <Input
@@ -1006,6 +1006,33 @@ export default function VPSConsole() {
                           <li>Chạy: <code className="bg-muted px-1 rounded">cloudflared access tcp --hostname URL --url localhost:PORT</code></li>
                           <li>Sau đó SSH vào <code className="bg-muted px-1 rounded">localhost:PORT</code></li>
                         </ol>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="saved-novnc-ngrok-token">Ngrok Authtoken <Badge variant="outline" className="ml-1 text-[10px]">Tùy chọn</Badge></Label>
+                      <Input
+                        id="saved-novnc-ngrok-token"
+                        type="password"
+                        placeholder="2c... (tùy chọn, giúp session ổn định hơn)"
+                        value={ngrokToken}
+                        onChange={(e) => setNgrokToken(e.target.value)}
+                      />
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">
+                          🎉 <strong>noVNC dùng Ngrok HTTP tunnel (FREE!)</strong> — Không cần cài app, mở URL trên trình duyệt là dùng.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          💡 Thêm Ngrok token để session ổn định hơn (không bắt buộc).
+                        </p>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-primary"
+                          onClick={() => window.open('https://dashboard.ngrok.com/get-started/your-authtoken', '_blank')}
+                        >
+                          🔑 Lấy Ngrok Authtoken (miễn phí)
+                        </Button>
                       </div>
                     </div>
                   )}

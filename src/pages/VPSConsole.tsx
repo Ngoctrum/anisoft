@@ -592,12 +592,13 @@ export default function VPSConsole() {
         toast.error('Tailscale Token không đúng định dạng (phải bắt đầu bằng tskey-auth-)');
         return;
       }
-    } else {
+    } else if (networkingType === 'ngrok') {
       if (ngrokToken.trim() && ngrokToken.trim().length < 10) {
         toast.error('Ngrok Token không hợp lệ');
         return;
       }
     }
+    // Cloudflare token is optional (supports quick tunnel without token)
 
     // Save tokens to localStorage (persists across sessions)
     if (githubToken.trim()) {

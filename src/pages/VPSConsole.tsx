@@ -753,6 +753,7 @@ export default function VPSConsole() {
         localStorage.removeItem('vps_github_token');
         localStorage.removeItem('vps_tailscale_token');
         localStorage.removeItem('vps_ngrok_token');
+        localStorage.removeItem('vps_cloudflare_token');
         localStorage.removeItem('vps_networking_type');
         toast.info('Tokens đã được xóa sau khi tạo VPS');
       }

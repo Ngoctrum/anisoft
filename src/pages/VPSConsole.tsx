@@ -848,7 +848,7 @@ export default function VPSConsole() {
                       name="settings_networking_type"
                       value="tailscale"
                       checked={networkingType === 'tailscale'}
-                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok')}
+                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare')}
                       className="w-4 h-4"
                     />
                     <Label htmlFor="settings_networking_tailscale" className="font-normal cursor-pointer">

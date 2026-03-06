@@ -663,6 +663,11 @@ export default function VPSConsole() {
     const networkingName = networkingType === 'tailscale' ? 'Tailscale' : networkingType === 'ngrok' ? 'Ngrok' : networkingType === 'cloudflare' ? 'Cloudflare' : 'noVNC (Web)';
     setLogs([`🚀 Bắt đầu tạo ${osDisplayName} Server (${networkingName})...`]);
 
+    let createdSessionId: string | null = null;
+    let createdRepoFullName: string | null = null;
+    let createdRepoOwner: string | null = null;
+    let createdRepoName: string | null = null;
+
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) {
@@ -672,6 +677,9 @@ export default function VPSConsole() {
       // Step 1: Create repository
       setLogs((prev) => [...prev, '📦 Đang tạo GitHub repository...']);
       const repo = await createRepository(githubToken);
+      createdRepoFullName = repo.full_name;
+      createdRepoOwner = repo.owner.login;
+      createdRepoName = repo.name;
       
       setLogs((prev) => [...prev, `✅ Repository: ${repo.full_name}`]);
 
@@ -698,6 +706,7 @@ export default function VPSConsole() {
         .single();
 
       if (sessionError) throw sessionError;
+      createdSessionId = session.id;
       setLogs((prev) => [...prev, '✅ Session đã được tạo']);
 
       // Step 3: Upload workflow
@@ -766,14 +775,38 @@ export default function VPSConsole() {
         toast.info('Tokens đã được xóa sau khi tạo VPS');
       }
       
-      // Note: NOT resetting form tokens so user can create another VPS quickly
-      
       // Reload sessions
       await loadSessions();
     } catch (error: any) {
       console.error('Error creating VPS:', error);
       toast.error(error.message || 'Có lỗi xảy ra khi tạo VPS');
       setLogs((prev) => [...prev, `❌ Lỗi: ${error.message}`]);
+      
+      // Auto-cleanup: Delete failed session from database
+      if (createdSessionId) {
+        setLogs((prev) => [...prev, '🧹 Đang tự động xóa session lỗi...']);
+        try {
+          await supabase.from('rdp_sessions').delete().eq('id', createdSessionId);
+          setLogs((prev) => [...prev, '✅ Đã xóa session lỗi khỏi database']);
+        } catch (cleanupError) {
+          console.error('Failed to cleanup session:', cleanupError);
+          setLogs((prev) => [...prev, '⚠️ Không thể xóa session lỗi tự động']);
+        }
+      }
+      
+      // Auto-cleanup: Delete failed GitHub repo
+      if (createdRepoOwner && createdRepoName) {
+        setLogs((prev) => [...prev, '🧹 Đang xóa GitHub repo lỗi...']);
+        try {
+          await deleteGithubRepo(`https://github.com/${createdRepoOwner}/${createdRepoName}`, githubToken);
+          setLogs((prev) => [...prev, '✅ Đã xóa GitHub repo lỗi']);
+        } catch (repoCleanupError) {
+          console.error('Failed to cleanup repo:', repoCleanupError);
+          setLogs((prev) => [...prev, '⚠️ Không thể xóa repo lỗi tự động']);
+        }
+      }
+      
+      await loadSessions();
     } finally {
       setIsProcessing(false);
     }

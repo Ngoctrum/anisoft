@@ -891,11 +891,26 @@ export default function VPSConsole() {
                         value={tailscaleToken}
                         onChange={(e) => setTailscaleToken(e.target.value)}
                       />
-                      <p className="text-xs text-muted-foreground">
-                        <a href="https://login.tailscale.com/admin/settings/keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                          🔑 Lấy Tailscale Auth Key
-                        </a>
-                      </p>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Hướng dẫn lấy Tailscale Auth Key:</strong>
+                        </p>
+                        <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-0.5">
+                          <li>Truy cập <a href="https://login.tailscale.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">login.tailscale.com</a> và đăng nhập</li>
+                          <li>Vào <strong>Settings</strong> → <strong>Keys</strong> → <strong>Auth keys</strong></li>
+                          <li>Click <strong>"Generate auth key"</strong></li>
+                          <li>Chọn <strong>Reusable</strong> và <strong>Ephemeral</strong> (khuyến nghị)</li>
+                          <li>Copy key bắt đầu bằng <code className="bg-muted px-1 rounded">tskey-auth-...</code></li>
+                        </ol>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-primary"
+                          onClick={() => window.open('https://login.tailscale.com/admin/settings/keys', '_blank')}
+                        >
+                          📋 Mở trang tạo Tailscale Auth Key
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-2">

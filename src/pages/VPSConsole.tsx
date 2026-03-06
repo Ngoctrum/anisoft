@@ -641,8 +641,7 @@ export default function VPSConsole() {
         toast.error('Tailscale Token không đúng định dạng (phải bắt đầu bằng tskey-auth-)');
         return;
       }
-    } else {
-      // Ngrok type
+    } else if (networkingType === 'ngrok') {
       if (!ngrokToken.trim()) {
         toast.error('Vui lòng nhập Ngrok Authtoken');
         return;
@@ -652,6 +651,7 @@ export default function VPSConsole() {
         return;
       }
     }
+    // Cloudflare: token is optional (quick tunnel works without it)
 
     setIsProcessing(true);
     const osDisplayName = osType === 'windows' ? 'Windows RDP' : 

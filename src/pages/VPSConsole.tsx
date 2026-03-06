@@ -862,12 +862,26 @@ export default function VPSConsole() {
                       name="settings_networking_type"
                       value="ngrok"
                       checked={networkingType === 'ngrok'}
-                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok')}
+                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare')}
                       disabled={osType === 'windows'}
                       className="w-4 h-4 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <Label htmlFor="settings_networking_ngrok" className={`font-normal cursor-pointer ${osType === 'windows' ? 'opacity-50 cursor-not-allowed' : ''}`}>
                       🌐 Ngrok (Internet công khai) {osType === 'windows' && '❌ Không hỗ trợ Windows'}
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="settings_networking_cloudflare"
+                      name="settings_networking_type"
+                      value="cloudflare"
+                      checked={networkingType === 'cloudflare'}
+                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare')}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="settings_networking_cloudflare" className="font-normal cursor-pointer">
+                      ☁️ Cloudflare Tunnel (Miễn phí, không cần tài khoản)
                     </Label>
                   </div>
                 </div>

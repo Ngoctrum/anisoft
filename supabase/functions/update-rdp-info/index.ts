@@ -17,9 +17,9 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { repoName, ngrokUrl, rdpUser, rdpPassword, osType, sshPort } = await req.json();
+    const { repoName, ngrokUrl, rdpUser, rdpPassword, osType, sshPort, networkingType } = await req.json();
 
-    console.log('Received update request:', { repoName, ngrokUrl, rdpUser });
+    console.log('Received update request:', { repoName, ngrokUrl, rdpUser, osType, networkingType });
 
     // Find the session by github_repo
     const { data: session, error: findError } = await supabase
@@ -39,18 +39,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Update the session with RDP info
+    // Update the session with connection info
     const updateData: any = {
       rdp_user: rdpUser,
       rdp_password: rdpPassword,
       status: 'connected',
       is_active: true,
+      started_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    // Save Tailscale IP
+    // Save connection URL based on networking type
     if (ngrokUrl) {
-      updateData.tailscale_ip = ngrokUrl;
+      // For Tailscale, save as tailscale_ip
+      // For Ngrok/Cloudflare/noVNC, save as ngrok_url
+      const currentNetType = networkingType || session.networking_type || 'tailscale';
+      if (currentNetType === 'tailscale') {
+        updateData.tailscale_ip = ngrokUrl;
+      } else {
+        updateData.ngrok_url = ngrokUrl;
+        // Also save to tailscale_ip for backward compatibility
+        updateData.tailscale_ip = ngrokUrl;
+      }
+    }
+
+    // Save networking type if provided
+    if (networkingType) {
+      updateData.networking_type = networkingType;
     }
 
     // Save OS type and SSH port if provided

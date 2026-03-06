@@ -913,8 +913,10 @@ export default function VPSConsole() {
                       <>✅ <strong>Tailscale:</strong> Mạng riêng bảo mật, cần cài Tailscale trên máy</>
                     ) : networkingType === 'ngrok' ? (
                       <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm. ⚠️ <strong>Chỉ hỗ trợ Linux</strong> (Ngrok free không cho phép Windows RDP)</>
+                    ) : networkingType === 'cloudflare' ? (
+                      <>✅ <strong>Cloudflare Tunnel:</strong> Miễn phí, hỗ trợ tất cả OS. Cần cài <code className="bg-muted px-1 rounded">cloudflared</code> trên máy client.</>
                     ) : (
-                      <>✅ <strong>Cloudflare Tunnel:</strong> Miễn phí, hỗ trợ tất cả OS. Không cần tài khoản (Quick Tunnel). Cần cài <code className="bg-muted px-1 rounded">cloudflared</code> trên máy client để kết nối.</>
+                      <>✅ <strong>noVNC (Web Browser):</strong> 🎉 <strong>Không cần cài bất kỳ app nào!</strong> Truy cập desktop VPS trực tiếp qua trình duyệt web. Dùng Ngrok HTTP tunnel (free).</>
                     )}
                   </p>
                 </div>

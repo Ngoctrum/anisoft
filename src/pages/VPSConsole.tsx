@@ -713,8 +713,8 @@ export default function VPSConsole() {
       await new Promise(resolve => setTimeout(resolve, 8000));
 
       // Step 5: Add networking secret based on type
-      const secretName = networkingType === 'tailscale' ? 'TAILSCALE_AUTH_KEY' : 'NGROK_AUTH_TOKEN';
-      const secretValue = networkingType === 'tailscale' ? tailscaleToken : ngrokToken;
+      const secretName = networkingType === 'tailscale' ? 'TAILSCALE_AUTH_KEY' : networkingType === 'ngrok' ? 'NGROK_AUTH_TOKEN' : 'CLOUDFLARE_TUNNEL_TOKEN';
+      const secretValue = networkingType === 'tailscale' ? tailscaleToken : networkingType === 'ngrok' ? ngrokToken : cloudflareToken;
       setLogs((prev) => [...prev, `🔐 Đang thêm ${networkingName} token vào repository...`]);
       try {
         await addGithubSecret(githubToken, repo.owner.login, repo.name, secretName, secretValue);

@@ -71,8 +71,8 @@ export default function VPSConsole() {
   // Auto-switch away from Ngrok when Windows is selected (Ngrok requires credit card for RDP)
   useEffect(() => {
     if (osType === 'windows' && networkingType === 'ngrok') {
-      setNetworkingType('cloudflare');
-      toast.warning('Windows RDP không hỗ trợ Ngrok free. Đã chuyển sang Cloudflare Tunnel.');
+      setNetworkingType('novnc');
+      toast.warning('Windows RDP không hỗ trợ Ngrok free. Đã chuyển sang noVNC (Web Browser).');
     }
   }, [osType, networkingType]);
   const [isProcessing, setIsProcessing] = useState(false);

@@ -1,0 +1,1 @@
+UPDATE rdp_sessions SET is_active = false, status = 'expired' WHERE expires_at < now() AND is_active = true;

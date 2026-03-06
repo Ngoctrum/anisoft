@@ -1,0 +1,2 @@
+ALTER TABLE public.rdp_sessions DROP CONSTRAINT IF EXISTS rdp_sessions_networking_type_check;
+ALTER TABLE public.rdp_sessions ADD CONSTRAINT rdp_sessions_networking_type_check CHECK (networking_type IN ('tailscale', 'ngrok', 'cloudflare', 'novnc'));

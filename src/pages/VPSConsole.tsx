@@ -944,7 +944,7 @@ export default function VPSConsole() {
                         </Button>
                       </div>
                     </div>
-                  ) : (
+                  ) : networkingType === 'ngrok' ? (
                     <div className="space-y-2">
                       <Label htmlFor="saved-ngrok-token">Ngrok Authtoken</Label>
                       <Input
@@ -959,6 +959,30 @@ export default function VPSConsole() {
                           🔑 Lấy Ngrok Authtoken
                         </a>
                       </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="saved-cloudflare-token">Cloudflare Tunnel Token <Badge variant="outline" className="ml-1 text-[10px]">Tùy chọn</Badge></Label>
+                      <Input
+                        id="saved-cloudflare-token"
+                        type="password"
+                        placeholder="eyJhIjoixx... (để trống = Quick Tunnel miễn phí)"
+                        value={cloudflareToken}
+                        onChange={(e) => setCloudflareToken(e.target.value)}
+                      />
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>💡 Quick Tunnel (mặc định):</strong> Không cần token, tự động tạo URL tạm thời miễn phí.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Hướng dẫn kết nối SSH qua Cloudflare:</strong>
+                        </p>
+                        <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-0.5">
+                          <li>Cài <code className="bg-muted px-1 rounded">cloudflared</code> trên máy: <a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Tải tại đây</a></li>
+                          <li>Chạy: <code className="bg-muted px-1 rounded">cloudflared access tcp --hostname URL --url localhost:PORT</code></li>
+                          <li>Sau đó SSH vào <code className="bg-muted px-1 rounded">localhost:PORT</code></li>
+                        </ol>
+                      </div>
                     </div>
                   )}
                 </div>

@@ -104,7 +104,8 @@ export default function VPSConsole() {
     const savedGithub = localStorage.getItem('vps_github_token');
     const savedTailscale = localStorage.getItem('vps_tailscale_token');
     const savedNgrok = localStorage.getItem('vps_ngrok_token');
-    const savedNetworkingType = localStorage.getItem('vps_networking_type') as 'tailscale' | 'ngrok';
+    const savedCloudflare = localStorage.getItem('vps_cloudflare_token');
+    const savedNetworkingType = localStorage.getItem('vps_networking_type') as 'tailscale' | 'ngrok' | 'cloudflare';
     const savedTokensFlag = localStorage.getItem('vps_save_tokens_enabled');
     
     // Load GitHub token for form (vps_github_token) and for deletion (github_token)

@@ -435,14 +435,13 @@ export default function VPSConsole() {
 
   const triggerWorkflow = async (token: string, owner: string, repo: string) => {
     const isWindows = osType === 'windows';
-    const isTailscale = networkingType === 'tailscale';
     
     // Tên workflow file dựa trên OS và networking type
     let workflowFileName: string;
     if (isWindows) {
-      workflowFileName = isTailscale ? 'windows-rdp.yml' : 'windows-rdp-ngrok.yml';
+      workflowFileName = networkingType === 'tailscale' ? 'windows-rdp.yml' : networkingType === 'ngrok' ? 'windows-rdp-ngrok.yml' : networkingType === 'cloudflare' ? 'windows-rdp-cloudflare.yml' : 'windows-rdp-novnc.yml';
     } else {
-      workflowFileName = isTailscale ? `${osType}-ssh.yml` : `${osType}-ssh-ngrok.yml`;
+      workflowFileName = networkingType === 'tailscale' ? `${osType}-ssh.yml` : networkingType === 'ngrok' ? `${osType}-ssh-ngrok.yml` : networkingType === 'cloudflare' ? `${osType}-ssh-cloudflare.yml` : `${osType}-ssh-novnc.yml`;
     }
     
     const durationInput = isWindows

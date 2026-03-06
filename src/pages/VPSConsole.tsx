@@ -885,11 +885,25 @@ export default function VPSConsole() {
                       name="settings_networking_type"
                       value="cloudflare"
                       checked={networkingType === 'cloudflare'}
-                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare')}
+                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
                       className="w-4 h-4"
                     />
                     <Label htmlFor="settings_networking_cloudflare" className="font-normal cursor-pointer">
-                      ☁️ Cloudflare Tunnel (Miễn phí, không cần tài khoản)
+                      ☁️ Cloudflare Tunnel (Cần cài cloudflared)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="settings_networking_novnc"
+                      name="settings_networking_type"
+                      value="novnc"
+                      checked={networkingType === 'novnc'}
+                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="settings_networking_novnc" className="font-normal cursor-pointer">
+                      🖥️ noVNC (Web Browser - Không cần cài app!)
                     </Label>
                   </div>
                 </div>

@@ -610,7 +610,7 @@ export default function VPSConsole() {
     localStorage.setItem('vps_networking_type', networkingType);
     if (networkingType === 'tailscale' && tailscaleToken.trim()) {
       localStorage.setItem('vps_tailscale_token', tailscaleToken);
-    } else if (networkingType === 'ngrok' && ngrokToken.trim()) {
+    } else if ((networkingType === 'ngrok' || networkingType === 'novnc') && ngrokToken.trim()) {
       localStorage.setItem('vps_ngrok_token', ngrokToken);
     } else if (networkingType === 'cloudflare' && cloudflareToken.trim()) {
       localStorage.setItem('vps_cloudflare_token', cloudflareToken);
@@ -653,7 +653,17 @@ export default function VPSConsole() {
       }
     }
     // Cloudflare: token is optional (quick tunnel works without it)
-    // noVNC: uses Ngrok HTTP tunnel (free, needs ngrok token)
+    // noVNC: uses Ngrok HTTP tunnel, needs ngrok token
+    if (networkingType === 'novnc') {
+      if (!ngrokToken.trim()) {
+        toast.error('noVNC cần Ngrok Authtoken để tạo tunnel. Vui lòng nhập Ngrok token.');
+        return;
+      }
+      if (ngrokToken.trim().length < 10) {
+        toast.error('Ngrok Authtoken không hợp lệ');
+        return;
+      }
+    }
 
     setIsProcessing(true);
     const osDisplayName = osType === 'windows' ? 'Windows RDP' : 
@@ -1043,20 +1053,20 @@ export default function VPSConsole() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <Label htmlFor="saved-novnc-ngrok-token">Ngrok Authtoken <Badge variant="outline" className="ml-1 text-[10px]">Tùy chọn</Badge></Label>
+                      <Label htmlFor="saved-novnc-ngrok-token">Ngrok Authtoken <Badge variant="destructive" className="ml-1 text-[10px]">Bắt buộc</Badge></Label>
                       <Input
                         id="saved-novnc-ngrok-token"
                         type="password"
-                        placeholder="2c... (tùy chọn, giúp session ổn định hơn)"
+                        placeholder="2c... (bắt buộc để tạo tunnel)"
                         value={ngrokToken}
                         onChange={(e) => setNgrokToken(e.target.value)}
                       />
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">
-                          🎉 <strong>noVNC dùng Ngrok HTTP tunnel (FREE!)</strong> — Không cần cài app, mở URL trên trình duyệt là dùng.
+                          🎉 <strong>noVNC dùng Ngrok HTTP tunnel</strong> — Không cần cài app, mở URL trên trình duyệt là dùng.
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          💡 Thêm Ngrok token để session ổn định hơn (không bắt buộc).
+                          ⚠️ <strong>Cần Ngrok Authtoken</strong> để tạo tunnel. Đăng ký miễn phí tại ngrok.com.
                         </p>
                         <Button
                           variant="link"

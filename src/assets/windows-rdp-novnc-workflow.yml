@@ -50,12 +50,14 @@ jobs:
               $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
               $lower = 'abcdefghijkmnpqrstuvwxyz'
               $numbers = '23456789'
+              $special = '!@#$%&*'
               $all = $upper + $lower + $numbers
               $pw = ''
               $pw += $upper[(Get-Random -Minimum 0 -Maximum $upper.Length)]
               $pw += $lower[(Get-Random -Minimum 0 -Maximum $lower.Length)]
               $pw += $numbers[(Get-Random -Minimum 0 -Maximum $numbers.Length)]
-              for ($i = 1; $i -le 5; $i++) {
+              $pw += $special[(Get-Random -Minimum 0 -Maximum $special.Length)]
+              for ($i = 1; $i -le 6; $i++) {
                   $pw += $all[(Get-Random -Minimum 0 -Maximum $all.Length)]
               }
               return -join ($pw.ToCharArray() | Sort-Object { Get-Random })

@@ -102,35 +102,28 @@ jobs:
           Start-Sleep -Seconds 5
           Write-Host "✅ noVNC đang chạy trên port 6080" -ForegroundColor Green
 
-      - name: 🌐 THIẾT LẬP LOCALHOST.RUN TUNNEL
+      - name: 🌐 THIẾT LẬP CLOUDFLARE QUICK TUNNEL
         run: |
-          # Install OpenSSH client if not present
-          Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0 -ErrorAction SilentlyContinue
+          # Download cloudflared
+          Invoke-WebRequest -Uri "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile "$env:TEMP\cloudflared.exe"
           
-          # Generate SSH key for localhost.run (no passphrase)
-          if (-not (Test-Path "$env:USERPROFILE\.ssh\id_rsa")) {
-            ssh-keygen -t rsa -b 2048 -f "$env:USERPROFILE\.ssh\id_rsa" -N '""' -q
-          }
+          # Start quick tunnel (no token needed)
+          Start-Process -FilePath "$env:TEMP\cloudflared.exe" -ArgumentList "tunnel --url http://localhost:6080 --no-autoupdate" -NoNewWindow -RedirectStandardOutput "$env:TEMP\cf.log" -RedirectStandardError "$env:TEMP\cf_err.log"
           
-          # Start localhost.run tunnel in background, capture output
-          $tunnelLog = "$env:TEMP\tunnel.log"
-          Start-Process -FilePath "ssh" -ArgumentList "-o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R 80:localhost:6080 nokey@localhost.run" -NoNewWindow -RedirectStandardOutput $tunnelLog -RedirectStandardError "$env:TEMP\tunnel_err.log"
-          
-          # Wait and extract URL
+          # Wait and extract URL from stderr (cloudflared logs to stderr)
           $publicUrl = $null
           for ($i = 1; $i -le 30; $i++) {
             Start-Sleep -Seconds 2
-            if (Test-Path $tunnelLog) {
-              $content = Get-Content $tunnelLog -Raw -ErrorAction SilentlyContinue
-              if ($content -match '(https://[a-z0-9]+\.lhr\.life[^\s]*)') {
+            if (Test-Path "$env:TEMP\cf_err.log") {
+              $content = Get-Content "$env:TEMP\cf_err.log" -Raw -ErrorAction SilentlyContinue
+              if ($content -match '(https://[a-z0-9\-]+\.trycloudflare\.com)') {
                 $publicUrl = $Matches[1]
                 break
               }
-              if ($content -match '(https://[^\s]+localhost\.run[^\s]*)') {
-                $publicUrl = $Matches[1]
-                break
-              }
-              if ($content -match '(https://[^\s]+\.lhr\.[^\s]*)') {
+            }
+            if (Test-Path "$env:TEMP\cf.log") {
+              $content = Get-Content "$env:TEMP\cf.log" -Raw -ErrorAction SilentlyContinue
+              if ($content -match '(https://[a-z0-9\-]+\.trycloudflare\.com)') {
                 $publicUrl = $Matches[1]
                 break
               }
@@ -139,8 +132,8 @@ jobs:
           
           if (-not $publicUrl) {
             Write-Host "❌ Không thể lấy tunnel URL" -ForegroundColor Red
-            if (Test-Path $tunnelLog) { Get-Content $tunnelLog }
-            if (Test-Path "$env:TEMP\tunnel_err.log") { Get-Content "$env:TEMP\tunnel_err.log" }
+            if (Test-Path "$env:TEMP\cf_err.log") { Get-Content "$env:TEMP\cf_err.log" }
+            if (Test-Path "$env:TEMP\cf.log") { Get-Content "$env:TEMP\cf.log" }
             exit 1
           }
           

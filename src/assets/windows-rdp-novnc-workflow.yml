@@ -44,7 +44,6 @@ jobs:
 
       - name: 👤 TẠO TÀI KHOẢN
         run: |
-          # Generate password using function to avoid GitHub masking
           function New-RdpPassword {
               param()
               $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
@@ -64,11 +63,8 @@ jobs:
           }
 
           $matKhau = New-RdpPassword
-
-          # Save password to file BEFORE creating secure string
           $matKhau | Out-File -FilePath "$env:TEMP\rdp_password.txt" -NoNewline
 
-          # Now create user
           try {
               Remove-LocalUser -Name "AISTV-WEB" -ErrorAction SilentlyContinue
           } catch {}
@@ -88,13 +84,11 @@ jobs:
 
       - name: 🌐 CÀI ĐẶT noVNC & WEBSOCKIFY
         run: |
-          # Install Python & websockify
           choco install -y python3 --no-progress 2>$null
           refreshenv
           $env:PATH = "C:\Python312;C:\Python312\Scripts;C:\Python311;C:\Python311\Scripts;C:\Python310;C:\Python310\Scripts;" + $env:PATH
           pip install websockify numpy 2>$null
           
-          # Download noVNC
           Invoke-WebRequest -Uri "https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.zip" -OutFile "$env:TEMP\novnc.zip"
           Expand-Archive -Path "$env:TEMP\novnc.zip" -DestinationPath "$env:TEMP\novnc" -Force
           
@@ -103,43 +97,50 @@ jobs:
       - name: 🚀 KHỞI ĐỘNG WEBSOCKIFY + noVNC
         run: |
           $novncPath = Get-ChildItem "$env:TEMP\novnc" -Directory | Select-Object -First 1
-          
-          # Start websockify bridging WebSocket to RDP port
           $env:PATH = "C:\Python312;C:\Python312\Scripts;C:\Python311;C:\Python311\Scripts;C:\Python310;C:\Python310\Scripts;" + $env:PATH
           Start-Process -FilePath "python" -ArgumentList "-m websockify --web `"$($novncPath.FullName)`" 6080 localhost:3389" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ws.log" -RedirectStandardError "$env:TEMP\ws_err.log"
-          
           Start-Sleep -Seconds 5
           Write-Host "✅ noVNC đang chạy trên port 6080" -ForegroundColor Green
 
-      - name: 🌐 THIẾT LẬP NGROK HTTP TUNNEL
-        env:
-          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      - name: 🌐 THIẾT LẬP LOCALHOST.RUN TUNNEL
         run: |
-          Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile "$env:TEMP\ngrok.zip"
-          Expand-Archive -Path "$env:TEMP\ngrok.zip" -DestinationPath "$env:TEMP\ngrok" -Force
-          $ngrokPath = "$env:TEMP\ngrok\ngrok.exe"
+          # Install OpenSSH client if not present
+          Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0 -ErrorAction SilentlyContinue
           
-          if ($env:NGROK_AUTH_TOKEN) {
-            & $ngrokPath config add-authtoken $env:NGROK_AUTH_TOKEN
+          # Generate SSH key for localhost.run (no passphrase)
+          if (-not (Test-Path "$env:USERPROFILE\.ssh\id_rsa")) {
+            ssh-keygen -t rsa -b 2048 -f "$env:USERPROFILE\.ssh\id_rsa" -N '""' -q
           }
           
-          Start-Process -FilePath $ngrokPath -ArgumentList "http 6080 --log=stdout" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ngrok.log"
-          Start-Sleep -Seconds 10
+          # Start localhost.run tunnel in background, capture output
+          $tunnelLog = "$env:TEMP\tunnel.log"
+          Start-Process -FilePath "ssh" -ArgumentList "-o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R 80:localhost:6080 nokey@localhost.run" -NoNewWindow -RedirectStandardOutput $tunnelLog -RedirectStandardError "$env:TEMP\tunnel_err.log"
           
-          $maxRetries = 5
+          # Wait and extract URL
           $publicUrl = $null
-          for ($i = 1; $i -le $maxRetries; $i++) {
-            try {
-              $tunnels = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels" -ErrorAction Stop
-              $publicUrl = ($tunnels.tunnels | Where-Object { $_.proto -eq "https" } | Select-Object -First 1).public_url
-              if (-not $publicUrl) { $publicUrl = $tunnels.tunnels[0].public_url }
-              if ($publicUrl) { break }
-            } catch {}
-            Start-Sleep -Seconds 3
+          for ($i = 1; $i -le 30; $i++) {
+            Start-Sleep -Seconds 2
+            if (Test-Path $tunnelLog) {
+              $content = Get-Content $tunnelLog -Raw -ErrorAction SilentlyContinue
+              if ($content -match '(https://[a-z0-9]+\.lhr\.life[^\s]*)') {
+                $publicUrl = $Matches[1]
+                break
+              }
+              if ($content -match '(https://[^\s]+localhost\.run[^\s]*)') {
+                $publicUrl = $Matches[1]
+                break
+              }
+              if ($content -match '(https://[^\s]+\.lhr\.[^\s]*)') {
+                $publicUrl = $Matches[1]
+                break
+              }
+            }
           }
           
           if (-not $publicUrl) {
-            Write-Host "❌ Không thể lấy Ngrok URL" -ForegroundColor Red
+            Write-Host "❌ Không thể lấy tunnel URL" -ForegroundColor Red
+            if (Test-Path $tunnelLog) { Get-Content $tunnelLog }
+            if (Test-Path "$env:TEMP\tunnel_err.log") { Get-Content "$env:TEMP\tunnel_err.log" }
             exit 1
           }
           

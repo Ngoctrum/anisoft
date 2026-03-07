@@ -66,27 +66,27 @@ jobs:
           sudo chown -R aistv-web:aistv-web /home/aistv-web/.vnc
           sudo -u aistv-web vncserver :1 -geometry 1920x1080 -depth 24
 
-      - name: 🌐 KHỞI ĐỘNG noVNC + NGROK
+      - name: 🌐 KHỞI ĐỘNG noVNC + LOCALHOST.RUN TUNNEL
         run: |
           websockify --web=/usr/share/novnc/ 6080 localhost:5901 &
           NOVNC_PID=$!
           echo "NOVNC_PID=$NOVNC_PID" >> $GITHUB_ENV
           sleep 3
           
-          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok-v3-stable-linux-amd64.tgz | tar xz -C /usr/local/bin/
-          NGROK_TOKEN="${{ secrets.NGROK_AUTH_TOKEN }}"
-          [ -n "$NGROK_TOKEN" ] && ngrok config add-authtoken "$NGROK_TOKEN"
+          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R 80:localhost:6080 nokey@localhost.run > /tmp/tunnel.log 2>&1 &
+          TUNNEL_PID=$!
+          echo "TUNNEL_PID=$TUNNEL_PID" >> $GITHUB_ENV
           
-          ngrok http 6080 --log=stdout > /tmp/ngrok.log 2>&1 &
-          NGROK_PID=$!
-          echo "NGROK_PID=$NGROK_PID" >> $GITHUB_ENV
-          sleep 8
+          NOVNC_URL=""
+          for i in $(seq 1 30); do
+            sleep 2
+            NOVNC_URL=$(grep -oP 'https://[a-z0-9]+\.[a-z]+\.[a-z]+' /tmp/tunnel.log 2>/dev/null | head -1)
+            [ -n "$NOVNC_URL" ] && break
+          done
           
-          NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | grep -oP '"public_url":"https://[^"]+' | head -1 | cut -d'"' -f4)
-          [ -z "$NGROK_URL" ] && sleep 5 && NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | grep -oP '"public_url":"https://[^"]+' | head -1 | cut -d'"' -f4)
-          [ -z "$NGROK_URL" ] && echo "❌ Không thể lấy URL" && exit 1
+          [ -z "$NOVNC_URL" ] && echo "❌ Không thể lấy tunnel URL" && cat /tmp/tunnel.log && exit 1
           
-          echo "NOVNC_URL=$NGROK_URL" >> $GITHUB_ENV
+          echo "NOVNC_URL=$NOVNC_URL" >> $GITHUB_ENV
 
       - name: 📤 GỬI THÔNG TIN VỀ WEBSITE
         run: |
@@ -107,8 +107,9 @@ jobs:
           KEEPALIVE_PID=$!
           for ((i=MINUTES; i>0; i--)); do
             HOURS_LEFT=$((i / 60)); MINS_LEFT=$((i % 60))
-            if ! curl -s http://localhost:4040/api/tunnels > /dev/null 2>&1; then
-              ngrok http 6080 --log=stdout > /tmp/ngrok.log 2>&1 &
+            if ! kill -0 $TUNNEL_PID 2>/dev/null; then
+              ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R 80:localhost:6080 nokey@localhost.run > /tmp/tunnel.log 2>&1 &
+              TUNNEL_PID=$!
               sleep 5
             fi
             echo -ne "\r⏱️ Còn lại: ${HOURS_LEFT}h ${MINS_LEFT}m   "
@@ -120,7 +121,7 @@ jobs:
         if: always()
         run: |
           rm -f /tmp/vnc_password.txt
-          kill $NOVNC_PID $NGROK_PID 2>/dev/null || true
+          kill $NOVNC_PID $TUNNEL_PID 2>/dev/null || true
           sudo -u aistv-web vncserver -kill :1 2>/dev/null || true
 
       - name: ❌ BÁO LỖI VỀ WEBSITE

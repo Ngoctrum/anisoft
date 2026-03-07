@@ -723,22 +723,24 @@ export default function VPSConsole() {
       setLogs((prev) => [...prev, '⏳ Đợi 8 giây để workflow được xử lý...']);
       await new Promise(resolve => setTimeout(resolve, 8000));
 
-      // Step 5: Add networking secret based on type
-      const secretName = networkingType === 'tailscale' ? 'TAILSCALE_AUTH_KEY' : networkingType === 'ngrok' ? 'NGROK_AUTH_TOKEN' : networkingType === 'cloudflare' ? 'CLOUDFLARE_TUNNEL_TOKEN' : 'NGROK_AUTH_TOKEN';
-      const secretValue = networkingType === 'tailscale' ? tailscaleToken : networkingType === 'ngrok' ? ngrokToken : networkingType === 'cloudflare' ? cloudflareToken : ngrokToken;
-      
-      if (secretValue && secretValue.trim()) {
-        setLogs((prev) => [...prev, `🔐 Đang thêm ${networkingName} token vào repository...`]);
-        try {
-          await addGithubSecret(githubToken, repo.owner.login, repo.name, secretName, secretValue);
-          setLogs((prev) => [...prev, `✅ ${networkingName} secret đã được thêm tự động!`]);
-        } catch (error: any) {
-          setLogs((prev) => [...prev, '⚠️ Không thể thêm secret tự động, thử phương án khác...']);
+      // Step 5: Add networking secret based on type (noVNC uses localhost.run, no token needed)
+      if (networkingType !== 'novnc') {
+        const secretName = networkingType === 'tailscale' ? 'TAILSCALE_AUTH_KEY' : networkingType === 'ngrok' ? 'NGROK_AUTH_TOKEN' : 'CLOUDFLARE_TUNNEL_TOKEN';
+        const secretValue = networkingType === 'tailscale' ? tailscaleToken : networkingType === 'ngrok' ? ngrokToken : cloudflareToken;
+        
+        if (secretValue && secretValue.trim()) {
+          setLogs((prev) => [...prev, `🔐 Đang thêm ${networkingName} token vào repository...`]);
+          try {
+            await addGithubSecret(githubToken, repo.owner.login, repo.name, secretName, secretValue);
+            setLogs((prev) => [...prev, `✅ ${networkingName} secret đã được thêm tự động!`]);
+          } catch (error: any) {
+            setLogs((prev) => [...prev, '⚠️ Không thể thêm secret tự động, thử phương án khác...']);
+          }
+        } else if (networkingType === 'cloudflare') {
+          setLogs((prev) => [...prev, '☁️ Sử dụng Cloudflare Quick Tunnel (không cần token)']);
         }
-      } else if (networkingType === 'cloudflare') {
-        setLogs((prev) => [...prev, '☁️ Sử dụng Cloudflare Quick Tunnel (không cần token)']);
-      } else if (networkingType === 'novnc' && !ngrokToken.trim()) {
-        setLogs((prev) => [...prev, '🌐 noVNC sẽ dùng Ngrok HTTP tunnel (có thể cần token cho session dài)']);
+      } else {
+        setLogs((prev) => [...prev, '🌐 noVNC sử dụng localhost.run tunnel (không cần token)']);
       }
 
       // Step 6: Trigger workflow automatically

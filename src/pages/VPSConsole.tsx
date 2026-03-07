@@ -653,7 +653,17 @@ export default function VPSConsole() {
       }
     }
     // Cloudflare: token is optional (quick tunnel works without it)
-    // noVNC: uses Ngrok HTTP tunnel (free, needs ngrok token)
+    // noVNC: uses Ngrok HTTP tunnel, needs ngrok token
+    if (networkingType === 'novnc') {
+      if (!ngrokToken.trim()) {
+        toast.error('noVNC cần Ngrok Authtoken để tạo tunnel. Vui lòng nhập Ngrok token.');
+        return;
+      }
+      if (ngrokToken.trim().length < 10) {
+        toast.error('Ngrok Authtoken không hợp lệ');
+        return;
+      }
+    }
 
     setIsProcessing(true);
     const osDisplayName = osType === 'windows' ? 'Windows RDP' : 

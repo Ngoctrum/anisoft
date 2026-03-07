@@ -66,25 +66,28 @@ jobs:
           sudo chown -R aistv-web:aistv-web /home/aistv-web/.vnc
           sudo -u aistv-web vncserver :1 -geometry 1920x1080 -depth 24
 
-      - name: 🌐 KHỞI ĐỘNG noVNC + LOCALHOST.RUN TUNNEL
+      - name: 🌐 KHỞI ĐỘNG noVNC + CLOUDFLARE QUICK TUNNEL
         run: |
           websockify --web=/usr/share/novnc/ 6080 localhost:5901 &
           NOVNC_PID=$!
           echo "NOVNC_PID=$NOVNC_PID" >> $GITHUB_ENV
           sleep 3
           
-          ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R 80:localhost:6080 nokey@localhost.run > /tmp/tunnel.log 2>&1 &
-          TUNNEL_PID=$!
-          echo "TUNNEL_PID=$TUNNEL_PID" >> $GITHUB_ENV
+          curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+          chmod +x /usr/local/bin/cloudflared
+          
+          cloudflared tunnel --url http://localhost:6080 --no-autoupdate > /tmp/cf.log 2>&1 &
+          CF_PID=$!
+          echo "CF_PID=$CF_PID" >> $GITHUB_ENV
           
           NOVNC_URL=""
           for i in $(seq 1 30); do
             sleep 2
-            NOVNC_URL=$(grep -oP 'https://[a-z0-9]+\.[a-z]+\.[a-z]+' /tmp/tunnel.log 2>/dev/null | head -1)
+            NOVNC_URL=$(grep -oP 'https://[a-z0-9\-]+\.trycloudflare\.com' /tmp/cf.log 2>/dev/null | head -1)
             [ -n "$NOVNC_URL" ] && break
           done
           
-          [ -z "$NOVNC_URL" ] && echo "❌ Không thể lấy tunnel URL" && cat /tmp/tunnel.log && exit 1
+          [ -z "$NOVNC_URL" ] && echo "❌ Không thể lấy tunnel URL" && cat /tmp/cf.log && exit 1
           
           echo "NOVNC_URL=$NOVNC_URL" >> $GITHUB_ENV
 
@@ -107,9 +110,9 @@ jobs:
           KEEPALIVE_PID=$!
           for ((i=MINUTES; i>0; i--)); do
             HOURS_LEFT=$((i / 60)); MINS_LEFT=$((i % 60))
-            if ! kill -0 $TUNNEL_PID 2>/dev/null; then
-              ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R 80:localhost:6080 nokey@localhost.run > /tmp/tunnel.log 2>&1 &
-              TUNNEL_PID=$!
+            if ! kill -0 $CF_PID 2>/dev/null; then
+              cloudflared tunnel --url http://localhost:6080 --no-autoupdate > /tmp/cf.log 2>&1 &
+              CF_PID=$!
               sleep 5
             fi
             echo -ne "\r⏱️ Còn lại: ${HOURS_LEFT}h ${MINS_LEFT}m   "
@@ -121,7 +124,7 @@ jobs:
         if: always()
         run: |
           rm -f /tmp/vnc_password.txt
-          kill $NOVNC_PID $TUNNEL_PID 2>/dev/null || true
+          kill $NOVNC_PID $CF_PID 2>/dev/null || true
           sudo -u aistv-web vncserver -kill :1 2>/dev/null || true
 
       - name: ❌ BÁO LỖI VỀ WEBSITE

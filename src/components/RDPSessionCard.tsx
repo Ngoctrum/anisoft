@@ -632,43 +632,81 @@ username:s:${username}`;
             </div>
             
             {/* Hướng dẫn quan trọng */}
-            <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg space-y-3">
               <p className="text-sm font-semibold text-yellow-600 dark:text-yellow-400 mb-2">
                 ⚠️ Hướng dẫn kết nối VPS
               </p>
-              {session.networking_type === 'ngrok' ? (
+              
+              {/* Hướng dẫn cho Linux SSH */}
+              {(session.os_type === 'ubuntu' || session.os_type === 'debian' || session.os_type === 'archlinux' || session.os_type === 'centos') ? (
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>✅ Không cần cài Tailscale - truy cập trực tiếp qua Ngrok URL</li>
-                  {session.os_type === 'ubuntu' ? (
-                    <>
-                      <li>Nhấn "Copy SSH Command" → lệnh SSH tự động copy vào clipboard</li>
-                      <li>Mở CMD/Terminal → Paste lệnh (Ctrl+V hoặc Cmd+V) → Enter</li>
-                      <li>Nhập password khi được hỏi (copy password bên dưới)</li>
-                    </>
-                  ) : (
-                    <>
-                      <li>Nhấn "Tải RDP" → mật khẩu tự động copy vào clipboard</li>
-                      <li>Mở file .rdp → khi hỏi password, Paste (Ctrl+V)</li>
-                      <li><strong>Nếu paste không được:</strong> gõ thủ công password bên dưới</li>
-                    </>
+                  {session.networking_type === 'ngrok' ? (
+                    <li>✅ Không cần cài Tailscale - truy cập trực tiếp qua Ngrok URL</li>
+                  ) : session.networking_type !== 'cloudflare' && (
+                    <li>Cài Tailscale: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">tailscale.com/download</a> và đăng nhập</li>
                   )}
+                  <li>Nhấn "Copy SSH Command" → lệnh SSH tự động copy vào clipboard</li>
+                  <li>Mở CMD/Terminal → Paste lệnh → Enter</li>
+                  <li>Nhập password khi được hỏi (copy password bên dưới)</li>
+                </ol>
+              ) : session.networking_type === 'novnc' ? (
+                /* noVNC - Windows qua trình duyệt */
+                <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>✅ Không cần cài app - truy cập trực tiếp qua trình duyệt web</li>
+                  <li>Nhấn vào Server URL bên dưới để mở noVNC</li>
+                  <li>Nhập password khi noVNC hỏi → nhấn Connect</li>
                 </ol>
               ) : (
-                session.os_type === 'ubuntu' ? (
-                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                    <li>Cài Tailscale: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">tailscale.com/download</a> và đăng nhập</li>
-                    <li>Nhấn "Copy SSH Command" → lệnh SSH tự động copy vào clipboard</li>
-                    <li>Mở CMD/Terminal → Paste lệnh (Ctrl+V hoặc Cmd+V) → Enter</li>
-                    <li>Nhập password khi được hỏi (copy password bên dưới)</li>
-                  </ol>
-                ) : (
-                  <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                    <li>Cài Tailscale: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">tailscale.com/download</a> và đăng nhập</li>
-                    <li>Nhấn "Tải RDP" → mật khẩu tự động copy vào clipboard</li>
-                    <li>Mở file .rdp → khi hỏi password, Paste (Ctrl+V)</li>
-                    <li><strong>Nếu paste không được:</strong> gõ thủ công password bên dưới</li>
-                  </ol>
-                )
+                /* Windows RDP - Hướng dẫn đầy đủ */
+                <div className="space-y-3">
+                  {/* Cách 1: Windows App (Mobile/Tablet) */}
+                  <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                      📱 Cách 1: Windows App (Điện thoại/Tablet)
+                    </p>
+                    <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                      <li>Tải <a href="https://apps.apple.com/app/windows-app/id1295203466" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Windows App (iOS)</a> hoặc <a href="https://play.google.com/store/apps/details?id=com.microsoft.rdc.androidx" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">RD Client (Android)</a></li>
+                      {session.networking_type !== 'ngrok' && session.networking_type !== 'cloudflare' && (
+                        <li>Cài & đăng nhập <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Tailscale</a> trên điện thoại</li>
+                      )}
+                      <li>Mở app → nhấn <strong>"+"</strong> → <strong>"Add PC"</strong></li>
+                      <li>PC name: nhập <strong>{serverAddress}</strong></li>
+                      <li>User account → <strong>"Add User Account"</strong></li>
+                      <li>Username: <strong>{session.rdp_user}</strong> | Password: copy bên dưới</li>
+                      <li>Nhấn <strong>Save</strong> → nhấn vào PC vừa thêm để kết nối</li>
+                    </ol>
+                  </div>
+
+                  {/* Cách 2: File RDP (PC/Laptop) */}
+                  <div className="p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <p className="text-xs font-semibold text-green-600 dark:text-green-400 mb-1">
+                      💻 Cách 2: File RDP (PC/Laptop)
+                    </p>
+                    <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                      {session.networking_type !== 'ngrok' && session.networking_type !== 'cloudflare' && (
+                        <li>Cài Tailscale: <a href="https://tailscale.com/download" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">tailscale.com/download</a> và đăng nhập</li>
+                      )}
+                      <li>Nhấn <strong>"Tải RDP"</strong> → mật khẩu tự động copy vào clipboard</li>
+                      <li>Mở file .rdp → khi hỏi password, Paste (Ctrl+V)</li>
+                      <li><strong>Nếu paste không được:</strong> gõ thủ công password bên dưới</li>
+                    </ol>
+                  </div>
+
+                  {/* Cách 3: Thủ công */}
+                  <div className="p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                    <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1">
+                      🖥️ Cách 3: Remote Desktop thủ công (Windows)
+                    </p>
+                    <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                      {session.networking_type !== 'ngrok' && session.networking_type !== 'cloudflare' && (
+                        <li>Cài Tailscale và đăng nhập</li>
+                      )}
+                      <li>Nhấn <strong>Win + R</strong> → gõ <strong>mstsc</strong> → Enter</li>
+                      <li>Computer: nhập <strong>{serverAddress}</strong></li>
+                      <li>Nhập Username và Password bên dưới → Connect</li>
+                    </ol>
+                  </div>
+                </div>
               )}
             </div>
             

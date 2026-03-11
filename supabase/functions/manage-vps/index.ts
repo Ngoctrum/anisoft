@@ -51,9 +51,24 @@ Deno.serve(async (req) => {
       .from('rdp_sessions')
       .select('*')
       .eq('id', sessionId)
-      .single();
+      .maybeSingle();
 
-    if (sessionError || !session) {
+    if (sessionError) {
+      console.error('Error fetching session:', sessionError);
+      return new Response(
+        JSON.stringify({ error: 'Error fetching session' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!session) {
+      // Session already deleted - treat as success for kill action
+      if (action === 'kill') {
+        return new Response(
+          JSON.stringify({ success: true, message: 'Session already removed' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       return new Response(
         JSON.stringify({ error: 'Session not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

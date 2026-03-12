@@ -82,6 +82,16 @@ export default function VPSConsole() {
   const [savedGithubToken, setSavedGithubToken] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [saveTokensEnabled, setSaveTokensEnabled] = useState(false);
+  const [showAddServer, setShowAddServer] = useState(false);
+  const [customServer, setCustomServer] = useState({
+    host: '',
+    port: '',
+    username: '',
+    password: '',
+    osType: 'ubuntu' as 'windows' | 'ubuntu' | 'debian' | 'archlinux' | 'centos',
+    label: '',
+  });
+  const [isAddingServer, setIsAddingServer] = useState(false);
 
   // Config info
   const CONFIG_INFO = {

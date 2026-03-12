@@ -956,8 +956,9 @@ export default function VPSConsole() {
                       onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
                       className="w-4 h-4"
                     />
-                    <Label htmlFor="settings_networking_ngrok" className={`font-normal cursor-pointer ${osType === 'windows' ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                      🌐 Ngrok (Internet công khai) {osType === 'windows' && '❌ Không hỗ trợ Windows'}
+                    <Label htmlFor="settings_networking_ngrok" className="font-normal cursor-pointer">
+                      🌐 Ngrok (Internet công khai)
+                    </Label>
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">

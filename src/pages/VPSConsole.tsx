@@ -8,7 +8,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Server, Play, Terminal, ExternalLink, Key, Trash2, Settings, Info, BarChart, Activity } from 'lucide-react';
+import { Loader2, Server, Play, Terminal, ExternalLink, Key, Trash2, Settings, Info, BarChart, Activity, Plus, Globe } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { RDPSessionCard } from '@/components/RDPSessionCard';
@@ -81,6 +82,16 @@ export default function VPSConsole() {
   const [savedGithubToken, setSavedGithubToken] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [saveTokensEnabled, setSaveTokensEnabled] = useState(false);
+  const [showAddServer, setShowAddServer] = useState(false);
+  const [customServer, setCustomServer] = useState({
+    host: '',
+    port: '',
+    username: '',
+    password: '',
+    osType: 'ubuntu' as 'windows' | 'ubuntu' | 'debian' | 'archlinux' | 'centos',
+    label: '',
+  });
+  const [isAddingServer, setIsAddingServer] = useState(false);
 
   // Config info
   const CONFIG_INFO = {
@@ -814,6 +825,49 @@ export default function VPSConsole() {
     }
   };
 
+  const handleAddCustomServer = async () => {
+    if (!customServer.host || !customServer.username || !customServer.password) {
+      toast.error('Vui lòng nhập đầy đủ Host, Username và Password');
+      return;
+    }
+    setIsAddingServer(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        toast.error('Bạn cần đăng nhập trước');
+        return;
+      }
+      const port = parseInt(customServer.port) || (customServer.osType === 'windows' ? 3389 : 22);
+      const serverAddress = `${customServer.host}:${port}`;
+      const label = customServer.label || `custom-${customServer.host}`;
+
+      const { error } = await supabase.from('rdp_sessions').insert({
+        user_id: userData.user.id,
+        github_repo: label,
+        tailscale_ip: serverAddress,
+        ngrok_url: serverAddress,
+        rdp_user: customServer.username,
+        rdp_password: customServer.password,
+        os_type: customServer.osType,
+        networking_type: 'custom',
+        status: 'connected',
+        is_active: true,
+        started_at: new Date().toISOString(),
+        ssh_port: port,
+      });
+
+      if (error) throw error;
+      toast.success('Đã thêm server thành công!');
+      setShowAddServer(false);
+      setCustomServer({ host: '', port: '', username: '', password: '', osType: 'ubuntu', label: '' });
+      await loadSessions();
+    } catch (error: any) {
+      toast.error('Lỗi thêm server: ' + error.message);
+    } finally {
+      setIsAddingServer(false);
+    }
+  };
+
   return (
     <PageAccessControl pageKey="vps_console_enabled" pageName="VPS Console">
       <>
@@ -1301,10 +1355,103 @@ export default function VPSConsole() {
 
         {/* Active Sessions */}
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Terminal className="h-6 w-6" />
-            VPS Sessions ({sessions.length})
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Terminal className="h-6 w-6" />
+              VPS Sessions ({sessions.length})
+            </h2>
+            <Dialog open={showAddServer} onOpenChange={setShowAddServer}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Thêm Server Riêng
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-primary" />
+                    Thêm Server Riêng
+                  </DialogTitle>
+                  <DialogDescription>
+                    Nhập thông tin server đã mở port để thêm vào dashboard quản lý
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-2">
+                    <Label>Tên hiển thị (tùy chọn)</Label>
+                    <Input
+                      placeholder="VPS của tui, Server game..."
+                      value={customServer.label}
+                      onChange={(e) => setCustomServer(s => ({ ...s, label: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2 space-y-2">
+                      <Label>Host / IP <span className="text-destructive">*</span></Label>
+                      <Input
+                        placeholder="192.168.1.100 hoặc my-server.com"
+                        value={customServer.host}
+                        onChange={(e) => setCustomServer(s => ({ ...s, host: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Port</Label>
+                      <Input
+                        placeholder={customServer.osType === 'windows' ? '3389' : '22'}
+                        value={customServer.port}
+                        onChange={(e) => setCustomServer(s => ({ ...s, port: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
+                      <Label>Username <span className="text-destructive">*</span></Label>
+                      <Input
+                        placeholder="root, admin..."
+                        value={customServer.username}
+                        onChange={(e) => setCustomServer(s => ({ ...s, username: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Password <span className="text-destructive">*</span></Label>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        value={customServer.password}
+                        onChange={(e) => setCustomServer(s => ({ ...s, password: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Hệ điều hành</Label>
+                    <Select 
+                      value={customServer.osType} 
+                      onValueChange={(v: any) => setCustomServer(s => ({ ...s, osType: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="windows">🪟 Windows</SelectItem>
+                        <SelectItem value="ubuntu">🐧 Ubuntu</SelectItem>
+                        <SelectItem value="debian">🌀 Debian</SelectItem>
+                        <SelectItem value="archlinux">⚡ Arch Linux</SelectItem>
+                        <SelectItem value="centos">🔷 CentOS</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowAddServer(false)}>Hủy</Button>
+                  <Button onClick={handleAddCustomServer} disabled={isAddingServer} className="gap-2">
+                    {isAddingServer ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    Thêm Server
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
 
           {sessions.length === 0 ? (
             <Alert>

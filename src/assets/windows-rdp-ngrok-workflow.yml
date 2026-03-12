@@ -99,17 +99,21 @@ jobs:
           
           # Download Ngrok
           $ngrokZip = "$env:TEMP\ngrok.zip"
+          $ngrokRoot = "C:\ngrok"
+          $ngrokExe = Join-Path $ngrokRoot "ngrok.exe"
           Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile $ngrokZip
-          Expand-Archive -Path $ngrokZip -DestinationPath "$env:TEMP\ngrok" -Force
+          if (Test-Path $ngrokRoot) { Remove-Item $ngrokRoot -Recurse -Force }
+          Expand-Archive -Path $ngrokZip -DestinationPath $ngrokRoot -Force
           Remove-Item $ngrokZip -Force
+          echo "NGROK_EXE=$ngrokExe" >> $env:GITHUB_ENV
           Write-Host "│ ✅ Đã tải Ngrok" -ForegroundColor Green
           
           # Authenticate Ngrok
-          & "$env:TEMP\ngrok\ngrok.exe" authtoken $env:NGROK_AUTH_TOKEN
+          & $ngrokExe authtoken $env:NGROK_AUTH_TOKEN
           Write-Host "│ ✅ Đã xác thực Ngrok" -ForegroundColor Green
           
           # Start Ngrok tunnel trong background
-          Start-Process -FilePath "$env:TEMP\ngrok\ngrok.exe" -ArgumentList "tcp", "3389", "--log=stdout" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ngrok.log"
+          Start-Process -FilePath $ngrokExe -ArgumentList "tcp", "3389", "--log=stdout" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ngrok.log"
           Write-Host "│ ✅ Đã khởi động Ngrok tunnel" -ForegroundColor Green
           
           # Chờ Ngrok khởi động
@@ -211,8 +215,20 @@ jobs:
               $ngrokProcess = Get-Process -Name ngrok -ErrorAction SilentlyContinue
               if (-not $ngrokProcess) {
                   Write-Host "`n⚠️ Ngrok đã dừng! Khởi động lại..." -ForegroundColor Red
-                  Start-Process -FilePath "$env:TEMP\ngrok\ngrok.exe" -ArgumentList "tcp", "3389", "--log=stdout" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ngrok_restart.log"
-                  Start-Sleep -Seconds 5
+                  $ngrokExe = if ($env:NGROK_EXE) { $env:NGROK_EXE } else { "C:\ngrok\ngrok.exe" }
+
+                  if (-not (Test-Path $ngrokExe)) {
+                      Write-Host "❌ Không tìm thấy ngrok.exe tại: $ngrokExe" -ForegroundColor Red
+                      continue
+                  }
+
+                  try {
+                      Start-Process -FilePath $ngrokExe -ArgumentList "tcp", "3389", "--log=stdout" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ngrok_restart.log" -ErrorAction Stop
+                      Start-Sleep -Seconds 5
+                  } catch {
+                      Write-Host "❌ Restart Ngrok thất bại: $($_.Exception.Message)" -ForegroundColor Red
+                      continue
+                  }
               }
               
               Write-Host "`r⏱️ Còn lại: ${hours}h ${mins}m   " -NoNewline -ForegroundColor Blue

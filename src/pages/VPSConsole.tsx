@@ -70,7 +70,6 @@ export default function VPSConsole() {
   const [durationHours, setDurationHours] = useState(6);
 
   // Ngrok now supports Windows RDP via TCP tunnel
-  }, [osType, networkingType]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [logs, setLogs] = useState<string[]>([]);

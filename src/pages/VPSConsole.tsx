@@ -69,13 +69,7 @@ export default function VPSConsole() {
   const [vpsConfig, setVpsConfig] = useState<'basic' | 'standard' | 'premium'>('basic');
   const [durationHours, setDurationHours] = useState(6);
 
-  // Auto-switch away from Ngrok when Windows is selected (Ngrok requires credit card for RDP)
-  useEffect(() => {
-    if (osType === 'windows' && networkingType === 'ngrok') {
-      setNetworkingType('novnc');
-      toast.warning('Windows RDP không hỗ trợ Ngrok free. Đã chuyển sang noVNC (Web Browser).');
-    }
-  }, [osType, networkingType]);
+  // Ngrok now supports Windows RDP via TCP tunnel
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [logs, setLogs] = useState<string[]>([]);
@@ -960,11 +954,10 @@ export default function VPSConsole() {
                       value="ngrok"
                       checked={networkingType === 'ngrok'}
                       onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
-                      disabled={osType === 'windows'}
-                      className="w-4 h-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-4 h-4"
                     />
-                    <Label htmlFor="settings_networking_ngrok" className={`font-normal cursor-pointer ${osType === 'windows' ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                      🌐 Ngrok (Internet công khai) {osType === 'windows' && '❌ Không hỗ trợ Windows'}
+                    <Label htmlFor="settings_networking_ngrok" className="font-normal cursor-pointer">
+                      🌐 Ngrok (Internet công khai)
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -1001,7 +994,7 @@ export default function VPSConsole() {
                     {networkingType === 'tailscale' ? (
                       <>✅ <strong>Tailscale:</strong> Mạng riêng bảo mật, cần cài Tailscale trên máy</>
                     ) : networkingType === 'ngrok' ? (
-                      <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm. ⚠️ <strong>Chỉ hỗ trợ Linux</strong> (Ngrok free không cho phép Windows RDP)</>
+                      <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm. Hỗ trợ cả Windows RDP &amp; Linux SSH.</>
                     ) : networkingType === 'cloudflare' ? (
                       <>✅ <strong>Cloudflare Tunnel:</strong> Miễn phí, hỗ trợ tất cả OS. Cần cài <code className="bg-muted px-1 rounded">cloudflared</code> trên máy client.</>
                     ) : (

@@ -106,7 +106,8 @@ jobs:
           Expand-Archive -Path $ngrokZip -DestinationPath $ngrokRoot -Force
           Remove-Item $ngrokZip -Force
           echo "NGROK_EXE=$ngrokExe" >> $env:GITHUB_ENV
-          Write-Host "│ ✅ Đã tải Ngrok" -ForegroundColor Green
+          echo "$ngrokRoot" >> $env:GITHUB_PATH
+          Write-Host "│ ✅ Đã tải Ngrok và thêm vào PATH" -ForegroundColor Green
           
           # Authenticate Ngrok
           & $ngrokExe authtoken $env:NGROK_AUTH_TOKEN
@@ -215,10 +216,18 @@ jobs:
               $ngrokProcess = Get-Process -Name ngrok -ErrorAction SilentlyContinue
               if (-not $ngrokProcess) {
                   Write-Host "`n⚠️ Ngrok đã dừng! Khởi động lại..." -ForegroundColor Red
-                  $ngrokExe = if ($env:NGROK_EXE) { $env:NGROK_EXE } else { "C:\ngrok\ngrok.exe" }
+                  $ngrokExe = $null
+                  if ($env:NGROK_EXE -and (Test-Path $env:NGROK_EXE)) {
+                      $ngrokExe = $env:NGROK_EXE
+                  } elseif (Test-Path "C:\ngrok\ngrok.exe") {
+                      $ngrokExe = "C:\ngrok\ngrok.exe"
+                  } else {
+                      $ngrokCmd = Get-Command ngrok -ErrorAction SilentlyContinue
+                      if ($ngrokCmd) { $ngrokExe = $ngrokCmd.Source }
+                  }
 
-                  if (-not (Test-Path $ngrokExe)) {
-                      Write-Host "❌ Không tìm thấy ngrok.exe tại: $ngrokExe" -ForegroundColor Red
+                  if (-not $ngrokExe) {
+                      Write-Host "❌ Không tìm thấy ngrok.exe để restart" -ForegroundColor Red
                       continue
                   }
 

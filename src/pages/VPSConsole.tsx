@@ -1060,11 +1060,25 @@ export default function VPSConsole() {
                         value={ngrokToken}
                         onChange={(e) => setNgrokToken(e.target.value)}
                       />
-                      <p className="text-xs text-muted-foreground">
-                        <a href="https://dashboard.ngrok.com/get-started/your-authtoken" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                          🔑 Lấy Ngrok Authtoken
-                        </a>
-                      </p>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Hướng dẫn lấy Ngrok Authtoken:</strong>
+                        </p>
+                        <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-0.5">
+                          <li>Truy cập <a href="https://dashboard.ngrok.com/signup" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">dashboard.ngrok.com</a> → đăng ký / đăng nhập</li>
+                          <li>Vào <strong>Your Authtoken</strong> trong menu bên trái</li>
+                          <li>Copy token (bắt đầu bằng <code className="bg-muted px-1 rounded">2c...</code>)</li>
+                          <li>Dán vào ô trên → <strong>Done!</strong></li>
+                        </ol>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-primary"
+                          onClick={() => window.open('https://dashboard.ngrok.com/get-started/your-authtoken', '_blank')}
+                        >
+                          🔑 Mở trang lấy Ngrok Authtoken
+                        </Button>
+                      </div>
                     </div>
                   ) : networkingType === 'cloudflare' ? (
                     <div className="space-y-2">

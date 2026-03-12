@@ -959,7 +959,6 @@ export default function VPSConsole() {
                     <Label htmlFor="settings_networking_ngrok" className="font-normal cursor-pointer">
                       🌐 Ngrok (Internet công khai)
                     </Label>
-                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <input

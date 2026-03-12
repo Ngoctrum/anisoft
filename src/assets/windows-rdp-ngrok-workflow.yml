@@ -216,10 +216,18 @@ jobs:
               $ngrokProcess = Get-Process -Name ngrok -ErrorAction SilentlyContinue
               if (-not $ngrokProcess) {
                   Write-Host "`n⚠️ Ngrok đã dừng! Khởi động lại..." -ForegroundColor Red
-                  $ngrokExe = if ($env:NGROK_EXE) { $env:NGROK_EXE } else { "C:\ngrok\ngrok.exe" }
+                  $ngrokExe = $null
+                  if ($env:NGROK_EXE -and (Test-Path $env:NGROK_EXE)) {
+                      $ngrokExe = $env:NGROK_EXE
+                  } elseif (Test-Path "C:\ngrok\ngrok.exe") {
+                      $ngrokExe = "C:\ngrok\ngrok.exe"
+                  } else {
+                      $ngrokCmd = Get-Command ngrok -ErrorAction SilentlyContinue
+                      if ($ngrokCmd) { $ngrokExe = $ngrokCmd.Source }
+                  }
 
-                  if (-not (Test-Path $ngrokExe)) {
-                      Write-Host "❌ Không tìm thấy ngrok.exe tại: $ngrokExe" -ForegroundColor Red
+                  if (-not $ngrokExe) {
+                      Write-Host "❌ Không tìm thấy ngrok.exe để restart" -ForegroundColor Red
                       continue
                   }
 

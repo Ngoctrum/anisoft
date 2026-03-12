@@ -219,8 +219,8 @@ username:s:${username}`;
   const hasFullInfo = (session.tailscale_ip || session.ngrok_url) && session.rdp_user && session.rdp_password;
   const osIcon = session.os_type === 'ubuntu' ? '🐧' : '🪟';
   const osName = session.os_type === 'ubuntu' ? 'Ubuntu SSH' : 'Windows RDP';
-  const networkingIcon = session.networking_type === 'ngrok' ? '🌐' : '🔒';
-  const networkingName = session.networking_type === 'ngrok' ? 'Ngrok' : 'Tailscale';
+  const networkingIcon = session.networking_type === 'custom' ? '🖥️' : session.networking_type === 'ngrok' ? '🌐' : session.networking_type === 'cloudflare' ? '☁️' : session.networking_type === 'novnc' ? '🖥️' : '🔒';
+  const networkingName = session.networking_type === 'custom' ? 'Server Riêng' : session.networking_type === 'ngrok' ? 'Ngrok' : session.networking_type === 'cloudflare' ? 'Cloudflare' : session.networking_type === 'novnc' ? 'noVNC' : 'Tailscale';
   const serverAddress = getServerAddress();
   const connectionCommand = session.os_type === 'ubuntu' 
     ? `ssh ${session.rdp_user}@${serverAddress}` 

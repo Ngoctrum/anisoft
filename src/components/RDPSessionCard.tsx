@@ -248,7 +248,7 @@ username:s:${username}`;
         body: {
           sessionId: session.id,
           action: 'kill',
-          githubToken: sessionStorage.getItem('github_token'),
+          githubToken: localStorage.getItem('github_token') || sessionStorage.getItem('github_token'),
           workflowRunId: session.workflow_run_id,
         },
       });

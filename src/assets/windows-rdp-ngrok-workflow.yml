@@ -198,6 +198,40 @@ jobs:
           Write-Host "🔄 BẮT ĐẦU DUY TRÌ PHIÊN..." -ForegroundColor Yellow
           Write-Host "💎 Windows RDP via Ngrok" -ForegroundColor Green
           Write-Host "🔗 Kết nối: $env:NGROK_URL" -ForegroundColor Green
+
+          $password = Get-Content $env:TEMP\rdp_password.txt -ErrorAction SilentlyContinue
+          $repoName = "${{ github.repository }}".Split('/')[-1]
+
+          function Get-CurrentNgrokUrl {
+              try {
+                  $response = Invoke-RestMethod -Uri "http://localhost:4040/api/tunnels" -ErrorAction Stop
+                  $tunnel = $response.tunnels | Where-Object { $_.proto -eq "tcp" } | Select-Object -First 1
+                  if ($tunnel -and $tunnel.public_url) {
+                      return ($tunnel.public_url -replace 'tcp://', '')
+                  }
+              } catch {}
+              return $null
+          }
+
+          function Sync-SessionInfo([string]$url) {
+              if (-not $url) { return }
+              $body = @{
+                  repoName = $repoName
+                  ngrokUrl = $url
+                  rdpUser = "AISTV-NGROK"
+                  rdpPassword = $password
+              } | ConvertTo-Json
+
+              try {
+                  Invoke-RestMethod -Uri "https://wxqxriwodkgzpzqaxigp.supabase.co/functions/v1/update-rdp-info" -Method POST -Body $body -ContentType "application/json" -Headers @{
+                      "apikey" = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8"
+                      "Authorization" = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8"
+                  } | Out-Null
+                  Write-Host "✅ Đã cập nhật URL mới về website: $url" -ForegroundColor Green
+              } catch {
+                  Write-Host "⚠️ Không cập nhật được URL mới về website" -ForegroundColor Yellow
+              }
+          }
           
           # Start a background job to keep system active
           $keepAliveJob = Start-Job -ScriptBlock {
@@ -211,6 +245,13 @@ jobs:
           for($i=$totalMinutes; $i -gt 0; $i--) {
               $hours = [math]::Floor($i / 60)
               $mins = $i % 60
+
+              $currentNgrokUrl = Get-CurrentNgrokUrl
+              if ($currentNgrokUrl -and $currentNgrokUrl -ne $env:NGROK_URL) {
+                  $env:NGROK_URL = $currentNgrokUrl
+                  Write-Host "`n🔄 Ngrok URL đã đổi: $currentNgrokUrl" -ForegroundColor Yellow
+                  Sync-SessionInfo -url $currentNgrokUrl
+              }
               
               # Check if Ngrok is still running
               $ngrokProcess = Get-Process -Name ngrok -ErrorAction SilentlyContinue
@@ -232,8 +273,21 @@ jobs:
                   }
 
                   try {
-                      Start-Process -FilePath $ngrokExe -ArgumentList "tcp", "3389", "--log=stdout" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ngrok_restart.log" -ErrorAction Stop
-                      Start-Sleep -Seconds 5
+                      Start-Process -FilePath $ngrokExe -ArgumentList "tcp", "3389", "--log=stdout" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ngrok_restart.log" -RedirectStandardError "$env:TEMP\ngrok_restart_error.log" -ErrorAction Stop
+                      Start-Sleep -Seconds 8
+
+                      $restartedUrl = Get-CurrentNgrokUrl
+                      if ($restartedUrl) {
+                          if ($restartedUrl -ne $env:NGROK_URL) {
+                              $env:NGROK_URL = $restartedUrl
+                              Write-Host "✅ Ngrok restart thành công, URL mới: $restartedUrl" -ForegroundColor Green
+                              Sync-SessionInfo -url $restartedUrl
+                          } else {
+                              Write-Host "✅ Ngrok restart thành công" -ForegroundColor Green
+                          }
+                      } else {
+                          Write-Host "⚠️ Restart xong nhưng chưa lấy được URL Ngrok" -ForegroundColor Yellow
+                      }
                   } catch {
                       Write-Host "❌ Restart Ngrok thất bại: $($_.Exception.Message)" -ForegroundColor Red
                       continue

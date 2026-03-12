@@ -215,8 +215,20 @@ jobs:
               $ngrokProcess = Get-Process -Name ngrok -ErrorAction SilentlyContinue
               if (-not $ngrokProcess) {
                   Write-Host "`n⚠️ Ngrok đã dừng! Khởi động lại..." -ForegroundColor Red
-                  Start-Process -FilePath "$env:TEMP\ngrok\ngrok.exe" -ArgumentList "tcp", "3389", "--log=stdout" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ngrok_restart.log"
-                  Start-Sleep -Seconds 5
+                  $ngrokExe = if ($env:NGROK_EXE) { $env:NGROK_EXE } else { "C:\ngrok\ngrok.exe" }
+
+                  if (-not (Test-Path $ngrokExe)) {
+                      Write-Host "❌ Không tìm thấy ngrok.exe tại: $ngrokExe" -ForegroundColor Red
+                      continue
+                  }
+
+                  try {
+                      Start-Process -FilePath $ngrokExe -ArgumentList "tcp", "3389", "--log=stdout" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ngrok_restart.log" -ErrorAction Stop
+                      Start-Sleep -Seconds 5
+                  } catch {
+                      Write-Host "❌ Restart Ngrok thất bại: $($_.Exception.Message)" -ForegroundColor Red
+                      continue
+                  }
               }
               
               Write-Host "`r⏱️ Còn lại: ${hours}h ${mins}m   " -NoNewline -ForegroundColor Blue

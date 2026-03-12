@@ -76,6 +76,9 @@ export function RDPSessionCard({ session, onDelete, onKill, onStart }: RDPSessio
   };
 
   const getServerAddress = () => {
+    if (session.networking_type === 'custom') {
+      return session.tailscale_ip || session.ngrok_url || '';
+    }
     if (session.networking_type === 'ngrok' && session.ngrok_url) {
       return session.ngrok_url.replace(/^tcp:\/\//, '');
     }

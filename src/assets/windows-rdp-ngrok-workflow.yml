@@ -155,6 +155,9 @@ jobs:
               ngrokUrl = $env:NGROK_URL
               rdpUser = "AISTV-NGROK"
               rdpPassword = $password
+              osType = "windows"
+              networkingType = "ngrok"
+              status = "connected"
           } | ConvertTo-Json
           
           try {
@@ -220,6 +223,9 @@ jobs:
                   ngrokUrl = $url
                   rdpUser = "AISTV-NGROK"
                   rdpPassword = $password
+                  osType = "windows"
+                  networkingType = "ngrok"
+                  status = "connected"
               } | ConvertTo-Json
 
               try {
@@ -231,6 +237,36 @@ jobs:
               } catch {
                   Write-Host "⚠️ Không cập nhật được URL mới về website" -ForegroundColor Yellow
               }
+          }
+          
+          # Đảm bảo có Ngrok process chạy ổn định ở bước duy trì phiên
+          $bootstrapNgrokProcess = Get-Process -Name ngrok -ErrorAction SilentlyContinue
+          if (-not $bootstrapNgrokProcess) {
+              $bootstrapExe = $null
+              if ($env:NGROK_EXE -and (Test-Path $env:NGROK_EXE)) {
+                  $bootstrapExe = $env:NGROK_EXE
+              } elseif (Test-Path "C:\ngrok\ngrok.exe") {
+                  $bootstrapExe = "C:\ngrok\ngrok.exe"
+              } else {
+                  $bootstrapCmd = Get-Command ngrok -ErrorAction SilentlyContinue
+                  if ($bootstrapCmd) { $bootstrapExe = $bootstrapCmd.Source }
+              }
+
+              if ($bootstrapExe) {
+                  try {
+                      Start-Process -FilePath $bootstrapExe -ArgumentList "tcp", "3389", "--log=stdout" -NoNewWindow -RedirectStandardOutput "$env:TEMP\ngrok_bootstrap.log" -RedirectStandardError "$env:TEMP\ngrok_bootstrap_error.log" -ErrorAction Stop
+                      Start-Sleep -Seconds 8
+                  } catch {
+                      Write-Host "⚠️ Không thể bootstrap Ngrok: $($_.Exception.Message)" -ForegroundColor Yellow
+                  }
+              }
+          }
+
+          $bootstrapUrl = Get-CurrentNgrokUrl
+          if ($bootstrapUrl -and $bootstrapUrl -ne $env:NGROK_URL) {
+              $env:NGROK_URL = $bootstrapUrl
+              Write-Host "🔄 Đồng bộ URL Ngrok hiện tại: $bootstrapUrl" -ForegroundColor Yellow
+              Sync-SessionInfo -url $bootstrapUrl
           }
           
           # Start a background job to keep system active
@@ -247,16 +283,18 @@ jobs:
               $mins = $i % 60
 
               $currentNgrokUrl = Get-CurrentNgrokUrl
+              $ngrokProcess = Get-Process -Name ngrok -ErrorAction SilentlyContinue
+
               if ($currentNgrokUrl -and $currentNgrokUrl -ne $env:NGROK_URL) {
                   $env:NGROK_URL = $currentNgrokUrl
                   Write-Host "`n🔄 Ngrok URL đã đổi: $currentNgrokUrl" -ForegroundColor Yellow
                   Sync-SessionInfo -url $currentNgrokUrl
               }
               
-              # Check if Ngrok is still running
-              $ngrokProcess = Get-Process -Name ngrok -ErrorAction SilentlyContinue
-              if (-not $ngrokProcess) {
-                  Write-Host "`n⚠️ Ngrok đã dừng! Khởi động lại..." -ForegroundColor Red
+              # Restart when process died OR tunnel URL cannot be read
+              if ((-not $ngrokProcess) -or (-not $currentNgrokUrl)) {
+                  $reason = if (-not $ngrokProcess) { "Ngrok process đã dừng" } else { "Không đọc được tunnel URL" }
+                  Write-Host "`n⚠️ $reason! Khởi động lại..." -ForegroundColor Red
                   $ngrokExe = $null
                   if ($env:NGROK_EXE -and (Test-Path $env:NGROK_EXE)) {
                       $ngrokExe = $env:NGROK_EXE

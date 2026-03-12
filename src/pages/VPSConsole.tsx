@@ -868,6 +868,7 @@ export default function VPSConsole() {
     }
   };
 
+  return (
     <PageAccessControl pageKey="vps_console_enabled" pageName="VPS Console">
       <>
         <Header />

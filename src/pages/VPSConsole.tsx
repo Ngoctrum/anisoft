@@ -892,7 +892,7 @@ export default function VPSConsole() {
               Powered by GitHub Actions
             </div>
             <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
-              <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 VPS Console
               </span>
             </h1>
@@ -918,98 +918,59 @@ export default function VPSConsole() {
 
         {/* Settings Panel */}
         {showSettings && (
-          <Card className="border-2 border-primary/20 shadow-xl shadow-primary/5 bg-card/50 backdrop-blur-sm overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl -z-10" />
-            <CardHeader className="border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2 bg-primary/10 rounded-lg">
+          <Card className="relative border border-primary/20 shadow-xl shadow-primary/5 bg-card/80 backdrop-blur-sm overflow-hidden rounded-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-accent/[0.03] pointer-events-none" />
+            <CardHeader className="relative border-b border-border/50 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl border border-primary/20">
                   <Settings className="h-5 w-5 text-primary" />
                 </div>
-                Cài đặt Networking & Tokens
-              </CardTitle>
-              <CardDescription className="text-base">
-                💾 Tokens được lưu vĩnh viễn (localStorage) - không mất khi đóng trình duyệt
-              </CardDescription>
+                <div>
+                  <CardTitle className="text-lg font-bold">Cài đặt Networking</CardTitle>
+                  <CardDescription className="text-xs mt-0.5">Tokens lưu vĩnh viễn trong trình duyệt</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="relative space-y-5 pt-5">
               {/* Networking Type Selection */}
-              <div className="space-y-3 p-4 bg-muted/50 rounded-lg border-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold">Loại kết nối mạng</Label>
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Loại kết nối mạng</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { value: 'tailscale', icon: '🔒', name: 'Tailscale', desc: 'Mạng riêng' },
+                    { value: 'ngrok', icon: '🌐', name: 'Ngrok', desc: 'Internet công khai' },
+                    { value: 'cloudflare', icon: '☁️', name: 'Cloudflare', desc: 'Tunnel miễn phí' },
+                    { value: 'novnc', icon: '🖥️', name: 'noVNC', desc: 'Qua trình duyệt' },
+                  ] as const).map((net) => (
+                    <button
+                      key={net.value}
+                      onClick={() => setNetworkingType(net.value as any)}
+                      className={`p-3 rounded-xl border-2 transition-all text-left ${
+                        networkingType === net.value
+                          ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                          : 'border-border/50 hover:border-primary/30 hover:bg-muted/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{net.icon}</span>
+                        <div>
+                          <div className="text-sm font-semibold">{net.name}</div>
+                          <div className="text-[10px] text-muted-foreground">{net.desc}</div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Chọn phương thức kết nối từ xa cho VPS
-                </p>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="settings_networking_tailscale"
-                      name="settings_networking_type"
-                      value="tailscale"
-                      checked={networkingType === 'tailscale'}
-                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="settings_networking_tailscale" className="font-normal cursor-pointer">
-                      🔒 Tailscale (Mạng riêng)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="settings_networking_ngrok"
-                      name="settings_networking_type"
-                      value="ngrok"
-                      checked={networkingType === 'ngrok'}
-                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="settings_networking_ngrok" className="font-normal cursor-pointer">
-                      🌐 Ngrok (Internet công khai)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="settings_networking_cloudflare"
-                      name="settings_networking_type"
-                      value="cloudflare"
-                      checked={networkingType === 'cloudflare'}
-                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="settings_networking_cloudflare" className="font-normal cursor-pointer">
-                      ☁️ Cloudflare Tunnel (Cần cài cloudflared)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="settings_networking_novnc"
-                      name="settings_networking_type"
-                      value="novnc"
-                      checked={networkingType === 'novnc'}
-                      onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor="settings_networking_novnc" className="font-normal cursor-pointer">
-                      🖥️ noVNC (Web Browser - Không cần cài app!)
-                    </Label>
-                  </div>
-                </div>
-                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded">
-                  <p className="text-xs text-muted-foreground">
-                    {networkingType === 'tailscale' ? (
-                      <>✅ <strong>Tailscale:</strong> Mạng riêng bảo mật, cần cài Tailscale trên máy</>
-                    ) : networkingType === 'ngrok' ? (
-                      <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm. Hỗ trợ cả Windows RDP &amp; Linux SSH.</>
-                    ) : networkingType === 'cloudflare' ? (
-                      <>✅ <strong>Cloudflare Tunnel:</strong> Miễn phí, hỗ trợ tất cả OS. Cần cài <code className="bg-muted px-1 rounded">cloudflared</code> trên máy client.</>
-                    ) : (
-                      <>✅ <strong>noVNC (Web Browser):</strong> 🎉 <strong>Không cần cài bất kỳ app nào!</strong> Truy cập desktop VPS trực tiếp qua trình duyệt web. Dùng Ngrok HTTP tunnel (free).</>
-                    )}
-                  </p>
+                <div className="p-3 bg-muted/30 rounded-xl border border-border/50 text-xs text-muted-foreground">
+                  {networkingType === 'tailscale' ? (
+                    <>✅ <strong>Tailscale:</strong> Mạng riêng bảo mật, cần cài Tailscale trên máy</>
+                  ) : networkingType === 'ngrok' ? (
+                    <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, hỗ trợ Windows RDP &amp; Linux SSH</>
+                  ) : networkingType === 'cloudflare' ? (
+                    <>✅ <strong>Cloudflare:</strong> Miễn phí, hỗ trợ tất cả OS. Cần <code className="bg-muted px-1 rounded">cloudflared</code> trên máy client</>
+                  ) : (
+                    <>✅ <strong>noVNC:</strong> Truy cập desktop trực tiếp qua trình duyệt, không cần cài app!</>
+                  )}
                 </div>
               </div>
 

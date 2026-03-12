@@ -918,20 +918,20 @@ export default function VPSConsole() {
 
         {/* Settings Panel */}
         {showSettings && (
-          <Card className="border-2 border-primary/20 shadow-xl shadow-primary/5 bg-card/50 backdrop-blur-sm overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-3xl -z-10" />
-            <CardHeader className="border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2 bg-primary/10 rounded-lg">
+          <Card className="relative border border-primary/20 shadow-xl shadow-primary/5 bg-card/80 backdrop-blur-sm overflow-hidden rounded-2xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-accent/[0.03] pointer-events-none" />
+            <CardHeader className="relative border-b border-border/50 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl border border-primary/20">
                   <Settings className="h-5 w-5 text-primary" />
                 </div>
-                Cài đặt Networking & Tokens
-              </CardTitle>
-              <CardDescription className="text-base">
-                💾 Tokens được lưu vĩnh viễn (localStorage) - không mất khi đóng trình duyệt
-              </CardDescription>
+                <div>
+                  <CardTitle className="text-lg font-bold">Cài đặt Networking</CardTitle>
+                  <CardDescription className="text-xs mt-0.5">Tokens lưu vĩnh viễn trong trình duyệt</CardDescription>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="relative space-y-5 pt-5">
               {/* Networking Type Selection */}
               <div className="space-y-3">
                 <Label className="text-sm font-semibold">Loại kết nối mạng</Label>

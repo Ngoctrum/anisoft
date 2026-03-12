@@ -825,7 +825,49 @@ export default function VPSConsole() {
     }
   };
 
-  return (
+  const handleAddCustomServer = async () => {
+    if (!customServer.host || !customServer.username || !customServer.password) {
+      toast.error('Vui lòng nhập đầy đủ Host, Username và Password');
+      return;
+    }
+    setIsAddingServer(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        toast.error('Bạn cần đăng nhập trước');
+        return;
+      }
+      const port = parseInt(customServer.port) || (customServer.osType === 'windows' ? 3389 : 22);
+      const serverAddress = `${customServer.host}:${port}`;
+      const label = customServer.label || `custom-${customServer.host}`;
+
+      const { error } = await supabase.from('rdp_sessions').insert({
+        user_id: userData.user.id,
+        github_repo: label,
+        tailscale_ip: serverAddress,
+        ngrok_url: serverAddress,
+        rdp_user: customServer.username,
+        rdp_password: customServer.password,
+        os_type: customServer.osType,
+        networking_type: 'custom',
+        status: 'connected',
+        is_active: true,
+        started_at: new Date().toISOString(),
+        ssh_port: port,
+      });
+
+      if (error) throw error;
+      toast.success('Đã thêm server thành công!');
+      setShowAddServer(false);
+      setCustomServer({ host: '', port: '', username: '', password: '', osType: 'ubuntu', label: '' });
+      await loadSessions();
+    } catch (error: any) {
+      toast.error('Lỗi thêm server: ' + error.message);
+    } finally {
+      setIsAddingServer(false);
+    }
+  };
+
     <PageAccessControl pageKey="vps_console_enabled" pageName="VPS Console">
       <>
         <Header />

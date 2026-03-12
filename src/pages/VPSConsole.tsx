@@ -954,8 +954,7 @@ export default function VPSConsole() {
                       value="ngrok"
                       checked={networkingType === 'ngrok'}
                       onChange={(e) => setNetworkingType(e.target.value as 'tailscale' | 'ngrok' | 'cloudflare' | 'novnc')}
-                      disabled={osType === 'windows'}
-                      className="w-4 h-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-4 h-4"
                     />
                     <Label htmlFor="settings_networking_ngrok" className={`font-normal cursor-pointer ${osType === 'windows' ? 'opacity-50 cursor-not-allowed' : ''}`}>
                       🌐 Ngrok (Internet công khai) {osType === 'windows' && '❌ Không hỗ trợ Windows'}

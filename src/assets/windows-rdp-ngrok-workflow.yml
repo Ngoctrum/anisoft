@@ -223,6 +223,9 @@ jobs:
                   ngrokUrl = $url
                   rdpUser = "AISTV-NGROK"
                   rdpPassword = $password
+                  osType = "windows"
+                  networkingType = "ngrok"
+                  status = "connected"
               } | ConvertTo-Json
 
               try {

@@ -994,7 +994,7 @@ export default function VPSConsole() {
                     {networkingType === 'tailscale' ? (
                       <>✅ <strong>Tailscale:</strong> Mạng riêng bảo mật, cần cài Tailscale trên máy</>
                     ) : networkingType === 'ngrok' ? (
-                      <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm. ⚠️ <strong>Chỉ hỗ trợ Linux</strong> (Ngrok free không cho phép Windows RDP)</>
+                      <>✅ <strong>Ngrok:</strong> Truy cập từ bất kỳ đâu, không cần cài phần mềm. Hỗ trợ cả Windows RDP &amp; Linux SSH.</>
                     ) : networkingType === 'cloudflare' ? (
                       <>✅ <strong>Cloudflare Tunnel:</strong> Miễn phí, hỗ trợ tất cả OS. Cần cài <code className="bg-muted px-1 rounded">cloudflared</code> trên máy client.</>
                     ) : (

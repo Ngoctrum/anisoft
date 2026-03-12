@@ -892,7 +892,7 @@ export default function VPSConsole() {
               Powered by GitHub Actions
             </div>
             <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
-              <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 VPS Console
               </span>
             </h1>

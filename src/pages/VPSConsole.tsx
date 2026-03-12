@@ -883,29 +883,37 @@ export default function VPSConsole() {
 
           <TabsContent value="console" className="space-y-8 animate-fade-in">
         {/* Hero Header */}
-        <div className="text-center space-y-6">
-          <div className="inline-flex items-center gap-4 px-8 py-4 bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 rounded-2xl border border-primary/20 shadow-lg shadow-primary/5 hover-scale transition-all duration-300">
-            <div className="p-3 bg-primary/10 rounded-xl">
-              <Server className="h-8 w-8 text-primary animate-pulse" />
+        <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5 p-8 md:p-12">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+          <div className="relative z-10 text-center space-y-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-xs font-medium text-primary mb-2">
+              <Activity className="h-3 w-3" />
+              Powered by GitHub Actions
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              VPS Console
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
+              <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                VPS Console
+              </span>
             </h1>
+            <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
+              Tạo và quản lý VPS miễn phí • Windows RDP & Linux SSH
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 pt-2">
+              {['Tailscale', 'Ngrok', 'Cloudflare', 'noVNC'].map((n) => (
+                <Badge key={n} variant="secondary" className="text-xs">{n}</Badge>
+              ))}
+            </div>
+            <Button
+              onClick={() => setShowSettings(!showSettings)}
+              variant={showSettings ? "default" : "outline"}
+              className="gap-2 mt-4"
+              size="lg"
+            >
+              <Settings className="h-4 w-4" />
+              {showSettings ? 'Đóng Cài đặt' : 'Cài đặt Networking'}
+            </Button>
           </div>
-          <p className="text-muted-foreground text-lg max-w-3xl mx-auto leading-relaxed">
-            🚀 Tạo và quản lý VPS miễn phí với GitHub Actions
-            <br />
-            <span className="text-sm">Hỗ trợ Windows RDP & Linux SSH • Tailscale, Ngrok, Cloudflare & noVNC networking</span>
-          </p>
-          <Button
-            onClick={() => setShowSettings(!showSettings)}
-            variant={showSettings ? "default" : "outline"}
-            className="gap-2"
-            size="lg"
-          >
-            <Settings className="h-5 w-5" />
-            {showSettings ? 'Đóng Cài đặt' : 'Mở Cài đặt Networking & Tokens'}
-          </Button>
         </div>
 
         {/* Settings Panel */}

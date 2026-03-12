@@ -90,22 +90,23 @@ export default function VPSConsole() {
   // Config info
   const CONFIG_INFO = {
     basic: {
-      cpu: '2 vCPU',
-      ram: '2 GB RAM',
-      disk: '20 GB SSD',
-      description: 'Phù hợp cho việc học tập, test nhỏ',
+      cpu: '4 vCPU',
+      ram: '4 GB RAM',
+      disk: '14 GB SSD',
+      description: 'Phù hợp cho học tập, test, trải nghiệm',
     },
     standard: {
       cpu: '4 vCPU',
-      ram: '4 GB RAM',
-      disk: '40 GB SSD',
-      description: 'Phù hợp cho dev, website nhỏ',
+      ram: '16 GB RAM',
+      disk: '14 GB SSD',
+      description: 'Phù hợp cho dev, chạy app, website',
     },
     premium: {
-      cpu: '16 vCPU',
+      cpu: '4 vCPU',
       ram: '16 GB RAM',
-      disk: '160 GB SSD',
-      description: 'Hiệu năng cao nhất - Production & App lớn',
+      disk: '14 GB SSD',
+      network: '10 Gbps',
+      description: 'Hiệu năng cao nhất - GitHub Actions runner đầy đủ',
     },
   };
 

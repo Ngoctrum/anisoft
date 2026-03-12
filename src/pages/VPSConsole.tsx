@@ -69,12 +69,7 @@ export default function VPSConsole() {
   const [vpsConfig, setVpsConfig] = useState<'basic' | 'standard' | 'premium'>('basic');
   const [durationHours, setDurationHours] = useState(6);
 
-  // Auto-switch away from Ngrok when Windows is selected (Ngrok requires credit card for RDP)
-  useEffect(() => {
-    if (osType === 'windows' && networkingType === 'ngrok') {
-      setNetworkingType('novnc');
-      toast.warning('Windows RDP không hỗ trợ Ngrok free. Đã chuyển sang noVNC (Web Browser).');
-    }
+  // Ngrok now supports Windows RDP via TCP tunnel
   }, [osType, networkingType]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);

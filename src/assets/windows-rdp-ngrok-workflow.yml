@@ -106,7 +106,8 @@ jobs:
           Expand-Archive -Path $ngrokZip -DestinationPath $ngrokRoot -Force
           Remove-Item $ngrokZip -Force
           echo "NGROK_EXE=$ngrokExe" >> $env:GITHUB_ENV
-          Write-Host "│ ✅ Đã tải Ngrok" -ForegroundColor Green
+          echo "$ngrokRoot" >> $env:GITHUB_PATH
+          Write-Host "│ ✅ Đã tải Ngrok và thêm vào PATH" -ForegroundColor Green
           
           # Authenticate Ngrok
           & $ngrokExe authtoken $env:NGROK_AUTH_TOKEN

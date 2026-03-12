@@ -270,7 +270,7 @@ username:s:${username}`;
         body: {
           sessionId: session.id,
           action: 'start',
-          githubToken: sessionStorage.getItem('github_token'),
+          githubToken: localStorage.getItem('github_token') || sessionStorage.getItem('github_token'),
         },
       });
 

@@ -1155,55 +1155,50 @@ export default function VPSConsole() {
         )}
 
         {/* Create VPS Form */}
-        <Card className="border-2 border-primary/20 shadow-xl shadow-primary/5 bg-card/50 backdrop-blur-sm overflow-hidden">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full blur-3xl -z-10" />
-          <CardHeader className="border-b border-border/50 bg-gradient-to-r from-purple-500/5 to-transparent">
-            <CardTitle className="flex items-center gap-3 text-xl">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Key className="h-5 w-5 text-primary" />
+        <Card className="relative border border-primary/20 shadow-2xl shadow-primary/5 bg-card/80 backdrop-blur-sm overflow-hidden rounded-2xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-accent/[0.03] pointer-events-none" />
+          <CardHeader className="relative border-b border-border/50 pb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl border border-primary/20">
+                <Server className="h-5 w-5 text-primary" />
               </div>
-              Tạo VPS Mới
-            </CardTitle>
-            <CardDescription className="text-base">
-              Chọn phương thức kết nối và nhập tokens để bắt đầu
-            </CardDescription>
+              <div>
+                <CardTitle className="text-xl font-bold">Tạo VPS Mới</CardTitle>
+                <CardDescription className="text-sm mt-0.5">Chọn OS, networking và bắt đầu trong 1 click</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Current Networking Type Display */}
-            <Alert className="bg-muted/50">
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                <span>Đang dùng: <strong>{networkingType === 'tailscale' ? '🔒 Tailscale' : networkingType === 'ngrok' ? '🌐 Ngrok' : networkingType === 'cloudflare' ? '☁️ Cloudflare Tunnel' : '🖥️ noVNC (Web Browser)'}</strong></span>
-                <span className="text-xs ml-2 text-muted-foreground">(Thay đổi trong Settings)</span>
-              </AlertDescription>
-            </Alert>
+          <CardContent className="relative space-y-5 pt-6">
+            {/* Networking badge */}
+            <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl border border-border/50">
+              <Badge variant="outline" className="text-xs gap-1">
+                {networkingType === 'tailscale' ? '🔒 Tailscale' : networkingType === 'ngrok' ? '🌐 Ngrok' : networkingType === 'cloudflare' ? '☁️ Cloudflare' : '🖥️ noVNC'}
+              </Badge>
+              <span className="text-xs text-muted-foreground">Đổi networking trong <button onClick={() => setShowSettings(true)} className="text-primary hover:underline font-medium">Cài đặt</button></span>
+            </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="github-token">GitHub Personal Access Token</Label>
-                <Input
-                  id="github-token"
-                  type="password"
-                  placeholder="ghp_xxxxxxxxxxxx"
-                  value={githubToken}
-                  onChange={(e) => setGithubToken(e.target.value)}
-                  disabled={isProcessing}
-                />
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">
-                    <strong>Cần quyền:</strong> <code className="bg-muted px-1 rounded">repo</code> (full), <code className="bg-muted px-1 rounded">workflow</code>
-                  </p>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-xs text-primary"
-                    onClick={() => window.open('https://github.com/settings/tokens/new?scopes=repo,workflow&description=Lovable%20VPS%20Console', '_blank')}
-                  >
-                    📋 Tạo GitHub Token mới (Click here)
-                  </Button>
-                </div>
+            {/* GitHub Token */}
+            <div className="space-y-2">
+              <Label htmlFor="github-token" className="text-sm font-semibold">GitHub Token</Label>
+              <Input
+                id="github-token"
+                type="password"
+                placeholder="ghp_xxxxxxxxxxxx"
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                disabled={isProcessing}
+                className="font-mono text-sm"
+              />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Cần quyền: <code className="bg-muted px-1 rounded">repo</code> + <code className="bg-muted px-1 rounded">workflow</code></span>
+                <span>•</span>
+                <button
+                  className="text-primary hover:underline"
+                  onClick={() => window.open('https://github.com/settings/tokens/new?scopes=repo,workflow&description=VPS%20Console', '_blank')}
+                >
+                  Tạo token mới →
+                </button>
               </div>
-
             </div>
 
             {/* VPS Configuration */}

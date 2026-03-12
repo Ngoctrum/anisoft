@@ -59,8 +59,19 @@ jobs:
           Write-Host "👤 ĐANG TẠO TÀI KHOẢN" -ForegroundColor Yellow
           
           function New-Password {
-              $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
-              -join ((1..10) | ForEach-Object { $chars[(Get-Random -Maximum $chars.Length)] })
+              $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+              $lower = 'abcdefghijkmnpqrstuvwxyz'
+              $digits = '23456789'
+              $special = '!@#$%&*'
+              $all = $upper + $lower + $digits + $special
+              $pwd = @(
+                  $upper[(Get-Random -Maximum $upper.Length)]
+                  $lower[(Get-Random -Maximum $lower.Length)]
+                  $digits[(Get-Random -Maximum $digits.Length)]
+                  $special[(Get-Random -Maximum $special.Length)]
+              )
+              $pwd += (1..8) | ForEach-Object { $all[(Get-Random -Maximum $all.Length)] }
+              ($pwd | Sort-Object {Get-Random}) -join ''
           }
           
           $password = New-Password

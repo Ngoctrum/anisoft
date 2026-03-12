@@ -90,22 +90,23 @@ export default function VPSConsole() {
   // Config info
   const CONFIG_INFO = {
     basic: {
-      cpu: '2 vCPU',
-      ram: '2 GB RAM',
-      disk: '20 GB SSD',
-      description: 'Phù hợp cho việc học tập, test nhỏ',
+      cpu: '4 vCPU',
+      ram: '4 GB RAM',
+      disk: '14 GB SSD',
+      description: 'Phù hợp cho học tập, test, trải nghiệm',
     },
     standard: {
       cpu: '4 vCPU',
-      ram: '4 GB RAM',
-      disk: '40 GB SSD',
-      description: 'Phù hợp cho dev, website nhỏ',
+      ram: '16 GB RAM',
+      disk: '14 GB SSD',
+      description: 'Phù hợp cho dev, chạy app, website',
     },
     premium: {
-      cpu: '16 vCPU',
+      cpu: '4 vCPU',
       ram: '16 GB RAM',
-      disk: '160 GB SSD',
-      description: 'Hiệu năng cao nhất - Production & App lớn',
+      disk: '14 GB SSD',
+      network: '10 Gbps',
+      description: 'Hiệu năng cao nhất - GitHub Actions runner đầy đủ',
     },
   };
 
@@ -882,29 +883,37 @@ export default function VPSConsole() {
 
           <TabsContent value="console" className="space-y-8 animate-fade-in">
         {/* Hero Header */}
-        <div className="text-center space-y-6">
-          <div className="inline-flex items-center gap-4 px-8 py-4 bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 rounded-2xl border border-primary/20 shadow-lg shadow-primary/5 hover-scale transition-all duration-300">
-            <div className="p-3 bg-primary/10 rounded-xl">
-              <Server className="h-8 w-8 text-primary animate-pulse" />
+        <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5 p-8 md:p-12">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+          <div className="relative z-10 text-center space-y-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-xs font-medium text-primary mb-2">
+              <Activity className="h-3 w-3" />
+              Powered by GitHub Actions
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              VPS Console
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">
+              <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                VPS Console
+              </span>
             </h1>
+            <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
+              Tạo và quản lý VPS miễn phí • Windows RDP & Linux SSH
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 pt-2">
+              {['Tailscale', 'Ngrok', 'Cloudflare', 'noVNC'].map((n) => (
+                <Badge key={n} variant="secondary" className="text-xs">{n}</Badge>
+              ))}
+            </div>
+            <Button
+              onClick={() => setShowSettings(!showSettings)}
+              variant={showSettings ? "default" : "outline"}
+              className="gap-2 mt-4"
+              size="lg"
+            >
+              <Settings className="h-4 w-4" />
+              {showSettings ? 'Đóng Cài đặt' : 'Cài đặt Networking'}
+            </Button>
           </div>
-          <p className="text-muted-foreground text-lg max-w-3xl mx-auto leading-relaxed">
-            🚀 Tạo và quản lý VPS miễn phí với GitHub Actions
-            <br />
-            <span className="text-sm">Hỗ trợ Windows RDP & Linux SSH • Tailscale, Ngrok, Cloudflare & noVNC networking</span>
-          </p>
-          <Button
-            onClick={() => setShowSettings(!showSettings)}
-            variant={showSettings ? "default" : "outline"}
-            className="gap-2"
-            size="lg"
-          >
-            <Settings className="h-5 w-5" />
-            {showSettings ? 'Đóng Cài đặt' : 'Mở Cài đặt Networking & Tokens'}
-          </Button>
         </div>
 
         {/* Settings Panel */}
@@ -1060,11 +1069,25 @@ export default function VPSConsole() {
                         value={ngrokToken}
                         onChange={(e) => setNgrokToken(e.target.value)}
                       />
-                      <p className="text-xs text-muted-foreground">
-                        <a href="https://dashboard.ngrok.com/get-started/your-authtoken" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                          🔑 Lấy Ngrok Authtoken
-                        </a>
-                      </p>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Hướng dẫn lấy Ngrok Authtoken:</strong>
+                        </p>
+                        <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-0.5">
+                          <li>Truy cập <a href="https://dashboard.ngrok.com/signup" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">dashboard.ngrok.com</a> → đăng ký / đăng nhập</li>
+                          <li>Vào <strong>Your Authtoken</strong> trong menu bên trái</li>
+                          <li>Copy token (bắt đầu bằng <code className="bg-muted px-1 rounded">2c...</code>)</li>
+                          <li>Dán vào ô trên → <strong>Done!</strong></li>
+                        </ol>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-primary"
+                          onClick={() => window.open('https://dashboard.ngrok.com/get-started/your-authtoken', '_blank')}
+                        >
+                          🔑 Mở trang lấy Ngrok Authtoken
+                        </Button>
+                      </div>
                     </div>
                   ) : networkingType === 'cloudflare' ? (
                     <div className="space-y-2">
@@ -1132,199 +1155,165 @@ export default function VPSConsole() {
         )}
 
         {/* Create VPS Form */}
-        <Card className="border-2 border-primary/20 shadow-xl shadow-primary/5 bg-card/50 backdrop-blur-sm overflow-hidden">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full blur-3xl -z-10" />
-          <CardHeader className="border-b border-border/50 bg-gradient-to-r from-purple-500/5 to-transparent">
-            <CardTitle className="flex items-center gap-3 text-xl">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Key className="h-5 w-5 text-primary" />
+        <Card className="relative border border-primary/20 shadow-2xl shadow-primary/5 bg-card/80 backdrop-blur-sm overflow-hidden rounded-2xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-accent/[0.03] pointer-events-none" />
+          <CardHeader className="relative border-b border-border/50 pb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl border border-primary/20">
+                <Server className="h-5 w-5 text-primary" />
               </div>
-              Tạo VPS Mới
-            </CardTitle>
-            <CardDescription className="text-base">
-              Chọn phương thức kết nối và nhập tokens để bắt đầu
-            </CardDescription>
+              <div>
+                <CardTitle className="text-xl font-bold">Tạo VPS Mới</CardTitle>
+                <CardDescription className="text-sm mt-0.5">Chọn OS, networking và bắt đầu trong 1 click</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Current Networking Type Display */}
-            <Alert className="bg-muted/50">
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                <span>Đang dùng: <strong>{networkingType === 'tailscale' ? '🔒 Tailscale' : networkingType === 'ngrok' ? '🌐 Ngrok' : networkingType === 'cloudflare' ? '☁️ Cloudflare Tunnel' : '🖥️ noVNC (Web Browser)'}</strong></span>
-                <span className="text-xs ml-2 text-muted-foreground">(Thay đổi trong Settings)</span>
-              </AlertDescription>
-            </Alert>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="github-token">GitHub Personal Access Token</Label>
-                <Input
-                  id="github-token"
-                  type="password"
-                  placeholder="ghp_xxxxxxxxxxxx"
-                  value={githubToken}
-                  onChange={(e) => setGithubToken(e.target.value)}
-                  disabled={isProcessing}
-                />
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">
-                    <strong>Cần quyền:</strong> <code className="bg-muted px-1 rounded">repo</code> (full), <code className="bg-muted px-1 rounded">workflow</code>
-                  </p>
-                  <Button
-                    variant="link"
-                    size="sm"
-                    className="h-auto p-0 text-xs text-primary"
-                    onClick={() => window.open('https://github.com/settings/tokens/new?scopes=repo,workflow&description=Lovable%20VPS%20Console', '_blank')}
-                  >
-                    📋 Tạo GitHub Token mới (Click here)
-                  </Button>
-                </div>
-              </div>
-
+          <CardContent className="relative space-y-5 pt-6">
+            {/* Networking badge */}
+            <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl border border-border/50">
+              <Badge variant="outline" className="text-xs gap-1">
+                {networkingType === 'tailscale' ? '🔒 Tailscale' : networkingType === 'ngrok' ? '🌐 Ngrok' : networkingType === 'cloudflare' ? '☁️ Cloudflare' : '🖥️ noVNC'}
+              </Badge>
+              <span className="text-xs text-muted-foreground">Đổi networking trong <button onClick={() => setShowSettings(true)} className="text-primary hover:underline font-medium">Cài đặt</button></span>
             </div>
 
-            {/* VPS Configuration */}
-            <div className="grid gap-4 md:grid-cols-3 border-t pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="os-type">Hệ điều hành</Label>
-                <Select value={osType} onValueChange={(value: 'windows' | 'ubuntu' | 'debian' | 'archlinux' | 'centos') => setOsType(value)}>
-                  <SelectTrigger id="os-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="windows">🪟 Windows Server 2025</SelectItem>
-                    <SelectItem value="ubuntu">🐧 Ubuntu 22.04 LTS</SelectItem>
-                    <SelectItem value="debian">🌀 Debian 12</SelectItem>
-                    <SelectItem value="archlinux">⚡ Arch Linux</SelectItem>
-                    <SelectItem value="centos">🔷 CentOS Stream 9</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="vps-config">Cấu hình VPS</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-primary/10">
-                        <Info className="h-4 w-4 text-primary" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 p-4 bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20" align="start">
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-lg flex items-center gap-2">
-                          <span className="text-2xl">
-                            {vpsConfig === 'basic' ? '⚡' : vpsConfig === 'standard' ? '💎' : '👑'}
-                          </span>
-                          {vpsConfig === 'basic' ? 'Basic' : vpsConfig === 'standard' ? 'Standard' : 'Premium'}
-                        </h4>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between p-2 bg-background/50 rounded-lg">
-                            <span className="text-sm text-muted-foreground">CPU</span>
-                            <span className="font-bold text-primary">{CONFIG_INFO[vpsConfig].cpu}</span>
-                          </div>
-                          <div className="flex items-center justify-between p-2 bg-background/50 rounded-lg">
-                            <span className="text-sm text-muted-foreground">RAM</span>
-                            <span className="font-bold text-primary">{CONFIG_INFO[vpsConfig].ram}</span>
-                          </div>
-                          <div className="flex items-center justify-between p-2 bg-background/50 rounded-lg">
-                            <span className="text-sm text-muted-foreground">Disk</span>
-                            <span className="font-bold text-primary">{CONFIG_INFO[vpsConfig].disk}</span>
-                          </div>
-                        </div>
-                        <div className="p-3 bg-muted/50 rounded-lg border border-primary/20">
-                          <p className="text-sm italic text-muted-foreground">{CONFIG_INFO[vpsConfig].description}</p>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <Select value={vpsConfig} onValueChange={(value: 'basic' | 'standard' | 'premium') => setVpsConfig(value)}>
-                  <SelectTrigger id="vps-config">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="basic">
-                      <div className="flex items-center gap-2">
-                        <span>⚡ Basic</span>
-                        <span className="text-xs text-muted-foreground">{CONFIG_INFO.basic.cpu}</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="standard">
-                      <div className="flex items-center gap-2">
-                        <span>💎 Standard</span>
-                        <span className="text-xs text-muted-foreground">{CONFIG_INFO.standard.cpu}</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="premium">
-                      <div className="flex items-center gap-2">
-                        <span>👑 Premium</span>
-                        <span className="text-xs text-muted-foreground">{CONFIG_INFO.premium.cpu}</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="duration">Thời gian (giờ)</Label>
-                <Select value={durationHours.toString()} onValueChange={(value) => setDurationHours(parseInt(value))}>
-                  <SelectTrigger id="duration">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 giờ</SelectItem>
-                    <SelectItem value="2">2 giờ</SelectItem>
-                    <SelectItem value="3">3 giờ</SelectItem>
-                    <SelectItem value="4">4 giờ</SelectItem>
-                    <SelectItem value="5">5 giờ</SelectItem>
-                    <SelectItem value="6">6 giờ</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Alert className="bg-blue-500/10 border-blue-500/20">
-              <AlertDescription className="text-sm">
-                💡 <strong>Thông tin:</strong> {osType === 'windows' ? 'Windows RDP' : 
-                  osType === 'ubuntu' ? 'Ubuntu SSH' : 
-                  osType === 'debian' ? 'Debian SSH' : 
-                  osType === 'archlinux' ? 'Arch Linux SSH' : 'CentOS SSH'} • {vpsConfig.toUpperCase()} • Tự động xóa sau {durationHours}h
-              </AlertDescription>
-            </Alert>
-
+            {/* GitHub Token */}
             <div className="space-y-2">
-              <div className="flex items-center space-x-2">
+              <Label htmlFor="github-token" className="text-sm font-semibold">GitHub Token</Label>
+              <Input
+                id="github-token"
+                type="password"
+                placeholder="ghp_xxxxxxxxxxxx"
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                disabled={isProcessing}
+                className="font-mono text-sm"
+              />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Cần quyền: <code className="bg-muted px-1 rounded">repo</code> + <code className="bg-muted px-1 rounded">workflow</code></span>
+                <span>•</span>
+                <button
+                  className="text-primary hover:underline"
+                  onClick={() => window.open('https://github.com/settings/tokens/new?scopes=repo,workflow&description=VPS%20Console', '_blank')}
+                >
+                  Tạo token mới →
+                </button>
+              </div>
+            </div>
+
+            {/* OS Selection - Visual Cards */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Hệ điều hành</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                {([
+                  { value: 'windows', icon: '🪟', name: 'Windows', sub: 'Server 2025' },
+                  { value: 'ubuntu', icon: '🐧', name: 'Ubuntu', sub: '22.04 LTS' },
+                  { value: 'debian', icon: '🌀', name: 'Debian', sub: '12' },
+                  { value: 'archlinux', icon: '⚡', name: 'Arch', sub: 'Linux' },
+                  { value: 'centos', icon: '🔷', name: 'CentOS', sub: 'Stream 9' },
+                ] as const).map((os) => (
+                  <button
+                    key={os.value}
+                    onClick={() => setOsType(os.value)}
+                    className={`relative p-3 rounded-xl border-2 transition-all duration-200 text-center ${
+                      osType === os.value
+                        ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                        : 'border-border/50 hover:border-primary/30 hover:bg-muted/30'
+                    }`}
+                  >
+                    <div className="text-2xl mb-1">{os.icon}</div>
+                    <div className="text-xs font-semibold">{os.name}</div>
+                    <div className="text-[10px] text-muted-foreground">{os.sub}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Config + Duration Row */}
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Config Cards */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Cấu hình</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { value: 'basic', icon: '⚡', name: 'Basic' },
+                    { value: 'standard', icon: '💎', name: 'Standard' },
+                    { value: 'premium', icon: '👑', name: 'Premium' },
+                  ] as const).map((cfg) => (
+                    <button
+                      key={cfg.value}
+                      onClick={() => setVpsConfig(cfg.value)}
+                      className={`p-3 rounded-xl border-2 transition-all duration-200 text-center ${
+                        vpsConfig === cfg.value
+                          ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                          : 'border-border/50 hover:border-primary/30 hover:bg-muted/30'
+                      }`}
+                    >
+                      <div className="text-lg">{cfg.icon}</div>
+                      <div className="text-xs font-semibold">{cfg.name}</div>
+                      <div className="text-[10px] text-muted-foreground">{CONFIG_INFO[cfg.value].cpu}</div>
+                      <div className="text-[10px] text-muted-foreground">{CONFIG_INFO[cfg.value].ram}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Thời gian</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 2, 3, 4, 5, 6].map((h) => (
+                    <button
+                      key={h}
+                      onClick={() => setDurationHours(h)}
+                      className={`p-3 rounded-xl border-2 transition-all duration-200 text-center ${
+                        durationHours === h
+                          ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                          : 'border-border/50 hover:border-primary/30 hover:bg-muted/30'
+                      }`}
+                    >
+                      <div className="text-sm font-bold">{h}h</div>
+                      <div className="text-[10px] text-muted-foreground">{h * 60}m</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Summary + Actions */}
+            <div className="rounded-xl border border-border/50 bg-muted/20 p-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <Badge variant="outline">{osType === 'windows' ? '🪟 Windows RDP' : `🐧 ${osType.charAt(0).toUpperCase() + osType.slice(1)} SSH`}</Badge>
+                <Badge variant="outline">{vpsConfig === 'basic' ? '⚡' : vpsConfig === 'standard' ? '💎' : '👑'} {vpsConfig.toUpperCase()}</Badge>
+                <Badge variant="outline">⏱️ {durationHours}h</Badge>
+                <Badge variant="outline">{networkingType === 'tailscale' ? '🔒' : networkingType === 'ngrok' ? '🌐' : networkingType === 'cloudflare' ? '☁️' : '🖥️'} {networkingType}</Badge>
+              </div>
+              <div className="flex items-center gap-2">
                 <Switch
                   id="save-tokens"
                   checked={saveTokensEnabled}
                   onCheckedChange={setSaveTokensEnabled}
                 />
-                <Label htmlFor="save-tokens" className="cursor-pointer">
-                  💾 Lưu tokens sau khi tạo VPS
+                <Label htmlFor="save-tokens" className="cursor-pointer text-xs">
+                  {saveTokensEnabled ? '✅ Giữ lại tokens sau khi tạo' : '💾 Lưu tokens sau khi tạo'}
                 </Label>
               </div>
-              <p className="text-xs text-muted-foreground ml-7">
-                {saveTokensEnabled ? 
-                  '✅ Tokens sẽ được giữ lại sau khi tạo VPS - không cần nhập lại lần sau' : 
-                  '⚠️ Tokens sẽ tự động xóa sau khi tạo VPS - cần nhập lại lần sau'}
-              </p>
             </div>
 
             <Button
               onClick={handleCreateVPS}
               disabled={isProcessing}
-              className="w-full"
+              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20"
               size="lg"
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                   Đang xử lý...
                 </>
               ) : (
                 <>
-                  <Play className="h-4 w-4 mr-2" />
+                  <Play className="h-5 w-5 mr-2" />
                   Tạo {osType === 'windows' ? 'Windows RDP' : 
                     osType === 'ubuntu' ? 'Ubuntu SSH' : 
                     osType === 'debian' ? 'Debian SSH' : 
@@ -1334,11 +1323,11 @@ export default function VPSConsole() {
             </Button>
 
             {logs.length > 0 && (
-              <div className="bg-black/95 text-green-400 p-4 rounded-lg font-mono text-xs max-h-[200px] overflow-y-auto space-y-1">
+              <div className="bg-background border border-border/50 rounded-xl p-4 font-mono text-xs max-h-[200px] overflow-y-auto space-y-1">
                 {logs.map((log, idx) => (
-                  <div key={idx} className="hover:bg-white/5 px-1 rounded transition-colors">
-                    <span className="text-gray-500 mr-2">[{new Date().toLocaleTimeString()}]</span>
-                    <span>{log}</span>
+                  <div key={idx} className="hover:bg-muted/50 px-2 py-0.5 rounded transition-colors text-muted-foreground">
+                    <span className="text-muted-foreground/50 mr-2">[{new Date().toLocaleTimeString()}]</span>
+                    <span className="text-foreground">{log}</span>
                   </div>
                 ))}
               </div>

@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, Search, User, LogOut, Download, Home, FileText, HelpCircle, Shield, Globe, Sparkles, Server, BookOpen } from 'lucide-react';
+import { Menu, Search, User, LogOut, Download, Home, FileText, HelpCircle, Shield, Globe, Sparkles, Server, BookOpen, FolderSearch } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import mascotAvatar from '@/assets/mascot-avatar.jpg';
@@ -134,6 +134,18 @@ export const Header = () => {
       >
         <Server className="h-4 w-4" />
         <span className="hidden lg:inline">VPS Console</span>
+      </Link>
+      <Link 
+        to="/gdrive-scanner"
+        className={cn(
+          "flex items-center gap-2 font-medium px-4 py-2 rounded-full transition-all",
+          isActivePath('/gdrive-scanner') 
+            ? "bg-gradient-primary text-primary-foreground shadow-glow" 
+            : "text-foreground/70 hover:text-foreground hover:bg-muted/50"
+        )}
+      >
+        <FolderSearch className="h-4 w-4" />
+        <span className="hidden lg:inline">GDrive</span>
       </Link>
       <Link 
         to="/docs" 
@@ -530,6 +542,19 @@ export const Header = () => {
                     >
                       <Server className="h-4 w-4" />
                       <span>VPS Console</span>
+                    </Link>
+                    <Link 
+                      to="/gdrive-scanner"
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
+                        isActivePath('/gdrive-scanner')
+                          ? "bg-gradient-primary text-primary-foreground shadow-glow" 
+                          : "text-foreground/80 hover:bg-muted/50"
+                      )}
+                    >
+                      <FolderSearch className="h-4 w-4" />
+                      <span>GDrive Scanner</span>
                     </Link>
                     <Link 
                       to="/docs"

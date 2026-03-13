@@ -544,6 +544,19 @@ export const Header = () => {
                       <span>VPS Console</span>
                     </Link>
                     <Link 
+                      to="/gdrive-scanner"
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg transition-all",
+                        isActivePath('/gdrive-scanner')
+                          ? "bg-gradient-primary text-primary-foreground shadow-glow" 
+                          : "text-foreground/80 hover:bg-muted/50"
+                      )}
+                    >
+                      <FolderSearch className="h-4 w-4" />
+                      <span>GDrive Scanner</span>
+                    </Link>
+                    <Link 
                       to="/docs"
                       onClick={() => setMobileOpen(false)}
                       className={cn(

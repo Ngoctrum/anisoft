@@ -12,6 +12,119 @@ interface ManageVPSRequest {
   workflowRunId?: string;
 }
 
+interface RepoInfo {
+  owner: string;
+  repo: string;
+}
+
+const resolveRepoInfo = (session: any): RepoInfo | null => {
+  if (session?.repo_url) {
+    const match = String(session.repo_url).match(/github\.com\/([^/]+)\/([^/]+)/i);
+    if (match) {
+      return {
+        owner: match[1],
+        repo: match[2].replace(/\.git$/, ''),
+      };
+    }
+  }
+
+  if (session?.github_repo && String(session.github_repo).includes('/')) {
+    const [owner, repo] = String(session.github_repo).split('/');
+    if (owner && repo) {
+      return { owner, repo };
+    }
+  }
+
+  return null;
+};
+
+const getWorkflowFileName = (osType?: string, networkingType?: string) => {
+  const os = (osType || 'windows').toLowerCase();
+  const networking = (networkingType || 'tailscale').toLowerCase();
+
+  if (os === 'windows') {
+    if (networking === 'ngrok') return 'windows-rdp-ngrok.yml';
+    if (networking === 'cloudflare') return 'windows-rdp-cloudflare.yml';
+    if (networking === 'novnc') return 'windows-rdp-novnc.yml';
+    return 'windows-rdp.yml';
+  }
+
+  const linuxOs = ['ubuntu', 'debian', 'archlinux', 'centos'].includes(os) ? os : 'ubuntu';
+  if (networking === 'ngrok') return `${linuxOs}-ssh-ngrok.yml`;
+  if (networking === 'cloudflare') return `${linuxOs}-ssh-cloudflare.yml`;
+  if (networking === 'novnc') return `${linuxOs}-ssh-novnc.yml`;
+  return `${linuxOs}-ssh.yml`;
+};
+
+const getDurationInput = (durationHours?: number, osType?: string) => {
+  const os = (osType || 'windows').toLowerCase();
+  const hours = Number(durationHours || 6);
+
+  if (os === 'windows') {
+    if (hours === 1) return '1h';
+    if (hours === 3) return '3h';
+    return '5h40m';
+  }
+
+  return `${Math.max(1, Math.min(hours, 24))}h`;
+};
+
+const triggerWorkflow = async (session: any, githubToken: string, repoInfo: RepoInfo) => {
+  const githubHeaders = {
+    'Authorization': `Bearer ${githubToken}`,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json',
+  };
+
+  const workflowFileName = getWorkflowFileName(session.os_type, session.networking_type);
+  const duration = getDurationInput(session.duration_hours, session.os_type);
+  const config = session.vps_config || 'basic';
+
+  const repoResponse = await fetch(`https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}`, {
+    headers: githubHeaders,
+  });
+
+  if (!repoResponse.ok) {
+    const body = await repoResponse.text();
+    throw new Error(`Cannot read repository metadata: ${repoResponse.status} ${body}`);
+  }
+
+  const repoData = await repoResponse.json();
+  const defaultBranch = repoData.default_branch || 'main';
+
+  const dispatchResponse = await fetch(
+    `https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/actions/workflows/${workflowFileName}/dispatches`,
+    {
+      method: 'POST',
+      headers: githubHeaders,
+      body: JSON.stringify({
+        ref: defaultBranch,
+        inputs: {
+          duration,
+          config,
+        },
+      }),
+    }
+  );
+
+  if (!dispatchResponse.ok) {
+    const body = await dispatchResponse.text();
+    throw new Error(`Failed to trigger workflow: ${dispatchResponse.status} ${body}`);
+  }
+
+  // Best-effort: fetch latest workflow run id for monitoring
+  const runsResponse = await fetch(
+    `https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/actions/runs?per_page=1&event=workflow_dispatch`,
+    { headers: githubHeaders }
+  );
+
+  if (!runsResponse.ok) return null;
+
+  const runsData = await runsResponse.json();
+  const latestRun = runsData?.workflow_runs?.[0];
+  return latestRun?.id ? String(latestRun.id) : null;
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -34,7 +147,7 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
@@ -83,14 +196,15 @@ Deno.serve(async (req) => {
       );
     }
 
+    const repoInfo = resolveRepoInfo(session);
+
     if (action === 'kill') {
-      // Kill VPS by canceling GitHub Actions workflow
-      if (workflowRunId && githubToken) {
-        const [owner, repo] = session.github_repo.split('/');
-        
+      // Kill VPS by canceling GitHub Actions workflow (best-effort)
+      const runIdToCancel = workflowRunId || session.workflow_run_id;
+      if (runIdToCancel && githubToken && repoInfo) {
         try {
           const cancelResponse = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/actions/runs/${workflowRunId}/cancel`,
+            `https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/actions/runs/${runIdToCancel}/cancel`,
             {
               method: 'POST',
               headers: {
@@ -114,6 +228,7 @@ Deno.serve(async (req) => {
         .update({
           is_active: false,
           status: 'killed',
+          stopped_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq('id', sessionId)
@@ -131,28 +246,83 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'start') {
-      // Start VPS by triggering GitHub Actions workflow again
-      if (!githubToken) {
-        return new Response(
-          JSON.stringify({ error: 'GitHub token required to start VPS' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      // Update session to pending
-      await supabase
+      // Mark session as pending first
+      const { error: pendingError } = await supabase
         .from('rdp_sessions')
         .update({
           is_active: true,
           status: 'pending',
+          started_at: new Date().toISOString(),
+          stopped_at: null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', sessionId);
 
-      return new Response(
-        JSON.stringify({ success: true, message: 'VPS restart initiated' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      if (pendingError) {
+        throw pendingError;
+      }
+
+      // If no token, avoid hard-failing: session is still marked pending
+      if (!githubToken) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            warning: 'Missing GitHub token. Session marked pending only.',
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!repoInfo) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            warning: 'Repository info missing. Session marked pending only.',
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try {
+        const workflowRunIdFromGithub = await triggerWorkflow(session, githubToken, repoInfo);
+
+        if (workflowRunIdFromGithub) {
+          await supabase
+            .from('rdp_sessions')
+            .update({
+              workflow_run_id: workflowRunIdFromGithub,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', sessionId);
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: 'VPS restart initiated',
+            workflowRunId: workflowRunIdFromGithub,
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (workflowError) {
+        console.error('Error triggering workflow restart:', workflowError);
+
+        await supabase
+          .from('rdp_sessions')
+          .update({
+            is_active: false,
+            status: 'failed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', sessionId);
+
+        return new Response(
+          JSON.stringify({
+            error: workflowError instanceof Error ? workflowError.message : 'Failed to restart VPS',
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     return new Response(

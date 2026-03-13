@@ -237,6 +237,16 @@ username:s:${username}`;
     return specs[config as keyof typeof specs] || specs.basic;
   };
 
+  const getGithubToken = () => {
+    return (
+      localStorage.getItem('github_token') ||
+      localStorage.getItem('vps_github_token') ||
+      sessionStorage.getItem('github_token') ||
+      sessionStorage.getItem('vps_github_token') ||
+      ''
+    ).trim();
+  };
+
   const handleKillVPS = async () => {
     if (!confirm('⚠️ Bạn có chắc muốn TẮT VPS này không?\n\nVPS sẽ dừng hoàn toàn.')) {
       return;
@@ -244,11 +254,13 @@ username:s:${username}`;
 
     setIsKilling(true);
     try {
+      const githubToken = getGithubToken();
+
       const { data, error } = await supabase.functions.invoke('manage-vps', {
         body: {
           sessionId: session.id,
           action: 'kill',
-          githubToken: localStorage.getItem('github_token') || sessionStorage.getItem('github_token'),
+          githubToken: githubToken || undefined,
           workflowRunId: session.workflow_run_id,
         },
       });
@@ -266,11 +278,17 @@ username:s:${username}`;
   const handleStartVPS = async () => {
     setIsStarting(true);
     try {
+      const githubToken = getGithubToken();
+
+      if (!githubToken) {
+        toast.warning('⚠️ Chưa thấy GitHub token đã lưu. Mở Cài đặt để lưu token nếu restart không chạy.');
+      }
+
       const { data, error } = await supabase.functions.invoke('manage-vps', {
         body: {
           sessionId: session.id,
           action: 'start',
-          githubToken: localStorage.getItem('github_token') || sessionStorage.getItem('github_token'),
+          githubToken: githubToken || undefined,
         },
       });
 

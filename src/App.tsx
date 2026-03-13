@@ -21,6 +21,7 @@ import Docs from "./pages/Docs";
 import Support from "./pages/Support";
 import Report from "./pages/Report";
 import VPSConsole from "./pages/VPSConsole";
+import GDriveScanner from "./pages/GDriveScanner";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminTools from "./pages/admin/Tools";
 import AdminApps from "./pages/admin/Apps";

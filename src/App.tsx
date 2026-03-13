@@ -58,6 +58,7 @@ const App = () => (
             <Route path="/support" element={<Support />} />
             <Route path="/report" element={<Report />} />
             <Route path="/vps-console" element={<VPSConsole />} />
+            <Route path="/gdrive-scanner" element={<GDriveScanner />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/tools" element={<AdminTools />} />
             <Route path="/admin/apps" element={<AdminApps />} />

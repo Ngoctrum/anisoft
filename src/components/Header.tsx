@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Menu, Search, User, LogOut, Download, Home, FileText, HelpCircle, Shield, Globe, Sparkles, Server, BookOpen } from 'lucide-react';
+import { Menu, Search, User, LogOut, Download, Home, FileText, HelpCircle, Shield, Globe, Sparkles, Server, BookOpen, FolderSearch } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import mascotAvatar from '@/assets/mascot-avatar.jpg';

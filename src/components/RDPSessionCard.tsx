@@ -11,6 +11,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { VPSSessionMonitor } from './vps/VPSSessionMonitor';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
+interface SystemInfo {
+  publicIp?: string;
+  hostname?: string;
+  osVersion?: string;
+  kernel?: string;
+  cpuModel?: string;
+  cpuCores?: string;
+  cpuThreads?: string;
+  totalRam?: string;
+  freeRam?: string;
+  diskTotal?: string;
+  diskUsed?: string;
+  diskAvail?: string;
+  arch?: string;
+}
+
 interface RDPSession {
   id: string;
   github_repo: string;
@@ -29,6 +45,7 @@ interface RDPSession {
   is_active?: boolean;
   ssh_port?: number;
   workflow_run_id?: string;
+  system_info?: SystemInfo;
 }
 
 interface RDPSessionCardProps {

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Clock, Server, User, Key, Copy, ExternalLink, Download, Power, PowerOff, AlertTriangle, Trash2, Calendar, Terminal } from 'lucide-react';
+import { Clock, Server, User, Key, Copy, ExternalLink, Download, Power, PowerOff, AlertTriangle, Trash2, Calendar, Terminal, Cpu, HardDrive, Globe, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { VPSQuickActions } from './vps/VPSQuickActions';

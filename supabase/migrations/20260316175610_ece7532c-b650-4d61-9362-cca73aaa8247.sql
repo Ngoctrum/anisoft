@@ -1,0 +1,1 @@
+ALTER TABLE public.rdp_sessions ADD COLUMN IF NOT EXISTS system_info jsonb DEFAULT '{}'::jsonb;

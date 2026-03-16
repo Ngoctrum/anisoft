@@ -513,7 +513,97 @@ username:s:${username}`;
           </div>
         )}
 
-        {/* Config Verification Commands */}
+        {/* System Info Panel */}
+        {session.system_info && Object.keys(session.system_info).length > 0 && (
+          <div className="p-4 rounded-xl bg-gradient-to-br from-accent/30 to-transparent border border-accent/20 space-y-3">
+            <h4 className="font-semibold flex items-center gap-2 text-foreground">
+              <div className="p-2 bg-accent/20 rounded-lg">
+                <Monitor className="h-4 w-4 text-primary" />
+              </div>
+              Thông tin hệ thống
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {session.system_info.publicIp && session.system_info.publicIp !== 'N/A' && (
+                <div className="flex items-center justify-between p-2.5 bg-background/50 rounded-lg border border-border/30">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Public IP</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <code className="text-xs font-mono font-semibold">{session.system_info.publicIp}</code>
+                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard(session.system_info!.publicIp!, 'Public IP')} className="h-6 w-6 p-0">
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {session.system_info.osVersion && (
+                <div className="flex items-center justify-between p-2.5 bg-background/50 rounded-lg border border-border/30">
+                  <div className="flex items-center gap-2">
+                    <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">OS</span>
+                  </div>
+                  <code className="text-xs font-mono font-semibold truncate max-w-[180px]" title={session.system_info.osVersion}>{session.system_info.osVersion}</code>
+                </div>
+              )}
+              {session.system_info.cpuModel && (
+                <div className="flex items-center justify-between p-2.5 bg-background/50 rounded-lg border border-border/30">
+                  <div className="flex items-center gap-2">
+                    <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">CPU</span>
+                  </div>
+                  <code className="text-xs font-mono font-semibold truncate max-w-[180px]" title={session.system_info.cpuModel}>
+                    {session.system_info.cpuCores} cores
+                    {session.system_info.cpuThreads ? ` / ${session.system_info.cpuThreads} threads` : ''}
+                  </code>
+                </div>
+              )}
+              {session.system_info.totalRam && (
+                <div className="flex items-center justify-between p-2.5 bg-background/50 rounded-lg border border-border/30">
+                  <div className="flex items-center gap-2">
+                    <Server className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">RAM</span>
+                  </div>
+                  <code className="text-xs font-mono font-semibold">
+                    {session.system_info.totalRam}
+                    {session.system_info.freeRam ? ` (Free: ${session.system_info.freeRam})` : ''}
+                  </code>
+                </div>
+              )}
+              {session.system_info.diskTotal && (
+                <div className="flex items-center justify-between p-2.5 bg-background/50 rounded-lg border border-border/30">
+                  <div className="flex items-center gap-2">
+                    <HardDrive className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Disk</span>
+                  </div>
+                  <code className="text-xs font-mono font-semibold">
+                    {session.system_info.diskUsed} / {session.system_info.diskTotal} (Free: {session.system_info.diskAvail})
+                  </code>
+                </div>
+              )}
+              {session.system_info.kernel && (
+                <div className="flex items-center justify-between p-2.5 bg-background/50 rounded-lg border border-border/30">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Kernel</span>
+                  </div>
+                  <code className="text-xs font-mono font-semibold truncate max-w-[180px]" title={session.system_info.kernel}>{session.system_info.kernel}</code>
+                </div>
+              )}
+              {session.system_info.hostname && (
+                <div className="flex items-center justify-between p-2.5 bg-background/50 rounded-lg border border-border/30 col-span-full">
+                  <div className="flex items-center gap-2">
+                    <Server className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Hostname</span>
+                  </div>
+                  <code className="text-xs font-mono font-semibold">{session.system_info.hostname} ({session.system_info.arch})</code>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+
         {hasFullInfo && (
           <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/20 space-y-3">
             <h4 className="font-semibold flex items-center gap-2 text-blue-600 dark:text-blue-400">

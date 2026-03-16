@@ -17,9 +17,9 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json();
-    const { repoName, ngrokUrl, rdpUser, rdpPassword, osType, sshPort, networkingType, status } = body;
+    const { repoName, ngrokUrl, rdpUser, rdpPassword, osType, sshPort, networkingType, status, systemInfo } = body;
 
-    console.log('Received update request:', { repoName, ngrokUrl, rdpUser, osType, networkingType, status });
+    console.log('Received update request:', { repoName, ngrokUrl, rdpUser, osType, networkingType, status, hasSystemInfo: !!systemInfo });
 
     // Find the session by github_repo
     const { data: session, error: findError } = await supabase
@@ -36,11 +36,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Handle FAILURE callback - mark session as failed and delete it
+    // Handle FAILURE callback
     if (status === 'failed') {
-      console.log('Workflow failed, marking session as failed and deleting:', session.id);
+      console.log('Workflow failed, deleting session:', session.id);
       
-      // Delete the failed session
       const { error: deleteError } = await supabase
         .from('rdp_sessions')
         .delete()
@@ -48,7 +47,6 @@ Deno.serve(async (req) => {
 
       if (deleteError) {
         console.error('Error deleting failed session:', deleteError);
-        // Fallback: just mark as failed
         await supabase
           .from('rdp_sessions')
           .update({ status: 'failed', is_active: false, updated_at: new Date().toISOString() })
@@ -85,6 +83,11 @@ Deno.serve(async (req) => {
     if (networkingType) updateData.networking_type = networkingType;
     if (osType) updateData.os_type = osType;
     if (sshPort) updateData.ssh_port = sshPort;
+    
+    // Save system info (public IP, CPU, RAM, disk, OS version, etc.)
+    if (systemInfo) {
+      updateData.system_info = systemInfo;
+    }
 
     const { data: updatedSession, error: updateError } = await supabase
       .from('rdp_sessions')

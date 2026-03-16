@@ -166,6 +166,7 @@ export type Database = {
           started_at: string | null
           status: string | null
           stopped_at: string | null
+          system_info: Json | null
           tailscale_ip: string | null
           total_uptime_minutes: number | null
           updated_at: string | null
@@ -192,6 +193,7 @@ export type Database = {
           started_at?: string | null
           status?: string | null
           stopped_at?: string | null
+          system_info?: Json | null
           tailscale_ip?: string | null
           total_uptime_minutes?: number | null
           updated_at?: string | null
@@ -218,6 +220,7 @@ export type Database = {
           started_at?: string | null
           status?: string | null
           stopped_at?: string | null
+          system_info?: Json | null
           tailscale_ip?: string | null
           total_uptime_minutes?: number | null
           updated_at?: string | null

@@ -1,4 +1,4 @@
-name: 🐧 UBUNTU SSH SERVER
+name: 🐧 UBUNTU 24.04 LTS SSH SERVER
 
 on:
   workflow_dispatch:
@@ -27,13 +27,13 @@ on:
 
 jobs:
   Ubuntu-SSH-Setup:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 360
     
     steps:
-      - name: 🎯 KHỞI ĐỘNG HỆ THỐNG UBUNTU
+      - name: 🎯 KHỞI ĐỘNG HỆ THỐNG UBUNTU 24.04
         run: |
-          echo "🐧 UBUNTU SSH SERVER"
+          echo "🐧 UBUNTU 24.04 LTS SSH SERVER"
           echo "⚡ Powered by AI STV"
           echo "🕒 Thời gian: ${{ github.event.inputs.duration }}"
           echo "⚙️ Cấu hình: ${{ github.event.inputs.config }}"
@@ -43,7 +43,7 @@ jobs:
         run: |
           echo "🛠️ ĐANG CẤU HÌNH HỆ THỐNG"
           sudo apt-get update -qq
-          sudo apt-get install -y openssh-server curl
+          sudo apt-get install -y openssh-server curl neofetch
           
           # Enable password authentication and keep-alive
           sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
@@ -81,6 +81,55 @@ jobs:
           
           echo "✅ Tài khoản: aistv-ubuntu đã sẵn sàng"
 
+      - name: 📊 THU THẬP THÔNG TIN HỆ THỐNG
+        run: |
+          echo "📊 ĐANG THU THẬP THÔNG TIN HỆ THỐNG..."
+          
+          # Public IP
+          PUBLIC_IP=$(curl -s ifconfig.me || curl -s ipinfo.io/ip || curl -s icanhazip.com || echo "N/A")
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+          
+          # Hostname
+          HOSTNAME_INFO=$(hostname)
+          echo "HOSTNAME_INFO=$HOSTNAME_INFO" >> $GITHUB_ENV
+          
+          # OS Version
+          OS_VERSION=$(cat /etc/os-release | grep PRETTY_NAME | cut -d'"' -f2)
+          echo "OS_VERSION=$OS_VERSION" >> $GITHUB_ENV
+          
+          # Kernel
+          KERNEL_VERSION=$(uname -r)
+          echo "KERNEL_VERSION=$KERNEL_VERSION" >> $GITHUB_ENV
+          
+          # CPU
+          CPU_MODEL=$(grep "model name" /proc/cpuinfo | head -1 | cut -d':' -f2 | xargs)
+          CPU_CORES=$(nproc)
+          echo "CPU_MODEL=$CPU_MODEL" >> $GITHUB_ENV
+          echo "CPU_CORES=$CPU_CORES" >> $GITHUB_ENV
+          
+          # RAM
+          TOTAL_RAM=$(free -h | grep Mem | awk '{print $2}')
+          echo "TOTAL_RAM=$TOTAL_RAM" >> $GITHUB_ENV
+          
+          # Disk
+          DISK_TOTAL=$(df -h / | tail -1 | awk '{print $2}')
+          DISK_USED=$(df -h / | tail -1 | awk '{print $3}')
+          DISK_AVAIL=$(df -h / | tail -1 | awk '{print $4}')
+          echo "DISK_TOTAL=$DISK_TOTAL" >> $GITHUB_ENV
+          echo "DISK_USED=$DISK_USED" >> $GITHUB_ENV
+          echo "DISK_AVAIL=$DISK_AVAIL" >> $GITHUB_ENV
+          
+          # Architecture
+          ARCH=$(uname -m)
+          echo "ARCH=$ARCH" >> $GITHUB_ENV
+          
+          echo "✅ Thu thập thông tin hoàn tất!"
+          echo "🌐 Public IP: $PUBLIC_IP"
+          echo "💻 OS: $OS_VERSION"
+          echo "🔧 CPU: $CPU_MODEL ($CPU_CORES cores)"
+          echo "💾 RAM: $TOTAL_RAM"
+          echo "📀 Disk: $DISK_USED / $DISK_TOTAL (Còn: $DISK_AVAIL)"
+
       - name: 🌐 THIẾT LẬP MẠNG TAILSCALE
         env:
           TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
@@ -107,12 +156,30 @@ jobs:
           PASSWORD=$(cat /tmp/ssh_password.txt)
           REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
           
+          # Tạo JSON với system info
+          SYSTEM_INFO=$(cat <<EOF
+          {
+            "publicIp": "$PUBLIC_IP",
+            "hostname": "$HOSTNAME_INFO",
+            "osVersion": "$OS_VERSION",
+            "kernel": "$KERNEL_VERSION",
+            "cpuModel": "$CPU_MODEL",
+            "cpuCores": "$CPU_CORES",
+            "totalRam": "$TOTAL_RAM",
+            "diskTotal": "$DISK_TOTAL",
+            "diskUsed": "$DISK_USED",
+            "diskAvail": "$DISK_AVAIL",
+            "arch": "$ARCH"
+          }
+          EOF
+          )
+          
           # Gửi thông tin về Supabase
           curl -X POST "https://wxqxriwodkgzpzqaxigp.supabase.co/functions/v1/update-rdp-info" \
             -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8" \
             -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4cXhyaXdvZGtnenB6cWF4aWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4Nzk0MDcsImV4cCI6MjA3OTQ1NTQwN30.u8piIXHELUvdN9klNTFhnBFrD0lzwMg0EMPcrz1Wfh8" \
             -H "Content-Type: application/json" \
-            -d "{\"repoName\":\"$REPO_NAME\",\"ngrokUrl\":\"$TAILSCALE_IP\",\"rdpUser\":\"aistv-ubuntu\",\"rdpPassword\":\"$PASSWORD\",\"osType\":\"ubuntu\",\"sshPort\":22}" \
+            -d "{\"repoName\":\"$REPO_NAME\",\"ngrokUrl\":\"$TAILSCALE_IP\",\"rdpUser\":\"aistv-ubuntu\",\"rdpPassword\":\"$PASSWORD\",\"osType\":\"ubuntu\",\"sshPort\":22,\"systemInfo\":$SYSTEM_INFO}" \
             || echo "⚠️ Lỗi gửi thông tin nhưng VPS vẫn hoạt động"
           
           echo "✅ Đã gửi thông tin về website!"
@@ -127,14 +194,20 @@ jobs:
           
           echo ""
           echo "┌───────────────────────────────────────────┐"
-          echo "│         🎉 UBUNTU SSH ĐÃ SẴN SÀNG!        │"
+          echo "│     🎉 UBUNTU 24.04 SSH ĐÃ SẴN SÀNG!      │"
           echo "├───────────────────────────────────────────┤"
-          echo "│ 🌐  Địa chỉ: $TAILSCALE_IP"
+          echo "│ 🌐  Tailscale IP: $TAILSCALE_IP"
+          echo "│ 🌍  Public IP: $PUBLIC_IP"
           echo "│ 👤  User: aistv-ubuntu"
           echo "│ 🔐  Password: $PASSWORD"
           echo "│ ⏰  Thời lượng: $HOURS giờ"
           echo "│ 🔌  SSH Port: 22"
           echo "│ ⚙️  Config: ${{ github.event.inputs.config }}"
+          echo "├───────────────────────────────────────────┤"
+          echo "│ 💻  OS: $OS_VERSION"
+          echo "│ 🔧  CPU: $CPU_MODEL ($CPU_CORES cores)"
+          echo "│ 💾  RAM: $TOTAL_RAM"
+          echo "│ 📀  Disk: $DISK_USED / $DISK_TOTAL"
           echo "├───────────────────────────────────────────┤"
           echo "│ 💡  Kết nối SSH:                          │"
           echo "│   ssh aistv-ubuntu@$TAILSCALE_IP          │"
@@ -149,7 +222,7 @@ jobs:
           MINUTES=$((HOURS * 60))
           
           echo "🔄 BẮT ĐẦU DUY TRÌ PHIÊN LÀM VIỆC..."
-          echo "💎 Ubuntu SSH Server"
+          echo "💎 Ubuntu 24.04 LTS SSH Server"
           echo "🔗 Kết nối: ssh aistv-ubuntu@$TAILSCALE_IP"
           echo "🕐 Thời gian: $HOURS giờ"
           

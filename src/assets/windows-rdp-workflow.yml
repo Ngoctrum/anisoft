@@ -170,8 +170,8 @@ jobs:
           Write-Host "📊 THU THẬP THÔNG TIN HỆ THỐNG..." -ForegroundColor Yellow
           
           # Public IP
-          $publicIp = try { (Invoke-RestMethod -Uri "https://ifconfig.me" -TimeoutSec 10) } catch { try { (Invoke-RestMethod -Uri "https://ipinfo.io/ip" -TimeoutSec 10) } catch { "N/A" } }
-          $publicIp = $publicIp.Trim()
+          $publicIp = try { (Invoke-RestMethod -Uri "https://api.ipify.org" -TimeoutSec 10) } catch { try { (Invoke-RestMethod -Uri "https://ifconfig.me/ip" -UserAgent "curl" -TimeoutSec 10) } catch { "N/A" } }
+          $publicIp = "$publicIp".Trim()
           echo "PUBLIC_IP=$publicIp" >> $env:GITHUB_ENV
           
           # Hostname

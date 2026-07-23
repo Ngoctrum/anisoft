@@ -113,6 +113,169 @@ export type Database = {
           },
         ]
       }
+      nexus_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      nexus_orders: {
+        Row: {
+          contact_channel: string
+          contact_name: string
+          contact_phone: string | null
+          contact_value: string
+          created_at: string
+          id: string
+          note: string | null
+          plan_name: string
+          price: number
+          product_id: string | null
+          product_name: string
+          quantity: number
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          contact_channel?: string
+          contact_name: string
+          contact_phone?: string | null
+          contact_value: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          plan_name: string
+          price: number
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          contact_channel?: string
+          contact_name?: string
+          contact_phone?: string | null
+          contact_value?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          plan_name?: string
+          price?: number
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_products: {
+        Row: {
+          badge: string | null
+          category_slug: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          is_featured: boolean
+          name: string
+          plans: Json
+          short_description: string | null
+          slug: string
+          sort_order: number
+          stock_status: string
+          updated_at: string
+          warranty: string | null
+        }
+        Insert: {
+          badge?: string | null
+          category_slug: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_featured?: boolean
+          name: string
+          plans?: Json
+          short_description?: string | null
+          slug: string
+          sort_order?: number
+          stock_status?: string
+          updated_at?: string
+          warranty?: string | null
+        }
+        Update: {
+          badge?: string | null
+          category_slug?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_featured?: boolean
+          name?: string
+          plans?: Json
+          short_description?: string | null
+          slug?: string
+          sort_order?: number
+          stock_status?: string
+          updated_at?: string
+          warranty?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_products_category_slug_fkey"
+            columns: ["category_slug"]
+            isOneToOne: false
+            referencedRelation: "nexus_categories"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       notification_channels: {
         Row: {
           config: Json

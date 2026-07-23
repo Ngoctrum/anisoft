@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Settings as SettingsIcon, Download, Link, Palette, Mail } from 'lucide-react';
+import { Loader2, Settings as SettingsIcon, Download, Link, Palette, Mail, Sparkles } from 'lucide-react';
 
 export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
@@ -22,6 +22,7 @@ export default function AdminSettings() {
   const [smtp, setSmtp] = useState<any>({});
   const [vpsSettings, setVpsSettings] = useState<any>({});
   const [pageVisibility, setPageVisibility] = useState<any>({});
+  const [nexusEnabled, setNexusEnabled] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -63,6 +64,9 @@ export default function AdminSettings() {
             docs_enabled: true,
             support_enabled: true
           });
+          break;
+        case 'nexus_mode_enabled':
+          setNexusEnabled(value === true || value?.enabled === true);
           break;
       }
     });
@@ -132,6 +136,10 @@ export default function AdminSettings() {
             <TabsTrigger value="pages">
               <SettingsIcon className="h-4 w-4 mr-2" />
               Quản lý trang
+            </TabsTrigger>
+            <TabsTrigger value="nexus">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Nexus Mode
             </TabsTrigger>
           </TabsList>
 
@@ -556,6 +564,49 @@ export default function AdminSettings() {
                 >
                   {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   💾 Lưu cài đặt hiển thị
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="nexus">
+            <Card className="border-2 border-fuchsia-500/40 bg-gradient-to-br from-fuchsia-500/5 to-violet-500/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-fuchsia-500" />
+                  Nexus Override — Shop tài khoản premium
+                </CardTitle>
+                <CardDescription>
+                  Khi bật, toàn bộ khách truy cập sẽ thấy site Nexus Override (ChatGPT, Netflix, Canva...). Admin vẫn thấy site Ani Studio cũ để quản lý.
+                  Có thể xem trước site Nexus tại <a href="/nexus" className="text-primary underline">/nexus</a>.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card/50">
+                  <div>
+                    <Label className="text-base font-semibold">Kích hoạt Nexus Mode</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {nexusEnabled ? '🟢 Site đang chạy Nexus Override' : '⚪ Site đang chạy Ani Studio'}
+                    </p>
+                  </div>
+                  <Switch
+                    className="scale-125"
+                    checked={nexusEnabled}
+                    onCheckedChange={setNexusEnabled}
+                  />
+                </div>
+                <div className="grid gap-2 md:grid-cols-3">
+                  <Button asChild variant="outline"><a href="/admin/nexus/products">Quản lý sản phẩm</a></Button>
+                  <Button asChild variant="outline"><a href="/admin/nexus/categories">Quản lý danh mục</a></Button>
+                  <Button asChild variant="outline"><a href="/admin/nexus/orders">Xem đơn hàng</a></Button>
+                </div>
+                <Button
+                  onClick={() => handleSave('nexus_mode_enabled', nexusEnabled)}
+                  disabled={saving}
+                  className="bg-gradient-to-r from-fuchsia-500 to-violet-600 text-white"
+                >
+                  {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Lưu cài đặt Nexus Mode
                 </Button>
               </CardContent>
             </Card>

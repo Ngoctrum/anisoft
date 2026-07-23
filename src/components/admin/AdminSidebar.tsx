@@ -9,6 +9,9 @@ import {
   Home,
   Sparkles,
   BookOpen,
+  ShoppingBag,
+  FolderTree,
+  Receipt,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -31,6 +34,12 @@ const menuItems = [
   { title: 'Quản lý Users', url: '/admin/users', icon: Users },
   { title: 'Báo lỗi', url: '/admin/reports', icon: AlertCircle },
   { title: 'Cài đặt', url: '/admin/settings', icon: Settings },
+];
+
+const nexusMenu = [
+  { title: 'Nexus - Sản phẩm', url: '/admin/nexus/products', icon: ShoppingBag },
+  { title: 'Nexus - Danh mục', url: '/admin/nexus/categories', icon: FolderTree },
+  { title: 'Nexus - Đơn hàng', url: '/admin/nexus/orders', icon: Receipt },
 ];
 
 export function AdminSidebar() {
@@ -65,6 +74,30 @@ export function AdminSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.end}
+                      className="hover:bg-muted/50 transition-colors"
+                      activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-fuchsia-400 font-semibold">
+            Nexus Override
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {nexusMenu.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
                       className="hover:bg-muted/50 transition-colors"
                       activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary"
                     >

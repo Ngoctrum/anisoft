@@ -115,6 +115,7 @@ Deno.serve(async (req) => {
     }
 
     console.log('Session updated successfully:', updatedSession?.id);
+    notify('ready');
 
     return new Response(
       JSON.stringify({ success: true, session: updatedSession }),

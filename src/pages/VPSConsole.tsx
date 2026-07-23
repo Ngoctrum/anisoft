@@ -1427,6 +1427,23 @@ export default function VPSConsole() {
         </div>
           </TabsContent>
 
+          <TabsContent value="templates" className="animate-fade-in">
+            <VPSTemplates
+              currentConfig={{ os_type: osType, networking_type: networkingType, vps_config: vpsConfig, duration_hours: durationHours }}
+              onDeploy={(t: VPSTemplate) => {
+                setOsType(t.os_type as any);
+                setNetworkingType(t.networking_type as any);
+                setVpsConfig(t.vps_config as any);
+                setDurationHours(t.duration_hours);
+                toast.success(`Đã áp dụng "${t.name}" — chuyển sang tab Console để bấm Tạo VPS`);
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="notifications" className="animate-fade-in">
+            <VPSNotificationSettings />
+          </TabsContent>
+
           <TabsContent value="analytics" className="animate-fade-in">
             <VPSAnalyticsDashboard />
           </TabsContent>

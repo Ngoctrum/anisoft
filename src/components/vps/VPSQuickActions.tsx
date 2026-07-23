@@ -74,6 +74,13 @@ export function VPSQuickActions({
           Xem Logs
         </DropdownMenuItem>
 
+        {onOpenFiles && (
+          <DropdownMenuItem onClick={() => handleAction(onOpenFiles)} className="cursor-pointer">
+            <FolderOpen className="h-4 w-4 mr-2" />
+            File Manager
+          </DropdownMenuItem>
+        )}
+
         <DropdownMenuSeparator />
 
         {isActive ? (

@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { VPSQuickActions } from './vps/VPSQuickActions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { VPSSessionMonitor } from './vps/VPSSessionMonitor';
+import { VPSFileManager } from './vps/VPSFileManager';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface SystemInfo {

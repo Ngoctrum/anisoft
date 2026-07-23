@@ -107,8 +107,8 @@ const RouteSwitcher = () => {
       </div>
     );
   }
-  // Admin routes vẫn truy cập được qua /admin/* trong cả 2 mode
-  const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  const location = useLocation();
+  const isAdminPath = location.pathname.startsWith('/admin');
   return nexusEnabled && !isAdminPath ? <NexusRoutes /> : <OriginalRoutes />;
 };
 

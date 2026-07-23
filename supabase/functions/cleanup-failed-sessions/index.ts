@@ -57,6 +57,32 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Notify users about expired/failed sessions
+    const notifyUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-vps-notification`;
+    const notifyHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` };
+    if (sessionsToDelete) {
+      for (const s of sessionsToDelete) {
+        if (!s.user_id) continue;
+        const event = s.status === 'failed' ? 'error' : 'killed';
+        fetch(notifyUrl, { method: 'POST', headers: notifyHeaders, body: JSON.stringify({ userId: s.user_id, sessionId: s.id, event }) }).catch(() => {});
+      }
+    }
+
+    // Notify sessions expiring within 10 minutes (still active)
+    const in10Min = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    const { data: expiring } = await supabase
+      .from('rdp_sessions')
+      .select('id, user_id, expires_at')
+      .eq('is_active', true)
+      .gte('expires_at', now)
+      .lte('expires_at', in10Min);
+    if (expiring) {
+      for (const s of expiring) {
+        if (!s.user_id) continue;
+        fetch(notifyUrl, { method: 'POST', headers: notifyHeaders, body: JSON.stringify({ userId: s.user_id, sessionId: s.id, event: 'expiring' }) }).catch(() => {});
+      }
+    }
+
     // Delete GitHub repositories for each session
     const githubToken = Deno.env.get('GITHUB_TOKEN');
     if (githubToken && sessionsToDelete) {

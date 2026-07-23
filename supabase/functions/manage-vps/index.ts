@@ -239,6 +239,12 @@ Deno.serve(async (req) => {
         throw updateError;
       }
 
+      fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-vps-notification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+        body: JSON.stringify({ userId: user.id, sessionId, event: 'killed' }),
+      }).catch(e => console.error('notify error', e));
+
       return new Response(
         JSON.stringify({ success: true, session: updatedSession }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

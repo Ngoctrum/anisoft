@@ -1,82 +1,86 @@
+## 1. Nâng quyền admin
+- Đã cấp role `admin` cho tài khoản `NexusOverride` (đã chạy migration).
 
-# Nâng cấp VPS Console — 3 tính năng mới
+## 2. Feature flag toàn cục "Nexus Mode"
+- Thêm key `nexus_mode_enabled` (boolean) vào bảng `site_settings` (mặc định `false`).
+- Thêm toggle trong Admin > Cài đặt: "Bật chế độ Nexus Override".
+- Tạo `NexusModeProvider` (React context) đọc setting này 1 lần khi app load + realtime subscribe.
+- Logic route:
+  - `nexus_mode_enabled = false` → site chạy như hiện tại (Ani Studio).
+  - `nexus_mode_enabled = true` + user **không phải admin** → toàn bộ route redirect sang site Nexus Override mới. Các trang cũ (`/tools`, `/apps`, `/vps-console`, `/gdrive-scanner`, `/courses`, `/docs`, `/support`, `/report`, `/website`, `/apps/*`, `/tools/*`, `/download/*`) trả về 404 hoặc redirect về `/`.
+  - `nexus_mode_enabled = true` + user **là admin** → admin vẫn thấy site Ani Studio cũ đầy đủ (có banner nhỏ "Bạn đang xem chế độ admin, site đang ẩn với public"). Admin cũng có thể bấm nút xem thử site Nexus Override.
 
-## 1. Template VPS (Preset)
+## 3. Site Nexus Override (mới)
+Danh mục shop share tài khoản premium: ChatGPT, Netflix, Canva, Gemini, YouTube Premium, CapCut Pro, Spotify, các AI tools, đọc truyện tranh, v.v.
 
-Cho phép lưu cấu hình yêu thích và tạo VPS chỉ với 1 cú click.
+### Routes mới (dùng chung route `/`)
+- `/` — Landing: hero + featured products + categories + testimonials + FAQ + CTA
+- `/products` — danh sách tất cả sản phẩm với filter theo category, giá, tình trạng
+- `/products/:slug` — chi tiết sản phẩm (mô tả, gói giá, chính sách bảo hành, nút mua/đặt hàng)
+- `/cart` — giỏ hàng đơn giản (localStorage)
+- `/checkout` — form đặt hàng (tên, liên hệ Zalo/Telegram, ghi chú) → tạo `order` record. Bản đầu không tích hợp payment, chỉ tạo order để admin xác nhận thủ công.
+- `/orders` — lịch sử đơn của user
+- `/account` — tái sử dụng trang account cũ (có thêm section đơn hàng)
+- `/login`, `/register` — giữ nguyên, chỉ đổi branding
 
-**Database:**
-- Bảng `vps_templates`: user_id, name, description, os_type, networking_type, vps_config, duration_hours, icon (emoji), is_favorite
-- RLS: user chỉ xem/sửa/xóa template của mình
+### Data model mới
+- `nexus_products`: id, slug, name, category, description, image_url, features (jsonb: array các gói giá + thời hạn), stock_status, is_featured, is_active, sort_order, created_at, updated_at
+- `nexus_categories`: id, slug, name, icon, sort_order
+- `nexus_orders`: id, user_id (nullable cho guest), product_id, plan_name, price, quantity, contact_name, contact_phone, contact_channel (zalo/telegram/messenger), note, status (pending/confirmed/delivered/cancelled), created_at, updated_at
+- Tất cả bảng: GRANT + RLS phù hợp; products/categories public read; orders user chỉ xem đơn của mình, admin xem tất cả.
 
-**UI:**
-- Thêm tab "Templates" trong VPS Console
-- Nút "Lưu làm template" ở form tạo VPS hiện tại
-- Card danh sách template với nút "Deploy" (1-click tạo VPS từ template)
-- Preset mặc định (system): Ubuntu Dev, Windows Gaming, Linux Server
+### Admin quản lý Nexus
+- Sidebar admin thêm mục: "Nexus - Sản phẩm", "Nexus - Danh mục", "Nexus - Đơn hàng"
+- CRUD đầy đủ cho từng mục.
 
-## 2. Notification & Webhook
+## 4. Hệ thống 2 theme (Light / Dark)
+- Thêm `ThemeProvider` (localStorage `nexus-theme`, mặc định dark).
+- Bổ sung biến CSS `.light` (đã có sẵn) — tinh chỉnh cho phù hợp shop.
+- Toggle theme (Sun/Moon icon) hiển thị trên Header cả 2 site.
+- Nexus Override dùng palette mới:
+  - Dark: nền `hsl(240 15% 6%)`, accent tím-hồng `hsl(280 90% 65%)` → `hsl(320 90% 60%)` gradient, viền neon nhẹ.
+  - Light: nền trắng ngà `hsl(30 20% 98%)`, accent cùng tone tím-hồng đậm hơn, shadow mềm.
+- Fonts: heading `Sora`, body `Inter` (Google Fonts).
 
-Gửi thông báo khi VPS ready / sắp hết hạn / bị lỗi.
+## 5. Cấu trúc thư mục
+```
+src/
+  contexts/
+    NexusModeContext.tsx
+    ThemeContext.tsx
+  components/nexus/
+    NexusHeader.tsx
+    NexusFooter.tsx
+    NexusProductCard.tsx
+    NexusCategoryPill.tsx
+    NexusLayout.tsx
+  pages/nexus/
+    Landing.tsx
+    Products.tsx
+    ProductDetail.tsx
+    Cart.tsx
+    Checkout.tsx
+    Orders.tsx
+  pages/admin/
+    NexusProducts.tsx
+    NexusCategories.tsx
+    NexusOrders.tsx
+```
 
-**Database:**
-- Bảng `notification_channels`: user_id, type (telegram/discord/webhook/email), config (JSONB: bot_token, chat_id, webhook_url...), events (array: ready, expiring, error, killed), enabled
+## 6. Router logic (App.tsx)
+- Bọc Routes trong `NexusModeProvider` + `ThemeProvider`.
+- Component `RouteSwitcher` quyết định set routes nào render dựa trên `(nexusEnabled, isAdmin)`.
+- Admin luôn có `/admin/*` truy cập được.
+- Route `/preview-nexus` chỉ dành cho admin xem thử site Nexus khi flag đang tắt.
 
-**Edge function:** `send-vps-notification`
-- Nhận session_id + event type
-- Query channels của user
-- Format message theo template và gửi (Telegram Bot API / Discord Webhook / generic webhook POST)
+## 7. Seed dữ liệu mẫu
+- Insert 6 category (ChatGPT, Netflix, Canva, Gemini, YouTube, Giải trí khác).
+- Insert ~8 sản phẩm mẫu để landing không trống khi bật lần đầu.
 
-**Trigger points:**
-- `update-rdp-info` gọi khi VPS ready
-- `cleanup-failed-sessions` gọi khi expiring (còn 10 phút) và khi error
-- `manage-vps` gọi khi kill
+## Chi tiết kỹ thuật
+- Tất cả route logic tập trung ở `App.tsx` để dễ maintain.
+- Không xóa/đổi tên file cũ — chỉ ẩn qua router; khi flag tắt là quay về nguyên trạng.
+- Ngăn flicker: `NexusModeProvider` render skeleton loader khi đang fetch setting lần đầu.
+- Order flow chưa cần cổng thanh toán; admin liên hệ user qua thông tin đơn để giao account.
 
-**UI:**
-- Trang `Settings → Notifications` trong VPS Console
-- Form thêm channel: chọn type, nhập config, tick events
-- Nút "Test" gửi tin nhắn thử
-
-## 3. File Manager tích hợp
-
-Upload/download file giữa web và VPS qua SFTP.
-
-**Cách tiếp cận:**
-Do trình duyệt không kết nối SSH trực tiếp được, dùng edge function làm proxy:
-- Edge function `vps-file-manager` dùng thư viện `ssh2` (Deno npm) kết nối tới VPS bằng SSH credentials trong session
-- Endpoints: `list` (ls path), `upload` (nhận base64 → ghi file), `download` (đọc file → trả base64), `delete`, `mkdir`
-
-**UI component `VPSFileManager`:**
-- Modal mở từ session card ("File Manager" trong Quick Actions)
-- Breadcrumb đường dẫn hiện tại
-- Table: tên, size, modified, actions (download/delete)
-- Drop zone upload file (giới hạn 10MB do edge function payload limit)
-- Nút tạo folder mới
-
-**Giới hạn:**
-- Chỉ hoạt động với Linux VPS (SSH), Windows RDP không hỗ trợ đợt này
-- File > 10MB: khuyến nghị dùng SCP/rsync trực tiếp (hiển thị hướng dẫn)
-
-## Kỹ thuật
-
-**Files tạo mới:**
-- `src/components/vps/VPSTemplates.tsx`, `VPSTemplateCard.tsx`, `SaveTemplateDialog.tsx`
-- `src/components/vps/VPSNotificationSettings.tsx`, `NotificationChannelForm.tsx`
-- `src/components/vps/VPSFileManager.tsx`
-- `supabase/functions/send-vps-notification/index.ts`
-- `supabase/functions/vps-file-manager/index.ts`
-
-**Files sửa:**
-- `src/pages/VPSConsole.tsx` — thêm tabs Templates/Notifications
-- `src/components/vps/VPSQuickActions.tsx` — thêm mục "File Manager"
-- `supabase/functions/update-rdp-info/index.ts` — trigger notification
-- `supabase/functions/cleanup-failed-sessions/index.ts` — trigger notification
-- `supabase/functions/manage-vps/index.ts` — trigger notification
-
-**Migrations:** 1 migration tạo 2 bảng `vps_templates` + `notification_channels` với RLS + GRANTs.
-
-## Ước tính
-
-Khoảng 12-15 file mới/sửa, 1 migration, 2 edge function mới. Triển khai theo thứ tự: (1) Templates, (2) Notifications, (3) File Manager để có thể review từng phần.
-
-Bạn duyệt kế hoạch này để mình bắt đầu triển khai nhé?
+Bạn duyệt kế hoạch để mình bắt đầu triển khai từng bước nhé?

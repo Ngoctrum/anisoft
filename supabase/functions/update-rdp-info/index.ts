@@ -36,10 +36,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    const notify = (event: string) => {
+      if (!session?.user_id) return;
+      fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-vps-notification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}` },
+        body: JSON.stringify({ userId: session.user_id, sessionId: session.id, event }),
+      }).catch(e => console.error('notify error', e));
+    };
+
     // Handle FAILURE callback
     if (status === 'failed') {
       console.log('Workflow failed, deleting session:', session.id);
-      
+      notify('error');
+
       const { error: deleteError } = await supabase
         .from('rdp_sessions')
         .delete()
@@ -105,6 +115,7 @@ Deno.serve(async (req) => {
     }
 
     console.log('Session updated successfully:', updatedSession?.id);
+    notify('ready');
 
     return new Response(
       JSON.stringify({ success: true, session: updatedSession }),

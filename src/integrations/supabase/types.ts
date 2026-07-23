@@ -113,6 +113,42 @@ export type Database = {
           },
         ]
       }
+      notification_channels: {
+        Row: {
+          config: Json
+          created_at: string
+          enabled: boolean
+          events: string[]
+          id: string
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          events?: string[]
+          id?: string
+          name: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          events?: string[]
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -385,6 +421,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vps_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_hours: number
+          icon: string | null
+          id: string
+          is_favorite: boolean
+          name: string
+          networking_type: string
+          os_type: string
+          updated_at: string
+          user_id: string
+          vps_config: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_hours?: number
+          icon?: string | null
+          id?: string
+          is_favorite?: boolean
+          name: string
+          networking_type: string
+          os_type: string
+          updated_at?: string
+          user_id: string
+          vps_config?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_hours?: number
+          icon?: string | null
+          id?: string
+          is_favorite?: boolean
+          name?: string
+          networking_type?: string
+          os_type?: string
+          updated_at?: string
+          user_id?: string
+          vps_config?: string
+        }
+        Relationships: []
       }
     }
     Views: {

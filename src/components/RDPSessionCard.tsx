@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { VPSQuickActions } from './vps/VPSQuickActions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { VPSSessionMonitor } from './vps/VPSSessionMonitor';
+import { VPSFileManager } from './vps/VPSFileManager';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface SystemInfo {
@@ -60,6 +61,8 @@ export function RDPSessionCard({ session, onDelete, onKill, onStart }: RDPSessio
   const [isKilling, setIsKilling] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [showLogsDialog, setShowLogsDialog] = useState(false);
+  const [showFileManager, setShowFileManager] = useState(false);
+  const isLinux = ['ubuntu', 'debian', 'archlinux', 'centos'].includes((session.os_type || '').toLowerCase());
 
   useEffect(() => {
     if (!session.expires_at) return;
@@ -402,9 +405,18 @@ username:s:${username}`;
               onKill={handleKillVPS}
               onStart={handleStartVPS}
               onViewLogs={() => setShowLogsDialog(true)}
+              onOpenFiles={isLinux && session.is_active ? () => setShowFileManager(true) : undefined}
             />
           </div>
         </CardHeader>
+        {showFileManager && (
+          <VPSFileManager
+            sessionId={session.id}
+            sessionName={session.github_repo}
+            open={showFileManager}
+            onClose={() => setShowFileManager(false)}
+          />
+        )}
       <CardContent className="space-y-6 pt-6">
         {/* Failed Status Alert */}
         {session.status === 'failed' && (

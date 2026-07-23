@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Settings as SettingsIcon, Download, Link, Palette, Mail } from 'lucide-react';
+import { Loader2, Settings as SettingsIcon, Download, Link, Palette, Mail, Sparkles } from 'lucide-react';
 
 export default function AdminSettings() {
   const [loading, setLoading] = useState(true);

@@ -9,6 +9,9 @@ import {
   Home,
   Sparkles,
   BookOpen,
+  ShoppingBag,
+  FolderTree,
+  Receipt,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -31,6 +34,12 @@ const menuItems = [
   { title: 'Quản lý Users', url: '/admin/users', icon: Users },
   { title: 'Báo lỗi', url: '/admin/reports', icon: AlertCircle },
   { title: 'Cài đặt', url: '/admin/settings', icon: Settings },
+];
+
+const nexusMenu = [
+  { title: 'Nexus - Sản phẩm', url: '/admin/nexus/products', icon: ShoppingBag },
+  { title: 'Nexus - Danh mục', url: '/admin/nexus/categories', icon: FolderTree },
+  { title: 'Nexus - Đơn hàng', url: '/admin/nexus/orders', icon: Receipt },
 ];
 
 export function AdminSidebar() {

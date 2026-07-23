@@ -16,6 +16,8 @@ import { RDPSessionCard } from '@/components/RDPSessionCard';
 import { Header } from '@/components/Header';
 import { Switch } from '@/components/ui/switch';
 import { VPSAnalyticsDashboard } from '@/components/vps/VPSAnalyticsDashboard';
+import { VPSTemplates, type VPSTemplate } from '@/components/vps/VPSTemplates';
+import { VPSNotificationSettings } from '@/components/vps/VPSNotificationSettings';
 import { PageAccessControl } from '@/components/PageAccessControl';
 import windowsWorkflowTemplate from '@/assets/windows-rdp-workflow.yml?raw';
 import windowsNgrokWorkflowTemplate from '@/assets/windows-rdp-ngrok-workflow.yml?raw';
@@ -870,10 +872,18 @@ export default function VPSConsole() {
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <Tabs defaultValue="console" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="console" className="flex items-center gap-2">
               <Server className="h-4 w-4" />
-              VPS Console
+              Console
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="flex items-center gap-2">
+              <Play className="h-4 w-4" />
+              Templates
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              Thông báo
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart className="h-4 w-4" />

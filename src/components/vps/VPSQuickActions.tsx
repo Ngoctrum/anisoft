@@ -15,7 +15,8 @@ import {
   PowerOff, 
   Download, 
   Eye, 
-  RefreshCw 
+  RefreshCw,
+  FolderOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -28,6 +29,7 @@ interface VPSQuickActionsProps {
   onStart: () => void;
   onViewLogs: () => void;
   onClone?: () => void;
+  onOpenFiles?: () => void;
 }
 
 export function VPSQuickActions({
@@ -39,6 +41,7 @@ export function VPSQuickActions({
   onStart,
   onViewLogs,
   onClone,
+  onOpenFiles,
 }: VPSQuickActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
 

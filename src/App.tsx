@@ -99,7 +99,7 @@ const NexusRoutes = () => (
 );
 
 const RouteSwitcher = () => {
-  const { nexusEnabled, isAdmin, loading } = useNexusMode();
+  const { nexusEnabled, loading } = useNexusMode();
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -107,7 +107,9 @@ const RouteSwitcher = () => {
       </div>
     );
   }
-  return nexusEnabled && !isAdmin ? <NexusRoutes /> : <OriginalRoutes />;
+  // Admin routes vẫn truy cập được qua /admin/* trong cả 2 mode
+  const isAdminPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  return nexusEnabled && !isAdminPath ? <NexusRoutes /> : <OriginalRoutes />;
 };
 
 const App = () => (

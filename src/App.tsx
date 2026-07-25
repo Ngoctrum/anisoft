@@ -75,6 +75,7 @@ const OriginalRoutes = () => (
     <Route path="/admin/nexus/products" element={<AdminNexusProducts />} />
     <Route path="/admin/nexus/categories" element={<AdminNexusCategories />} />
     <Route path="/admin/nexus/orders" element={<AdminNexusOrders />} />
+    <Route path="/admin/nexus/verify" element={<AdminNexusVerify />} />
     {/* Nexus preview cho admin khi tắt flag */}
     <Route path="/nexus" element={<NexusLanding />} />
     <Route path="/nexus/products" element={<NexusProducts />} />

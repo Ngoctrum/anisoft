@@ -36,6 +36,7 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminNexusProducts from "./pages/admin/NexusProducts";
 import AdminNexusCategories from "./pages/admin/NexusCategories";
 import AdminNexusOrders from "./pages/admin/NexusOrders";
+import AdminNexusVerify from "./pages/admin/NexusVerify";
 import NotFound from "./pages/NotFound";
 
 import NexusLanding from "./pages/nexus/Landing";
@@ -74,6 +75,7 @@ const OriginalRoutes = () => (
     <Route path="/admin/nexus/products" element={<AdminNexusProducts />} />
     <Route path="/admin/nexus/categories" element={<AdminNexusCategories />} />
     <Route path="/admin/nexus/orders" element={<AdminNexusOrders />} />
+    <Route path="/admin/nexus/verify" element={<AdminNexusVerify />} />
     {/* Nexus preview cho admin khi tắt flag */}
     <Route path="/nexus" element={<NexusLanding />} />
     <Route path="/nexus/products" element={<NexusProducts />} />

@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   FolderTree,
   Receipt,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -40,6 +41,7 @@ const nexusMenu = [
   { title: 'Nexus - Sản phẩm', url: '/admin/nexus/products', icon: ShoppingBag },
   { title: 'Nexus - Danh mục', url: '/admin/nexus/categories', icon: FolderTree },
   { title: 'Nexus - Đơn hàng', url: '/admin/nexus/orders', icon: Receipt },
+  { title: 'Kiểm tra Nexus', url: '/admin/nexus/verify', icon: ShieldCheck },
 ];
 
 export function AdminSidebar() {

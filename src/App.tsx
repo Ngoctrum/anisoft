@@ -36,6 +36,7 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminNexusProducts from "./pages/admin/NexusProducts";
 import AdminNexusCategories from "./pages/admin/NexusCategories";
 import AdminNexusOrders from "./pages/admin/NexusOrders";
+import AdminNexusVerify from "./pages/admin/NexusVerify";
 import NotFound from "./pages/NotFound";
 
 import NexusLanding from "./pages/nexus/Landing";
